@@ -173,8 +173,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 0.2.0 (2026-05-18)
 
 - Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
 - Fixed `input.voltage.extended` incorrectly tagged with unit "V" — now correctly detected as string

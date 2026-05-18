@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "news": {
-      "NEXT": {
+      "0.2.0": {
         "en": "Fixed vendorid/productid leading zeros and voltage.extended unit. Human-readable status display. HE flag. ENUM/RANGE for writable variables. Device name from mfr+model. Specific roles. i18n",
         "de": "Korrektur vendorid/productid führende Nullen und voltage.extended-Unit. Lesbarer Status-Display. HE-Flag. ENUM/RANGE für schreibbare Variablen. Gerätename aus Hersteller+Modell. Rollen. i18n",
         "ru": "Исправлены ведущие нули vendorid/productid и единица voltage.extended. Читаемый статус. Флаг HE. ENUM/RANGE для записываемых переменных. Имя устройства из производителя+модели. Роли. i18n",
@@ -95,7 +95,10 @@
       "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
-    "authors": ["Apollon77 <ingo@fischer-ka.de>", "krobi <krobi@power-dreams.com>"],
+    "authors": [
+      "Apollon77 <ingo@fischer-ka.de>",
+      "krobi <krobi@power-dreams.com>"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -129,10 +132,24 @@
         "admin": ">=7.8.23"
       }
     ],
-    "keywords": ["ups", "nut", "network ups tools", "uninterruptible power supply", "usv", "battery", "power"]
+    "keywords": [
+      "ups",
+      "nut",
+      "network ups tools",
+      "uninterruptible power supply",
+      "usv",
+      "battery",
+      "power"
+    ]
   },
-  "encryptedNative": ["username", "password"],
-  "protectedNative": ["username", "password"],
+  "encryptedNative": [
+    "username",
+    "password"
+  ],
+  "protectedNative": [
+    "username",
+    "password"
+  ],
   "native": {
     "host": "",
     "port": 3493,
