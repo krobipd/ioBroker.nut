@@ -178,6 +178,14 @@ nut.0.
 - Connection test button in admin UI
 - 11-language admin UI and state names
 
+## Credits
+
+**Original Author:** Apollon77 ([@Apollon77](https://github.com/Apollon77))
+
+**Rewrite:** krobi
+
+---
+
 ## Support
 
 - [ioBroker Forum](https://forum.iobroker.net/)
@@ -196,6 +204,7 @@ This adapter is free and open source. If you find it useful, consider buying me 
 
 MIT License
 
+Copyright (c) 2016-2025 Ingo Fischer <ingo@fischer-ka.de>  
 Copyright (c) 2026 krobi <krobi@power-dreams.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

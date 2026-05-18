@@ -44,6 +44,7 @@
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
     "authors": [
+      "Apollon77 <ingo@fischer-ka.de>",
       "krobi <krobi@power-dreams.com>"
     ],
     "licenseInformation": {
