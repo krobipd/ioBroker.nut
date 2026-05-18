@@ -1,0 +1,347 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var utils = __toESM(require("@iobroker/adapter-core"));
+var import_coerce = require("./lib/coerce");
+var import_message_router = require("./lib/message-router");
+var import_nut_client = require("./lib/nut-client");
+var import_state_manager = require("./lib/state-manager");
+class NutAdapter extends utils.Adapter {
+  client = null;
+  stateManager = null;
+  pollTimer = void 0;
+  isPolling = false;
+  lastErrorCode = "";
+  failedUps = /* @__PURE__ */ new Set();
+  discoveredUps = /* @__PURE__ */ new Map();
+  testClients = /* @__PURE__ */ new Set();
+  unhandledRejectionHandler = null;
+  uncaughtExceptionHandler = null;
+  constructor(options = {}) {
+    super({ ...options, name: "nut" });
+    this.on("ready", () => {
+      this.onReady().catch((err) => this.log.error(`onReady failed: ${(0, import_coerce.errText)(err)}`));
+    });
+    this.on("stateChange", (id, state) => {
+      this.onStateChange(id, state).catch((err) => this.log.error(`onStateChange failed: ${(0, import_coerce.errText)(err)}`));
+    });
+    this.on("unload", this.onUnload.bind(this));
+    this.on("message", (obj) => {
+      this.onMessage(obj).catch((err) => this.log.error(`onMessage failed: ${(0, import_coerce.errText)(err)}`));
+    });
+    this.unhandledRejectionHandler = (reason) => {
+      var _a;
+      this.log.error(`Unhandled rejection: ${(0, import_coerce.errText)(reason)}`);
+      (_a = this.terminate) == null ? void 0 : _a.call(this, 11);
+    };
+    this.uncaughtExceptionHandler = (err) => {
+      var _a;
+      this.log.error(`Uncaught exception: ${(0, import_coerce.errText)(err)}`);
+      (_a = this.terminate) == null ? void 0 : _a.call(this, 11);
+    };
+    process.on("unhandledRejection", this.unhandledRejectionHandler);
+    process.on("uncaughtException", this.uncaughtExceptionHandler);
+  }
+  async onReady() {
+    const config = this.config;
+    this.log.debug(
+      `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
+    );
+    await this.setStateAsync("info.connection", { val: false, ack: true });
+    const host = (0, import_coerce.coerceHost)(config.host);
+    if (!host) {
+      this.log.error("NUT server host is required \u2014 check adapter configuration");
+      return;
+    }
+    const port = (0, import_coerce.coercePort)(config.port);
+    const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
+    this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
+    const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
+    this.client = new import_nut_client.NutClient(host, port, {
+      localAddress,
+      commandTimeout: commandTimeoutMs,
+      logger: {
+        debug: (m) => this.log.debug(m),
+        warn: (m) => this.log.warn(m),
+        info: (m) => this.log.info(m)
+      }
+    });
+    this.stateManager = new import_state_manager.StateManager(this);
+    this.client.setOnReconnect(() => {
+      void this.rediscover().catch(
+        (err) => this.log.error(`Rediscovery after reconnect failed: ${(0, import_coerce.errText)(err)}`)
+      );
+    });
+    try {
+      await this.client.connect();
+    } catch (err) {
+      this.log.error(`Cannot connect to NUT server ${host}:${port} \u2014 ${(0, import_coerce.errText)(err)}`);
+      return;
+    }
+    await this.discover();
+    if (config.username && config.password) {
+      try {
+        await this.client.authenticate(config.username, config.password);
+        for (const ups of this.discoveredUps.keys()) {
+          await this.client.login(ups);
+        }
+        this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
+      } catch (err) {
+        this.log.warn(`Authentication failed \u2014 commands and writable variables will not work: ${(0, import_coerce.errText)(err)}`);
+      }
+    }
+    await this.poll();
+    const pollSec = (0, import_coerce.coercePollIntervalSec)(config.pollInterval);
+    this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
+    this.pollTimer = this.setInterval(() => {
+      void this.poll();
+    }, pollSec * 1e3);
+    if (config.enableCommands || config.enableSetVar) {
+      await this.subscribeStatesAsync("*");
+    }
+    this.log.info(
+      `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s`
+    );
+  }
+  async discover() {
+    if (!this.client || !this.stateManager) {
+      return;
+    }
+    const upsList = await this.client.listUps();
+    this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map((u) => u.name).join(", ")}`);
+    this.discoveredUps.clear();
+    for (const ups of upsList) {
+      this.discoveredUps.set(ups.name, ups);
+      await this.stateManager.ensureUpsDevice(ups.name, ups.description);
+    }
+    const config = this.config;
+    if (config.enableCommands && config.username && config.password) {
+      for (const ups of upsList) {
+        try {
+          const commands = await this.client.listCmd(ups.name);
+          await this.stateManager.createCommandButtons(ups.name, commands);
+          this.log.debug(`Created ${commands.length} command buttons for ${ups.name}`);
+        } catch (err) {
+          this.log.debug(`Failed to list commands for ${ups.name}: ${(0, import_coerce.errText)(err)}`);
+        }
+      }
+    }
+    await this.stateManager.cleanupRemovedUps(new Set(this.discoveredUps.keys()));
+  }
+  async rediscover() {
+    if (!this.client) {
+      return;
+    }
+    const config = this.config;
+    if (config.username && config.password) {
+      try {
+        await this.client.authenticate(config.username, config.password);
+        for (const ups of this.discoveredUps.keys()) {
+          await this.client.login(ups);
+        }
+      } catch (err) {
+        this.log.warn(`Re-authentication after reconnect failed: ${(0, import_coerce.errText)(err)}`);
+      }
+    }
+    await this.discover();
+  }
+  classifyError(err) {
+    if (err instanceof import_nut_client.NutError) {
+      return err.code;
+    }
+    if (!(err instanceof Error)) {
+      return "UNKNOWN";
+    }
+    const code = err.code;
+    if (code === "ENOTFOUND" || code === "ECONNREFUSED" || code === "ECONNRESET" || code === "ENETUNREACH" || code === "EHOSTUNREACH" || code === "EAI_AGAIN") {
+      return "NETWORK";
+    }
+    if (code === "ETIMEDOUT" || err.message.includes("timed out")) {
+      return "TIMEOUT";
+    }
+    return code || "UNKNOWN";
+  }
+  async poll() {
+    if (this.isPolling) {
+      this.log.debug("Skipping poll \u2014 previous poll still running");
+      return;
+    }
+    if (!this.client || !this.stateManager) {
+      return;
+    }
+    this.log.debug(`poll: starting (lastErrorCode='${this.lastErrorCode}', upsCount=${this.discoveredUps.size})`);
+    this.isPolling = true;
+    try {
+      for (const upsName of this.discoveredUps.keys()) {
+        try {
+          const [variables, rwVars] = await Promise.all([
+            this.client.listVar(upsName),
+            this.client.listRw(upsName).catch(() => [])
+          ]);
+          const rwNames = new Set(rwVars.map((v) => v.name));
+          await this.stateManager.updateVariables(upsName, variables, rwNames);
+          const statusVar = variables.find((v) => v.name === "ups.status");
+          if (statusVar) {
+            await this.stateManager.updateStatusFlags(upsName, statusVar.value);
+          }
+          if (this.failedUps.has(upsName)) {
+            this.log.info(`UPS '${upsName}' recovered`);
+            this.failedUps.delete(upsName);
+          }
+        } catch (err) {
+          const msg = `Failed to poll UPS '${upsName}': ${(0, import_coerce.errText)(err)}`;
+          if (this.failedUps.has(upsName)) {
+            this.log.debug(msg);
+          } else {
+            const isDataStale = err instanceof import_nut_client.NutError && err.code === "DATA-STALE";
+            if (isDataStale) {
+              this.log.warn(`UPS '${upsName}': driver reports stale data \u2014 keeping existing states`);
+            } else {
+              this.log.warn(msg);
+            }
+            this.failedUps.add(upsName);
+          }
+        }
+      }
+      await this.setStateAsync("info.connection", { val: true, ack: true });
+      if (this.lastErrorCode) {
+        this.log.info("Connection restored");
+        this.lastErrorCode = "";
+      }
+    } catch (err) {
+      const errMsg = (0, import_coerce.errText)(err);
+      const errorCode = this.classifyError(err);
+      const isRepeat = errorCode === this.lastErrorCode;
+      this.lastErrorCode = errorCode;
+      if (isRepeat) {
+        this.log.debug(`Poll failed (ongoing): ${errMsg}`);
+      } else if (errorCode === "NETWORK") {
+        this.log.warn("Cannot reach NUT server \u2014 will keep retrying");
+      } else {
+        this.log.error(`Poll failed: ${errMsg}`);
+      }
+      await this.setStateAsync("info.connection", { val: false, ack: true });
+    } finally {
+      this.isPolling = false;
+    }
+  }
+  async onStateChange(id, state) {
+    if (!state || state.ack || !this.client) {
+      return;
+    }
+    const config = this.config;
+    const localId = id.replace(`${this.namespace}.`, "");
+    const parts = localId.split(".");
+    if (parts.length < 3) {
+      return;
+    }
+    const upsName = parts[0];
+    if (!this.discoveredUps.has(upsName)) {
+      return;
+    }
+    if (parts[1] === "commands") {
+      if (!config.enableCommands) {
+        this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
+        return;
+      }
+      const cmdName = parts.slice(2).join(".");
+      this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
+      try {
+        await this.client.instCmd(upsName, cmdName);
+        this.log.info(`Command executed: ${cmdName} on ${upsName}`);
+      } catch (err) {
+        this.log.error(`Command failed: ${cmdName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+      }
+      await this.setStateAsync(id, { val: false, ack: true });
+      return;
+    }
+    if (!config.enableSetVar) {
+      this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
+      return;
+    }
+    const varName = parts.slice(1).join(".");
+    const value = String(state.val);
+    this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
+    try {
+      await this.client.setVar(upsName, varName, value);
+      await this.setStateAsync(id, { val: state.val, ack: true });
+      this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
+    } catch (err) {
+      this.log.error(`SET VAR failed: ${varName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+    }
+  }
+  async onMessage(obj) {
+    await (0, import_message_router.dispatchMessage)(obj, {
+      log: {
+        debug: (m) => this.log.debug(m),
+        warn: (m) => this.log.warn(m)
+      },
+      sendTo: this.sendTo.bind(this),
+      createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, {
+        debug: (m) => this.log.debug(m),
+        warn: (m) => this.log.warn(m),
+        info: (m) => this.log.info(m)
+      }),
+      onTestClientCreated: (client) => {
+        this.testClients.add(client);
+      },
+      onTestClientDone: (client) => {
+        this.testClients.delete(client);
+      }
+    });
+  }
+  onUnload(callback) {
+    var _a, _b;
+    try {
+      if (this.pollTimer) {
+        this.clearInterval(this.pollTimer);
+        this.pollTimer = void 0;
+      }
+      (_a = this.client) == null ? void 0 : _a.cancelAll();
+      (_b = this.client) == null ? void 0 : _b.destroy();
+      for (const tc of this.testClients) {
+        tc.destroy();
+      }
+      this.testClients.clear();
+      if (this.unhandledRejectionHandler) {
+        process.off("unhandledRejection", this.unhandledRejectionHandler);
+        this.unhandledRejectionHandler = null;
+      }
+      if (this.uncaughtExceptionHandler) {
+        process.off("uncaughtException", this.uncaughtExceptionHandler);
+        this.uncaughtExceptionHandler = null;
+      }
+      void this.setState("info.connection", { val: false, ack: true }).catch(() => {
+      });
+    } catch (err) {
+      this.log.debug(`onUnload error (ignored): ${(0, import_coerce.errText)(err)}`);
+    }
+    callback();
+  }
+}
+if (require.main !== module) {
+  module.exports = (options) => new NutAdapter(options);
+} else {
+  (() => new NutAdapter())();
+}
+//# sourceMappingURL=main.js.map

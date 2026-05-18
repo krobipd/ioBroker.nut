@@ -1,0 +1,181 @@
+{
+    "type": "tabs",
+    "i18n": true,
+    "items": {
+        "tab_connection": {
+            "type": "panel",
+            "label": "tab_connection",
+            "items": {
+                "host": {
+                    "type": "text",
+                    "label": "label_host",
+                    "help": "help_host",
+                    "placeholder": "192.168.1.100",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "port": {
+                    "type": "number",
+                    "label": "label_port",
+                    "min": 1,
+                    "max": 65535,
+                    "default": 3493,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "networkInterface": {
+                    "type": "ip",
+                    "label": "label_networkInterface",
+                    "tooltip": "tooltip_networkInterface",
+                    "onlyIp4": true,
+                    "noInternal": true,
+                    "listenOnAllPorts": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "pollInterval": {
+                    "type": "number",
+                    "label": "label_pollInterval",
+                    "help": "help_pollInterval",
+                    "min": 5,
+                    "max": 300,
+                    "default": 15,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "username": {
+                    "type": "text",
+                    "label": "label_username",
+                    "help": "help_username",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "password": {
+                    "type": "password",
+                    "label": "label_password",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "checkConnection": {
+                    "type": "sendTo",
+                    "command": "checkConnection",
+                    "jsonData": "{\"host\": \"${data.host}\", \"port\": ${data.port}}",
+                    "label": "btn_checkConnection",
+                    "result": {
+                        "okText": "msg_connectionOk",
+                        "errorText": "msg_connectionFailed"
+                    },
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "_supportHeader": {
+                    "newLine": true,
+                    "type": "header",
+                    "text": "supportHeader",
+                    "size": 5
+                },
+                "_aboutInfo": {
+                    "type": "staticText",
+                    "text": "aboutInfo",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "style": {
+                        "fontSize": 14,
+                        "marginBottom": 16
+                    }
+                },
+                "_kofiLink": {
+                    "type": "staticLink",
+                    "href": "https://ko-fi.com/krobipd",
+                    "label": "donateKofi",
+                    "button": true,
+                    "variant": "outlined",
+                    "color": "primary",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "_paypalLink": {
+                    "type": "staticLink",
+                    "href": "https://paypal.me/krobipd",
+                    "label": "donatePaypal",
+                    "button": true,
+                    "variant": "outlined",
+                    "color": "primary",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                }
+            }
+        },
+        "tab_advanced": {
+            "type": "panel",
+            "label": "tab_advanced",
+            "items": {
+                "commandTimeout": {
+                    "type": "number",
+                    "label": "label_commandTimeout",
+                    "help": "help_commandTimeout",
+                    "min": 1,
+                    "max": 30,
+                    "default": 5,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "enableCommands": {
+                    "type": "checkbox",
+                    "label": "label_enableCommands",
+                    "help": "help_enableCommands",
+                    "default": false,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "enableSetVar": {
+                    "type": "checkbox",
+                    "label": "label_enableSetVar",
+                    "help": "help_enableSetVar",
+                    "default": false,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                }
+            }
+        }
+    }
+}

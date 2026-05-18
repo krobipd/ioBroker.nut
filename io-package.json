@@ -1,0 +1,141 @@
+{
+  "common": {
+    "name": "nut",
+    "version": "0.1.0",
+    "news": {
+      "NEXT": {
+        "en": "Initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Первый выпуск",
+        "pt": "Lançamento inicial",
+        "nl": "Eerste uitgave",
+        "fr": "Version initiale",
+        "it": "Versione iniziale",
+        "es": "Versión inicial",
+        "pl": "Pierwsze wydanie",
+        "uk": "Початковий випуск",
+        "zh-cn": "初始版本"
+      }
+    },
+    "titleLang": {
+      "en": "Network UPS Tools",
+      "de": "Network UPS Tools",
+      "ru": "Network UPS Tools",
+      "pt": "Network UPS Tools",
+      "nl": "Network UPS Tools",
+      "fr": "Network UPS Tools",
+      "it": "Network UPS Tools",
+      "es": "Network UPS Tools",
+      "pl": "Network UPS Tools",
+      "uk": "Network UPS Tools",
+      "zh-cn": "Network UPS Tools"
+    },
+    "desc": {
+      "en": "Monitor uninterruptible power supplies via NUT (Network UPS Tools)",
+      "de": "Überwachung unterbrechungsfreier Stromversorgungen über NUT (Network UPS Tools)",
+      "ru": "Мониторинг источников бесперебойного питания через NUT (Network UPS Tools)",
+      "pt": "Monitorar fontes de alimentação ininterrupta via NUT (Network UPS Tools)",
+      "nl": "Monitor ononderbroken stroomvoorzieningen via NUT (Network UPS Tools)",
+      "fr": "Surveiller les alimentations sans interruption via NUT (Network UPS Tools)",
+      "it": "Monitorare gruppi di continuità tramite NUT (Network UPS Tools)",
+      "es": "Monitorear sistemas de alimentación ininterrumpida vía NUT (Network UPS Tools)",
+      "pl": "Monitorowanie zasilaczy awaryjnych przez NUT (Network UPS Tools)",
+      "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
+      "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
+    },
+    "authors": ["krobi <krobi@power-dreams.com>"],
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "nut.png",
+    "extIcon": "https://raw.githubusercontent.com/krobipd/ioBroker.nut/main/admin/nut.png",
+    "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
+    "enabled": true,
+    "tier": 3,
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "hardware",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "poll",
+    "messagebox": true,
+    "adminUI": {
+      "config": "json"
+    },
+    "supportedMessages": {
+      "stopInstance": true
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=7.0.7"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.8.23"
+      }
+    ]
+  },
+  "encryptedNative": ["username", "password"],
+  "protectedNative": ["username", "password"],
+  "native": {
+    "host": "",
+    "port": 3493,
+    "networkInterface": "",
+    "pollInterval": 15,
+    "username": "",
+    "password": "",
+    "commandTimeout": 5,
+    "enableCommands": false,
+    "enableSetVar": false
+  },
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Adapter information",
+          "de": "Adapter-Informationen",
+          "ru": "Информация об адаптере",
+          "pt": "Informações do adaptador",
+          "nl": "Adapterinformatie",
+          "fr": "Informations sur l'adaptateur",
+          "it": "Informazioni sull'adattatore",
+          "es": "Información del adaptador",
+          "pl": "Informacje o adapterze",
+          "uk": "Інформація про адаптер",
+          "zh-cn": "适配器信息"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Connection status",
+          "de": "Verbindungsstatus",
+          "ru": "Состояние соединения",
+          "pt": "Estado da conexão",
+          "nl": "Verbindingsstatus",
+          "fr": "État de la connexion",
+          "it": "Stato della connessione",
+          "es": "Estado de conexión",
+          "pl": "Stan połączenia",
+          "uk": "Стан з'єднання",
+          "zh-cn": "连接状态"
+        },
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
+}
