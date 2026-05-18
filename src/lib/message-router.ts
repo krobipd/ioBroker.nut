@@ -73,6 +73,9 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           return;
         }
 
+        const username = typeof config.username === "string" ? config.username : "";
+        const password = typeof config.password === "string" ? config.password : "";
+
         const testClient = deps.createTestClient(host, port);
         deps.onTestClientCreated?.(testClient);
         try {
@@ -80,12 +83,23 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           const upsList = await testClient.listUps();
           const names = upsList.map(u => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
-          deps.sendTo(
-            obj.from,
-            obj.command,
-            { success: true, message: `Connected — ${upsList.length} UPS(es): ${names}` },
-            obj.callback,
-          );
+
+          if (username && password) {
+            await testClient.authenticate(username, password);
+            deps.sendTo(
+              obj.from,
+              obj.command,
+              { success: true, message: `Connected and authenticated — ${upsList.length} UPS(es): ${names}` },
+              obj.callback,
+            );
+          } else {
+            deps.sendTo(
+              obj.from,
+              obj.command,
+              { success: true, message: `Connected — ${upsList.length} UPS(es): ${names}` },
+              obj.callback,
+            );
+          }
         } finally {
           testClient.destroy();
           deps.onTestClientDone?.(testClient);

@@ -234,6 +234,32 @@ const STATE_NAMES = {
     pl: "Opis UPS",
     uk: "\u041E\u043F\u0438\u0441 \u0414\u0411\u0416",
     "zh-cn": "UPS\u63CF\u8FF0"
+  },
+  upsOnline: {
+    en: "Online",
+    de: "Online",
+    ru: "\u0412 \u0441\u0435\u0442\u0438",
+    pt: "Online",
+    nl: "Online",
+    fr: "En ligne",
+    it: "Online",
+    es: "En l\xEDnea",
+    pl: "Online",
+    uk: "\u041E\u043D\u043B\u0430\u0439\u043D",
+    "zh-cn": "\u5728\u7EBF"
+  },
+  channelUpsInfo: {
+    en: "Information",
+    de: "Information",
+    ru: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F",
+    pt: "Informa\xE7\xE3o",
+    nl: "Informatie",
+    fr: "Information",
+    it: "Informazione",
+    es: "Informaci\xF3n",
+    pl: "Informacja",
+    uk: "\u0406\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0456\u044F",
+    "zh-cn": "\u4FE1\u606F"
   }
 };
 const CHANNEL_I18N = {
@@ -246,7 +272,8 @@ const CHANNEL_I18N = {
   outlet: "channelOutlet",
   ambient: "channelAmbient",
   status: "channelStatus",
-  commands: "channelCommands"
+  commands: "channelCommands",
+  info: "channelUpsInfo"
 };
 function tName(key) {
   var _a;

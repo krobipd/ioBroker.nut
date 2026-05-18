@@ -44,6 +44,8 @@ async function dispatchMessage(obj, deps) {
           deps.sendTo(obj.from, obj.command, { success: false, message: "Host is required" }, obj.callback);
           return;
         }
+        const username = typeof config.username === "string" ? config.username : "";
+        const password = typeof config.password === "string" ? config.password : "";
         const testClient = deps.createTestClient(host, port);
         (_a = deps.onTestClientCreated) == null ? void 0 : _a.call(deps, testClient);
         try {
@@ -51,12 +53,22 @@ async function dispatchMessage(obj, deps) {
           const upsList = await testClient.listUps();
           const names = upsList.map((u) => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
-          deps.sendTo(
-            obj.from,
-            obj.command,
-            { success: true, message: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
-            obj.callback
-          );
+          if (username && password) {
+            await testClient.authenticate(username, password);
+            deps.sendTo(
+              obj.from,
+              obj.command,
+              { success: true, message: `Connected and authenticated \u2014 ${upsList.length} UPS(es): ${names}` },
+              obj.callback
+            );
+          } else {
+            deps.sendTo(
+              obj.from,
+              obj.command,
+              { success: true, message: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
+              obj.callback
+            );
+          }
         } finally {
           testClient.destroy();
           (_b = deps.onTestClientDone) == null ? void 0 : _b.call(deps, testClient);

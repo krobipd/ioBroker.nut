@@ -34,6 +34,7 @@ class NutAdapter extends utils.Adapter {
   lastErrorCode = "";
   failedUps = /* @__PURE__ */ new Set();
   discoveredUps = /* @__PURE__ */ new Map();
+  authenticated = false;
   testClients = /* @__PURE__ */ new Set();
   unhandledRejectionHandler = null;
   uncaughtExceptionHandler = null;
@@ -102,12 +103,26 @@ class NutAdapter extends utils.Adapter {
     if (config.username && config.password) {
       try {
         await this.client.authenticate(config.username, config.password);
+        this.authenticated = true;
         for (const ups of this.discoveredUps.keys()) {
           await this.client.login(ups);
         }
         this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
       } catch (err) {
-        this.log.warn(`Authentication failed \u2014 commands and writable variables will not work: ${(0, import_coerce.errText)(err)}`);
+        this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
+        this.terminate(11);
+        return;
+      }
+    }
+    if (this.authenticated && config.enableCommands) {
+      for (const ups of this.discoveredUps.keys()) {
+        try {
+          const commands = await this.client.listCmd(ups);
+          await this.stateManager.createCommandButtons(ups, commands);
+          this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+        } catch (err) {
+          this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
+        }
       }
     }
     await this.poll();
@@ -119,8 +134,9 @@ class NutAdapter extends utils.Adapter {
     if (config.enableCommands || config.enableSetVar) {
       await this.subscribeStatesAsync("*");
     }
+    const authStatus = this.authenticated ? "authenticated" : "no credentials";
     this.log.info(
-      `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s`
+      `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`
     );
   }
   async discover() {
@@ -134,19 +150,9 @@ class NutAdapter extends utils.Adapter {
       this.discoveredUps.set(ups.name, ups);
       await this.stateManager.ensureUpsDevice(ups.name, ups.description);
     }
-    const config = this.config;
-    if (config.enableCommands && config.username && config.password) {
-      for (const ups of upsList) {
-        try {
-          const commands = await this.client.listCmd(ups.name);
-          await this.stateManager.createCommandButtons(ups.name, commands);
-          this.log.debug(`Created ${commands.length} command buttons for ${ups.name}`);
-        } catch (err) {
-          this.log.debug(`Failed to list commands for ${ups.name}: ${(0, import_coerce.errText)(err)}`);
-        }
-      }
-    }
-    await this.stateManager.cleanupRemovedUps(new Set(this.discoveredUps.keys()));
+    const knownNames = new Set(this.discoveredUps.keys());
+    await this.stateManager.cleanupRemovedUps(knownNames);
+    await this.stateManager.cleanupLegacyObjects(knownNames);
   }
   async rediscover() {
     if (!this.client) {
@@ -204,11 +210,13 @@ class NutAdapter extends utils.Adapter {
           if (statusVar) {
             await this.stateManager.updateStatusFlags(upsName, statusVar.value);
           }
+          await this.setStateAsync(`${upsName}.info.online`, { val: true, ack: true });
           if (this.failedUps.has(upsName)) {
             this.log.info(`UPS '${upsName}' recovered`);
             this.failedUps.delete(upsName);
           }
         } catch (err) {
+          await this.setStateAsync(`${upsName}.info.online`, { val: false, ack: true });
           const msg = `Failed to poll UPS '${upsName}': ${(0, import_coerce.errText)(err)}`;
           if (this.failedUps.has(upsName)) {
             this.log.debug(msg);
@@ -264,7 +272,7 @@ class NutAdapter extends utils.Adapter {
         this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
         return;
       }
-      const cmdName = parts.slice(2).join(".");
+      const cmdName = parts.slice(2).join(".").replace(/-/g, ".");
       this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
       try {
         await this.client.instCmd(upsName, cmdName);
@@ -279,7 +287,7 @@ class NutAdapter extends utils.Adapter {
       this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
       return;
     }
-    const varName = parts.slice(1).join(".");
+    const varName = `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
     const value = String(state.val);
     this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
     try {

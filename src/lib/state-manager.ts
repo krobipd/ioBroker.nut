@@ -6,6 +6,33 @@ import type { NutCommand, NutVariable } from "./types";
 
 type LocalizedName = ioBroker.StringOrTranslated;
 
+/**
+ * Convert NUT variable name to ioBroker state ID (dots after channel → dashes).
+ *
+ * @param upsName UPS identifier
+ * @param nutVarName NUT variable name
+ */
+export function nutVarToStateId(upsName: string, nutVarName: string): string {
+  const firstDot = nutVarName.indexOf(".");
+  if (firstDot < 0) {
+    return `${upsName}.${nutVarName}`;
+  }
+  const channel = nutVarName.slice(0, firstDot);
+  const leaf = nutVarName.slice(firstDot + 1).replace(/\./g, "-");
+  return `${upsName}.${channel}.${leaf}`;
+}
+
+/**
+ * Format NUT variable name as human-readable label.
+ *
+ * @param nutVarName NUT variable name
+ */
+export function nutVarToReadableName(nutVarName: string): string {
+  const firstDot = nutVarName.indexOf(".");
+  const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
+  return leaf.replace(/\./g, " ").replace(/^./, c => c.toUpperCase());
+}
+
 /** Manages creation, update and cleanup of ioBroker objects and states for NUT UPS devices. */
 export class StateManager {
   private readonly adapter: utils.AdapterInstance;
@@ -25,10 +52,26 @@ export class StateManager {
    * @param description UPS description from LIST UPS
    */
   async ensureUpsDevice(upsName: string, description: string): Promise<void> {
-    await this.ensureObject(upsName, {
+    await this.adapter.extendObjectAsync(upsName, {
       type: "device",
-      common: { name: description },
+      common: {
+        name: description,
+        statusStates: {
+          onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
+        },
+      },
       native: {},
+    });
+    this.createdIds.add(upsName);
+
+    await this.ensureChannel(upsName, "info");
+
+    await this.ensureState(`${upsName}.info.online`, {
+      type: "boolean",
+      role: "indicator.reachable",
+      read: true,
+      write: false,
+      name: tName("upsOnline"),
     });
 
     await this.ensureState(`${upsName}.info.name`, {
@@ -91,14 +134,14 @@ export class StateManager {
       const isWritable = rwNames.has(v.name);
       const detected = detectType(v.name, v.value, isWritable);
 
-      const stateId = `${upsName}.${v.name}`;
+      const stateId = nutVarToStateId(upsName, v.name);
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: v.name,
+        name: nutVarToReadableName(v.name),
       });
 
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
@@ -157,13 +200,13 @@ export class StateManager {
     await this.ensureChannel(upsName, "commands");
 
     for (const cmd of commands) {
-      const stateId = `${upsName}.commands.${cmd.name}`;
+      const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
       await this.ensureState(stateId, {
         type: "boolean",
         role: "button",
         read: false,
         write: true,
-        name: cmd.name,
+        name: cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
         def: false,
       });
     }
@@ -194,6 +237,62 @@ export class StateManager {
         if (cached === deviceId || cached.startsWith(`${deviceId}.`)) {
           this.createdIds.delete(cached);
         }
+      }
+    }
+  }
+
+  /**
+   * Remove orphaned objects from previous adapter versions and v0.1.0 dot-style objects.
+   *
+   * @param knownUpsNames Set of currently discovered UPS names
+   */
+  async cleanupLegacyObjects(knownUpsNames: Set<string>): Promise<void> {
+    const adapterObjects = await this.adapter.getAdapterObjectsAsync();
+    const orphanRoots = new Set<string>();
+    const dotStyleIds: string[] = [];
+
+    for (const fullId of Object.keys(adapterObjects)) {
+      const localId = fullId.replace(`${this.adapter.namespace}.`, "");
+      const parts = localId.split(".");
+      const topLevel = parts[0];
+
+      if (topLevel === "info") {
+        continue;
+      }
+
+      if (!knownUpsNames.has(topLevel)) {
+        orphanRoots.add(topLevel);
+        continue;
+      }
+
+      if (parts.length > 3) {
+        dotStyleIds.push(localId);
+      }
+    }
+
+    for (const root of orphanRoots) {
+      this.adapter.log.info(`Removing orphaned root object from previous adapter version: ${root}`);
+      await this.adapter.delObjectAsync(root, { recursive: true });
+      this.dropCacheUnder(root);
+    }
+
+    const sorted = dotStyleIds.sort((a, b) => b.split(".").length - a.split(".").length);
+    for (const id of sorted) {
+      this.adapter.log.debug(`Removing v0.1.0 dot-style object: ${id}`);
+      await this.adapter.delObjectAsync(id);
+      this.createdIds.delete(id);
+    }
+  }
+
+  /**
+   * Remove all cached IDs under a prefix.
+   *
+   * @param prefix ID prefix to clear
+   */
+  private dropCacheUnder(prefix: string): void {
+    for (const id of [...this.createdIds]) {
+      if (id === prefix || id.startsWith(`${prefix}.`)) {
+        this.createdIds.delete(id);
       }
     }
   }

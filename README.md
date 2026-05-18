@@ -166,6 +166,18 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- Fixed upgrade path from previous adapter version (orphaned root-level objects are now cleaned up automatically)
+- Fixed NUT variable dots converted to dashes in state IDs (matching previous adapter behavior)
+- Fixed authentication failure now stops the adapter instead of continuing without permissions
+- Fixed connection test now also verifies authentication credentials
+- Added per-UPS online indicator (info.online) with device status integration
+- Fixed command buttons only created after successful authentication
+- Fixed state names now human-readable instead of raw NUT variable names
+- Fixed log message order (auth result before "started" message)
+- Fixed admin UI layout (network interface and poll interval on separate rows)
+
 ### 0.1.0 (2026-05-18)
 
 - Initial release — complete rewrite of the NUT adapter

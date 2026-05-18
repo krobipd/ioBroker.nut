@@ -216,6 +216,32 @@ export const STATE_NAMES: Record<string, StateName> = {
     uk: "Опис ДБЖ",
     "zh-cn": "UPS描述",
   },
+  upsOnline: {
+    en: "Online",
+    de: "Online",
+    ru: "В сети",
+    pt: "Online",
+    nl: "Online",
+    fr: "En ligne",
+    it: "Online",
+    es: "En línea",
+    pl: "Online",
+    uk: "Онлайн",
+    "zh-cn": "在线",
+  },
+  channelUpsInfo: {
+    en: "Information",
+    de: "Information",
+    ru: "Информация",
+    pt: "Informação",
+    nl: "Informatie",
+    fr: "Information",
+    it: "Informazione",
+    es: "Información",
+    pl: "Informacja",
+    uk: "Інформація",
+    "zh-cn": "信息",
+  },
 };
 
 /** Channel name map: NUT domain → i18n key. */
@@ -230,6 +256,7 @@ export const CHANNEL_I18N: Record<string, string> = {
   ambient: "channelAmbient",
   status: "channelStatus",
   commands: "channelCommands",
+  info: "channelUpsInfo",
 };
 
 /**

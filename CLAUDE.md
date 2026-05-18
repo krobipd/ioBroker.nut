@@ -21,7 +21,7 @@ src/main.ts                     → NutAdapter (Lifecycle, Polling, onStateChang
 src/lib/
 ├── nut-client.ts               → NUT TCP Client (persistent, command queue, reconnect, auth)
 ├── nut-client.test.ts           → Mocked net.Socket tests
-├── state-manager.ts            → ioBroker state CRUD (device/channel/state, createdIds-Cache)
+├── state-manager.ts            → ioBroker state CRUD (device/channel/state, createdIds-Cache, legacy cleanup, nutVarToStateId/nutVarToReadableName)
 ├── state-manager.test.ts
 ├── type-detector.ts            → NUT variable → ioBroker type/role/unit Mapping
 ├── type-detector.test.ts
@@ -29,7 +29,7 @@ src/lib/
 ├── status-parser.test.ts
 ├── coerce.ts                   → errText + Boundary-Validators (host, port, pollInterval, commandTimeout)
 ├── coerce.test.ts
-├── message-router.ts           → onMessage-Dispatcher (checkConnection, default-Branch-Contract)
+├── message-router.ts           → onMessage-Dispatcher (checkConnection + auth test, default-Branch-Contract)
 ├── message-router.test.ts
 ├── i18n-states.ts              → 11-Sprachen State-Name-Translations + CHANNEL_I18N Map
 └── types.ts                    → TypeScript Interfaces + NUT-Konstanten
@@ -46,6 +46,10 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 6. **Commands hinter Safety-Gate** — `enableCommands` Checkbox verhindert versehentliches `load.off`. SET VAR ebenfalls gated
 7. **Network-Interface-Selector** — govee/hassemu-Pattern, wichtig für Multi-Homed-Server
 8. **Dot-Depth-Sortierung** — Variables nach Punkttiefe sortiert, damit Parent-States vor Children existieren (battery.charge vor battery.charge.low)
+9. **Dots→Dashes nach Channel** — `battery.charge.low` → stateId `ups0.battery.charge-low`. Erster Dot = Channel-Trenner, restliche Dots werden Dashes (kompatibel zum alten Apollon77-Adapter)
+10. **Auth-Failure = terminate** — bei konfiguriertem username+password und ACCESS-DENIED stoppt der Adapter (exit code 11) statt weiterzulaufen ohne Berechtigung
+11. **Per-UPS info.online** — `indicator.reachable` Boolean mit `statusStates.onlineId` auf Device-Objekt (beszel-Pattern)
+12. **Legacy-Cleanup** — `cleanupLegacyObjects()` löscht Root-Level-Orphans (alter Adapter) und v0.1.0-Dot-Style-Objekte in einem Pass
 
 ## NUT-Protokoll Referenz
 
@@ -55,15 +59,15 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (236 unit + 57 package = 293)
+## Tests (254 unit + 57 package = 311)
 
 ```
 src/lib/nut-client.test.ts      → TCP Client (45 tests)
 src/lib/type-detector.test.ts   → Variable-Type-Detection (68 tests)
 src/lib/status-parser.test.ts   → Status-Flag-Parsing (45 tests)
-src/lib/state-manager.test.ts   → State CRUD + Cleanup (26 tests)
+src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy (40 tests)
 src/lib/coerce.test.ts          → Boundary-Validators (40 tests)
-src/lib/message-router.test.ts  → onMessage-Dispatcher (12 tests)
+src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth-Test (16 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
 
@@ -71,7 +75,8 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights |
 |---------|------------|
-| 0.1.0 | **Initial release** — complete TypeScript rewrite. Multi-UPS support via LIST UPS, persistent TCP connection with reconnect, dynamic state creation with proper types/units, parsed ups.status flags as booleans + severity, instant commands (INSTCMD) and writable variables (SET VAR) with safety gates, network interface selector, connection test button, 11-language admin UI. 236 unit + 57 package = 293 tests. |
+| WIP | **9-Bug-Fix** — Upgrade-Pfad (Legacy-Cleanup), Dots→Dashes in State-IDs, Auth-Failure→terminate, checkConnection testet Auth, per-UPS info.online, Commands nach Auth, readable State-Namen, Log-Reihenfolge, Admin-Layout. 254 unit + 57 package = 311 tests. |
+| 0.1.0 | **Initial release** — complete TypeScript rewrite. Multi-UPS support via LIST UPS, persistent TCP connection with reconnect, dynamic state creation with proper types/units, parsed ups.status flags as booleans + severity, instant commands (INSTCMD) and writable variables (SET VAR) with safety gates, network interface selector, connection test button, 11-language admin UI. |
 
 ## Befehle
 

@@ -18,12 +18,28 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var state_manager_exports = {};
 __export(state_manager_exports, {
-  StateManager: () => StateManager
+  StateManager: () => StateManager,
+  nutVarToReadableName: () => nutVarToReadableName,
+  nutVarToStateId: () => nutVarToStateId
 });
 module.exports = __toCommonJS(state_manager_exports);
 var import_i18n_states = require("./i18n-states");
 var import_status_parser = require("./status-parser");
 var import_type_detector = require("./type-detector");
+function nutVarToStateId(upsName, nutVarName) {
+  const firstDot = nutVarName.indexOf(".");
+  if (firstDot < 0) {
+    return `${upsName}.${nutVarName}`;
+  }
+  const channel = nutVarName.slice(0, firstDot);
+  const leaf = nutVarName.slice(firstDot + 1).replace(/\./g, "-");
+  return `${upsName}.${channel}.${leaf}`;
+}
+function nutVarToReadableName(nutVarName) {
+  const firstDot = nutVarName.indexOf(".");
+  const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
+  return leaf.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase());
+}
 class StateManager {
   adapter;
   createdIds = /* @__PURE__ */ new Set();
@@ -40,10 +56,24 @@ class StateManager {
    * @param description UPS description from LIST UPS
    */
   async ensureUpsDevice(upsName, description) {
-    await this.ensureObject(upsName, {
+    await this.adapter.extendObjectAsync(upsName, {
       type: "device",
-      common: { name: description },
+      common: {
+        name: description,
+        statusStates: {
+          onlineId: `${this.adapter.namespace}.${upsName}.info.online`
+        }
+      },
       native: {}
+    });
+    this.createdIds.add(upsName);
+    await this.ensureChannel(upsName, "info");
+    await this.ensureState(`${upsName}.info.online`, {
+      type: "boolean",
+      role: "indicator.reachable",
+      read: true,
+      write: false,
+      name: (0, import_i18n_states.tName)("upsOnline")
     });
     await this.ensureState(`${upsName}.info.name`, {
       type: "string",
@@ -98,14 +128,14 @@ class StateManager {
       await this.ensureChannel(upsName, channel);
       const isWritable = rwNames.has(v.name);
       const detected = (0, import_type_detector.detectType)(v.name, v.value, isWritable);
-      const stateId = `${upsName}.${v.name}`;
+      const stateId = nutVarToStateId(upsName, v.name);
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: v.name
+        name: nutVarToReadableName(v.name)
       });
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
     }
@@ -156,13 +186,13 @@ class StateManager {
   async createCommandButtons(upsName, commands) {
     await this.ensureChannel(upsName, "commands");
     for (const cmd of commands) {
-      const stateId = `${upsName}.commands.${cmd.name}`;
+      const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
       await this.ensureState(stateId, {
         type: "boolean",
         role: "button",
         read: false,
         write: true,
-        name: cmd.name,
+        name: cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase()),
         def: false
       });
     }
@@ -193,6 +223,54 @@ class StateManager {
       }
     }
   }
+  /**
+   * Remove orphaned objects from previous adapter versions and v0.1.0 dot-style objects.
+   *
+   * @param knownUpsNames Set of currently discovered UPS names
+   */
+  async cleanupLegacyObjects(knownUpsNames) {
+    const adapterObjects = await this.adapter.getAdapterObjectsAsync();
+    const orphanRoots = /* @__PURE__ */ new Set();
+    const dotStyleIds = [];
+    for (const fullId of Object.keys(adapterObjects)) {
+      const localId = fullId.replace(`${this.adapter.namespace}.`, "");
+      const parts = localId.split(".");
+      const topLevel = parts[0];
+      if (topLevel === "info") {
+        continue;
+      }
+      if (!knownUpsNames.has(topLevel)) {
+        orphanRoots.add(topLevel);
+        continue;
+      }
+      if (parts.length > 3) {
+        dotStyleIds.push(localId);
+      }
+    }
+    for (const root of orphanRoots) {
+      this.adapter.log.info(`Removing orphaned root object from previous adapter version: ${root}`);
+      await this.adapter.delObjectAsync(root, { recursive: true });
+      this.dropCacheUnder(root);
+    }
+    const sorted = dotStyleIds.sort((a, b) => b.split(".").length - a.split(".").length);
+    for (const id of sorted) {
+      this.adapter.log.debug(`Removing v0.1.0 dot-style object: ${id}`);
+      await this.adapter.delObjectAsync(id);
+      this.createdIds.delete(id);
+    }
+  }
+  /**
+   * Remove all cached IDs under a prefix.
+   *
+   * @param prefix ID prefix to clear
+   */
+  dropCacheUnder(prefix) {
+    for (const id of [...this.createdIds]) {
+      if (id === prefix || id.startsWith(`${prefix}.`)) {
+        this.createdIds.delete(id);
+      }
+    }
+  }
   async ensureObject(id, obj) {
     if (this.createdIds.has(id)) {
       return;
@@ -218,6 +296,8 @@ class StateManager {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  StateManager
+  StateManager,
+  nutVarToReadableName,
+  nutVarToStateId
 });
 //# sourceMappingURL=state-manager.js.map

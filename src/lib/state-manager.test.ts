@@ -1,4 +1,4 @@
-import { StateManager } from "./state-manager";
+import { StateManager, nutVarToStateId, nutVarToReadableName } from "./state-manager";
 
 // ---------------------------------------------------------------------------
 // Mock adapter
@@ -37,6 +37,14 @@ function createMockAdapter(): {
     },
     setObjectNotExistsAsync: async (id: string, obj: MockObj) => {
       if (!objects.has(id)) {
+        objects.set(id, obj);
+      }
+    },
+    extendObjectAsync: async (id: string, obj: MockObj) => {
+      const existing = objects.get(id);
+      if (existing) {
+        existing.common = { ...existing.common, ...obj.common };
+      } else {
         objects.set(id, obj);
       }
     },
@@ -82,27 +90,40 @@ describe("StateManager", () => {
       expect(objects.get("ups0")?.type).toBe("device");
     });
 
-    it("should create info.name and info.description states", async () => {
-      const { adapter, states } = createMockAdapter();
+    it("should create info channel, info.online, info.name and info.description", async () => {
+      const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
 
+      expect(objects.has("ups0.info")).toBe(true);
+      expect(objects.get("ups0.info")?.type).toBe("channel");
+      expect(objects.has("ups0.info.online")).toBe(true);
+      expect(objects.get("ups0.info.online")?.common.role).toBe("indicator.reachable");
       expect(states.has("ups0.info.name")).toBe(true);
       expect(states.get("ups0.info.name")?.val).toBe("ups0");
       expect(states.has("ups0.info.description")).toBe(true);
       expect(states.get("ups0.info.description")?.val).toBe("Main UPS");
     });
 
-    it("should not recreate existing device", async () => {
+    it("should set statusStates.onlineId on device object", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      const common = objects.get("ups0")?.common as any;
+      expect(common?.statusStates?.onlineId).toBe("nut.0.ups0.info.online");
+    });
+
+    it("should update device description on re-discover", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
       await sm.ensureUpsDevice("ups0", "Updated UPS");
 
-      // setObjectNotExistsAsync only creates if missing
-      expect(objects.get("ups0")?.common.name).toBe("Main UPS");
+      expect(objects.get("ups0")?.common.name).toBe("Updated UPS");
     });
 
     it("should create multiple devices", async () => {
@@ -160,7 +181,7 @@ describe("StateManager", () => {
   // Variable updates
   // -----------------------------------------------------------------------
   describe("updateVariables", () => {
-    it("should create states for variables", async () => {
+    it("should create states for variables with dots→dashes", async () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -193,7 +214,7 @@ describe("StateManager", () => {
         { name: "ups.delay.shutdown", value: "20" },
       ], new Set(["ups.delay.shutdown"]));
 
-      const common = objects.get("ups0.ups.delay.shutdown")?.common;
+      const common = objects.get("ups0.ups.delay-shutdown")?.common;
       expect(common?.write).toBe(true);
     });
 
@@ -223,8 +244,20 @@ describe("StateManager", () => {
 
       const keys = [...objects.keys()];
       const chargeIdx = keys.indexOf("ups0.battery.charge");
-      const chargeLowIdx = keys.indexOf("ups0.battery.charge.low");
+      const chargeLowIdx = keys.indexOf("ups0.battery.charge-low");
       expect(chargeIdx).toBeLessThan(chargeLowIdx);
+    });
+
+    it("should use readable names for state objects", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [
+        { name: "battery.charge.low", value: "15" },
+      ], new Set());
+
+      const common = objects.get("ups0.battery.charge-low")?.common;
+      expect(common?.name).toBe("Charge low");
     });
   });
 
@@ -281,7 +314,7 @@ describe("StateManager", () => {
   // Command buttons
   // -----------------------------------------------------------------------
   describe("createCommandButtons", () => {
-    it("should create button states for commands", async () => {
+    it("should create button states with dots→dashes and readable names", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -291,13 +324,14 @@ describe("StateManager", () => {
       ]);
 
       expect(objects.has("ups0.commands")).toBe(true);
-      expect(objects.has("ups0.commands.beeper.enable")).toBe(true);
-      expect(objects.has("ups0.commands.load.off")).toBe(true);
+      expect(objects.has("ups0.commands.beeper-enable")).toBe(true);
+      expect(objects.has("ups0.commands.load-off")).toBe(true);
 
-      const common = objects.get("ups0.commands.beeper.enable")?.common;
+      const common = objects.get("ups0.commands.beeper-enable")?.common;
       expect(common?.role).toBe("button");
       expect(common?.write).toBe(true);
       expect(common?.read).toBe(false);
+      expect(common?.name).toBe("Beeper enable");
     });
   });
 
@@ -387,7 +421,7 @@ describe("StateManager", () => {
   // Dot-path edge cases
   // -----------------------------------------------------------------------
   describe("dot-path handling", () => {
-    it("should handle battery.charge and battery.charge.low coexistence", async () => {
+    it("should handle battery.charge and battery.charge.low with dash conversion", async () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -397,12 +431,12 @@ describe("StateManager", () => {
       ], new Set());
 
       expect(objects.has("ups0.battery.charge")).toBe(true);
-      expect(objects.has("ups0.battery.charge.low")).toBe(true);
+      expect(objects.has("ups0.battery.charge-low")).toBe(true);
       expect(states.get("ups0.battery.charge")?.val).toBe(100);
-      expect(states.get("ups0.battery.charge.low")?.val).toBe(15);
+      expect(states.get("ups0.battery.charge-low")?.val).toBe(15);
     });
 
-    it("should handle driver.version and driver.version.data", async () => {
+    it("should handle driver.version variants with dash conversion", async () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -413,12 +447,12 @@ describe("StateManager", () => {
       ], new Set());
 
       expect(objects.has("ups0.driver.version")).toBe(true);
-      expect(objects.has("ups0.driver.version.data")).toBe(true);
-      expect(objects.has("ups0.driver.version.internal")).toBe(true);
+      expect(objects.has("ups0.driver.version-data")).toBe(true);
+      expect(objects.has("ups0.driver.version-internal")).toBe(true);
       expect(states.get("ups0.driver.version")?.val).toBe("2.8.0");
     });
 
-    it("should handle deeply nested outlet paths", async () => {
+    it("should handle outlet paths with dash conversion", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -430,9 +464,9 @@ describe("StateManager", () => {
       ], new Set());
 
       expect(objects.has("ups0.outlet.desc")).toBe(true);
-      expect(objects.has("ups0.outlet.1.desc")).toBe(true);
-      expect(objects.has("ups0.outlet.1.status")).toBe(true);
-      expect(objects.has("ups0.outlet.2.desc")).toBe(true);
+      expect(objects.has("ups0.outlet.1-desc")).toBe(true);
+      expect(objects.has("ups0.outlet.1-status")).toBe(true);
+      expect(objects.has("ups0.outlet.2-desc")).toBe(true);
     });
   });
 
@@ -465,13 +499,14 @@ describe("StateManager", () => {
 
       await sm.updateVariables("ups0", vars, new Set(["ups.delay.shutdown", "ups.delay.start"]));
 
-      // Numeric types
+      // Numeric types (dots→dashes after channel)
       expect(states.get("ups0.battery.charge")?.val).toBe(100);
       expect(states.get("ups0.battery.runtime")?.val).toBe(2207);
       expect(states.get("ups0.input.voltage")?.val).toBe(221.0);
       expect(states.get("ups0.ups.load")?.val).toBe(15);
       expect(states.get("ups0.ups.power")?.val).toBe(159);
       expect(states.get("ups0.ups.realpower")?.val).toBe(147);
+      expect(states.get("ups0.battery.charge-low")?.val).toBe(15);
 
       // String types
       expect(states.get("ups0.battery.type")?.val).toBe("PbAc");
@@ -485,6 +520,114 @@ describe("StateManager", () => {
       expect(objects.has("ups0.ups")).toBe(true);
       expect(objects.has("ups0.input")).toBe(true);
       expect(objects.has("ups0.output")).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // nutVarToStateId
+  // -----------------------------------------------------------------------
+  describe("nutVarToStateId", () => {
+    it("should convert dots after channel to dashes", () => {
+      expect(nutVarToStateId("ups0", "battery.charge.low")).toBe("ups0.battery.charge-low");
+    });
+
+    it("should keep single-dot variables unchanged", () => {
+      expect(nutVarToStateId("ups0", "battery.charge")).toBe("ups0.battery.charge");
+    });
+
+    it("should handle no-dot variables", () => {
+      expect(nutVarToStateId("ups0", "status")).toBe("ups0.status");
+    });
+
+    it("should convert multiple dots", () => {
+      expect(nutVarToStateId("ups0", "driver.version.internal")).toBe("ups0.driver.version-internal");
+      expect(nutVarToStateId("ups0", "driver.reload.or.error")).toBe("ups0.driver.reload-or-error");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // nutVarToReadableName
+  // -----------------------------------------------------------------------
+  describe("nutVarToReadableName", () => {
+    it("should format leaf part as readable name", () => {
+      expect(nutVarToReadableName("battery.charge.low")).toBe("Charge low");
+    });
+
+    it("should handle single-dot variables", () => {
+      expect(nutVarToReadableName("battery.charge")).toBe("Charge");
+    });
+
+    it("should handle no-dot variables", () => {
+      expect(nutVarToReadableName("status")).toBe("Status");
+    });
+
+    it("should capitalize first letter only", () => {
+      expect(nutVarToReadableName("ups.delay.shutdown")).toBe("Delay shutdown");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // cleanupLegacyObjects
+  // -----------------------------------------------------------------------
+  describe("cleanupLegacyObjects", () => {
+    it("should remove root-level orphans from old adapter", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("battery", { type: "channel", common: { name: "Battery" }, native: {} });
+      objects.set("battery.charge", { type: "state", common: { name: "charge" }, native: {} });
+      objects.set("commands", { type: "channel", common: { name: "Commands" }, native: {} });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+
+      expect(deletedIds).toContain("battery");
+      expect(deletedIds).toContain("commands");
+    });
+
+    it("should not remove info or known UPS objects", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+
+      expect(deletedIds).not.toContain("info");
+      expect(deletedIds).not.toContain("ups0");
+    });
+
+    it("should remove v0.1.0 dot-style objects under known UPS", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0", { type: "device", common: { name: "Main" }, native: {} });
+      objects.set("ups0.battery", { type: "channel", common: { name: "Battery" }, native: {} });
+      objects.set("ups0.battery.charge", { type: "state", common: { name: "charge" }, native: {} });
+      objects.set("ups0.battery.charge.low", { type: "state", common: { name: "charge.low" }, native: {} });
+      objects.set("ups0.driver.version.data", { type: "state", common: { name: "version.data" }, native: {} });
+
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+
+      expect(deletedIds).toContain("ups0.battery.charge.low");
+      expect(deletedIds).toContain("ups0.driver.version.data");
+      expect(deletedIds).not.toContain("ups0.battery.charge");
+      expect(deletedIds).not.toContain("ups0.battery");
+      expect(deletedIds).not.toContain("ups0");
+    });
+
+    it("should delete deepest dot-style objects first", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0", { type: "device", common: { name: "Main" }, native: {} });
+      objects.set("ups0.a.b.c.d", { type: "state", common: { name: "deep" }, native: {} });
+      objects.set("ups0.a.b.c", { type: "state", common: { name: "mid" }, native: {} });
+
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+
+      const dIdx = deletedIds.indexOf("ups0.a.b.c.d");
+      const cIdx = deletedIds.indexOf("ups0.a.b.c");
+      expect(dIdx).toBeLessThan(cIdx);
     });
   });
 });

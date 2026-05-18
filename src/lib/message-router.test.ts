@@ -20,6 +20,7 @@ interface TestHarness {
 function makeHarness(
   listUpsResult?: { name: string; description: string }[],
   connectError?: Error,
+  authError?: Error,
 ): TestHarness {
   const sends: SentMessage[] = [];
   const logs: { level: "debug" | "warn"; msg: string }[] = [];
@@ -44,6 +45,11 @@ function makeHarness(
           }
         },
         listUps: async () => listUpsResult ?? [{ name: "ups0", description: "Eaton" }],
+        authenticate: async () => {
+          if (authError) {
+            throw authError;
+          }
+        },
         destroy: () => {},
       } as unknown as NutClient;
     },
@@ -171,6 +177,81 @@ describe("dispatchMessage", () => {
       const resp = h.sends[0].response as { success: boolean; message: string };
       expect(resp.success).toBe(false);
       expect(resp.message).toBe("ECONNREFUSED");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // checkConnection with auth
+  // -----------------------------------------------------------------------
+  describe("checkConnection with auth", () => {
+    it("should authenticate when username and password provided", async () => {
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "secret" },
+        }),
+        h.deps,
+      );
+
+      expect(h.sends).toHaveLength(1);
+      const resp = h.sends[0].response as { success: boolean; message: string };
+      expect(resp.success).toBe(true);
+      expect(resp.message).toContain("authenticated");
+    });
+
+    it("should not authenticate when no credentials provided", async () => {
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493 },
+        }),
+        h.deps,
+      );
+
+      expect(h.sends).toHaveLength(1);
+      const resp = h.sends[0].response as { success: boolean; message: string };
+      expect(resp.success).toBe(true);
+      expect(resp.message).not.toContain("authenticated");
+    });
+
+    it("should return failure when auth fails", async () => {
+      const h = makeHarness(
+        [{ name: "ups0", description: "Eaton" }],
+        undefined,
+        new Error("ACCESS-DENIED"),
+      );
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "wrong" },
+        }),
+        h.deps,
+      );
+
+      expect(h.sends).toHaveLength(1);
+      const resp = h.sends[0].response as { success: boolean; message: string };
+      expect(resp.success).toBe(false);
+      expect(resp.message).toContain("ACCESS-DENIED");
+    });
+
+    it("should still call onTestClientDone when auth fails", async () => {
+      const h = makeHarness(
+        [{ name: "ups0", description: "Eaton" }],
+        undefined,
+        new Error("ACCESS-DENIED"),
+      );
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "wrong" },
+        }),
+        h.deps,
+      );
+
+      expect(h.registered).toHaveLength(1);
+      expect(h.completed).toHaveLength(1);
     });
   });
 
