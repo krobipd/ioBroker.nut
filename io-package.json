@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.1.0",
     "news": {
+      "NEXT": {
+        "en": "Fixed upgrade path from previous version, auth failure stops adapter, connection test verifies credentials, per-UPS online indicator, human-readable state names, admin layout improvements",
+        "de": "Upgrade-Pfad von Vorgängerversion repariert, Auth-Fehler stoppt Adapter, Verbindungstest prüft Zugangsdaten, Online-Indikator pro USV, lesbare State-Namen, Admin-Layout verbessert",
+        "ru": "Исправлен путь обновления с предыдущей версии, ошибка аутентификации останавливает адаптер, тест подключения проверяет учётные данные, индикатор онлайн для каждого ИБП, понятные имена состояний, улучшена компоновка админки",
+        "pt": "Corrigido caminho de atualização da versão anterior, falha de autenticação para o adaptador, teste de conexão verifica credenciais, indicador online por UPS, nomes de estados legíveis, layout do admin melhorado",
+        "nl": "Upgradepad van vorige versie gerepareerd, authenticatiefout stopt adapter, verbindingstest verifieert inloggegevens, online-indicator per UPS, leesbare statusnamen, admin-layout verbeterd",
+        "fr": "Chemin de mise à jour corrigé, l'échec d'authentification arrête l'adaptateur, le test de connexion vérifie les identifiants, indicateur en ligne par onduleur, noms d'états lisibles, disposition admin améliorée",
+        "it": "Corretto percorso di aggiornamento, errore di autenticazione ferma l'adattatore, test di connessione verifica le credenziali, indicatore online per UPS, nomi degli stati leggibili, layout admin migliorato",
+        "es": "Corregida ruta de actualización, fallo de autenticación detiene el adaptador, prueba de conexión verifica credenciales, indicador en línea por SAI, nombres de estados legibles, diseño del admin mejorado",
+        "pl": "Naprawiona ścieżka aktualizacji z poprzedniej wersji, błąd uwierzytelniania zatrzymuje adapter, test połączenia weryfikuje dane, wskaźnik online dla każdego UPS, czytelne nazwy stanów, ulepszony układ admina",
+        "uk": "Виправлено шлях оновлення з попередньої версії, помилка автентифікації зупиняє адаптер, тест з'єднання перевіряє облікові дані, онлайн-індикатор для кожного ДБЖ, зрозумілі назви станів, покращено макет адмін-панелі",
+        "zh-cn": "修复了从旧版本升级的路径，认证失败停止适配器，连接测试验证凭据，每个UPS的在线指示器，可读的状态名称，改进管理界面布局"
+      },
       "0.1.0": {
         "en": "Initial release",
         "de": "Erstveröffentlichung",
