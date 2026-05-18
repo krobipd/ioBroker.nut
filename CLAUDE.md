@@ -47,7 +47,7 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 7. **Network-Interface-Selector** — govee/hassemu-Pattern, wichtig für Multi-Homed-Server
 8. **Dot-Depth-Sortierung** — Variables nach Punkttiefe sortiert, damit Parent-States vor Children existieren (battery.charge vor battery.charge.low)
 9. **Dots→Dashes nach Channel** — `battery.charge.low` → stateId `ups0.battery.charge-low`. Erster Dot = Channel-Trenner, restliche Dots werden Dashes (kompatibel zum alten Apollon77-Adapter)
-10. **Auth-Failure = stay alive, yellow** — bei konfiguriertem username+password und ACCESS-DENIED bleibt der Adapter am Leben mit `info.connection = false` (gelb in Admin), startet kein Polling. sendTo-Button (Verbindung testen) funktioniert weiter — User kann Credentials korrigieren und testen bevor er speichert
+10. **Auth-Failure = stay alive, yellow, no connections** — bei konfiguriertem username+password und ACCESS-DENIED: `client.destroy()` trennt TCP komplett (kein Reconnect, kein Polling, kein Datentransfer), Adapter bleibt am Leben mit `info.connection = false` (gelb in Admin). sendTo-Button (Verbindung testen) funktioniert weiter — User kann Credentials korrigieren und testen bevor er speichert. checkConnection testet auch LOGIN pro UPS (nicht nur USERNAME/PASSWORD)
 11. **Per-UPS info.online** — `indicator.reachable` Boolean mit `statusStates.onlineId` auf Device-Objekt (beszel-Pattern)
 12. **Legacy-Cleanup** — `cleanupLegacyObjects()` löscht Root-Level-Orphans (alter Adapter) und v0.1.0-Dot-Style-Objekte in einem Pass
 
@@ -59,7 +59,7 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (254 unit + 57 package = 311)
+## Tests (256 unit + 57 package = 313)
 
 ```
 src/lib/nut-client.test.ts      → TCP Client (45 tests)
@@ -67,7 +67,7 @@ src/lib/type-detector.test.ts   → Variable-Type-Detection (68 tests)
 src/lib/status-parser.test.ts   → Status-Flag-Parsing (45 tests)
 src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy (40 tests)
 src/lib/coerce.test.ts          → Boundary-Validators (40 tests)
-src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth-Test (16 tests)
+src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (18 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
 

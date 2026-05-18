@@ -103,6 +103,7 @@ class NutAdapter extends utils.Adapter {
       } catch (err) {
         this.log.error(`Authentication failed: ${errText(err)} — check NUT server credentials`);
         this.log.info(`NUT adapter running without authentication — fix credentials and use connection test in admin`);
+        this.client.destroy();
         return;
       }
     }
@@ -160,7 +161,7 @@ class NutAdapter extends utils.Adapter {
       return;
     }
     const config = this.config as unknown as AdapterConfig;
-    if (config.username && config.password) {
+    if (this.authenticated && config.username && config.password) {
       try {
         await this.client.authenticate(config.username, config.password);
         for (const ups of this.discoveredUps.keys()) {

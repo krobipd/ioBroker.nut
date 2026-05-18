@@ -21,6 +21,7 @@ function makeHarness(
   listUpsResult?: { name: string; description: string }[],
   connectError?: Error,
   authError?: Error,
+  loginError?: Error,
 ): TestHarness {
   const sends: SentMessage[] = [];
   const logs: { level: "debug" | "warn"; msg: string }[] = [];
@@ -48,6 +49,11 @@ function makeHarness(
         authenticate: async () => {
           if (authError) {
             throw authError;
+          }
+        },
+        login: async () => {
+          if (loginError) {
+            throw loginError;
           }
         },
         destroy: () => {},
@@ -236,6 +242,27 @@ describe("dispatchMessage", () => {
       expect(resp.message).toContain("ACCESS-DENIED");
     });
 
+    it("should return failure when login fails after successful auth", async () => {
+      const h = makeHarness(
+        [{ name: "ups0", description: "Eaton" }],
+        undefined,
+        undefined,
+        new Error("ACCESS-DENIED"),
+      );
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "secret" },
+        }),
+        h.deps,
+      );
+
+      expect(h.sends).toHaveLength(1);
+      const resp = h.sends[0].response as { success: boolean; message: string };
+      expect(resp.success).toBe(false);
+      expect(resp.message).toContain("ACCESS-DENIED");
+    });
+
     it("should still call onTestClientDone when auth fails", async () => {
       const h = makeHarness(
         [{ name: "ups0", description: "Eaton" }],
@@ -246,6 +273,25 @@ describe("dispatchMessage", () => {
         buildMessage({
           command: "checkConnection",
           message: { host: "192.168.1.100", port: 3493, username: "admin", password: "wrong" },
+        }),
+        h.deps,
+      );
+
+      expect(h.registered).toHaveLength(1);
+      expect(h.completed).toHaveLength(1);
+    });
+
+    it("should still call onTestClientDone when login fails", async () => {
+      const h = makeHarness(
+        [{ name: "ups0", description: "Eaton" }],
+        undefined,
+        undefined,
+        new Error("ACCESS-DENIED"),
+      );
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "secret" },
         }),
         h.deps,
       );

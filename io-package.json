@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.1.2",
     "news": {
+      "NEXT": {
+        "en": "Connection test now verifies LOGIN per UPS (catches ACCESS-DENIED). Auth failure fully disconnects (no reconnect spam)",
+        "de": "Verbindungstest prüft jetzt LOGIN pro USV (erkennt ACCESS-DENIED). Auth-Fehler trennt vollständig (kein Reconnect-Spam)",
+        "ru": "Тест подключения проверяет LOGIN на каждый ИБП (обнаруживает ACCESS-DENIED). Ошибка авторизации полностью отключает (без повторного подключения)",
+        "pt": "Teste de conexão verifica LOGIN por UPS (detecta ACCESS-DENIED). Falha de autenticação desconecta completamente (sem reconexão)",
+        "nl": "Verbindingstest verifieert LOGIN per UPS (detecteert ACCESS-DENIED). Authenticatiefout verbreekt volledig (geen reconnect-spam)",
+        "fr": "Test de connexion vérifie LOGIN par onduleur (détecte ACCESS-DENIED). Échec d'auth déconnecte complètement (pas de reconnexion)",
+        "it": "Test connessione verifica LOGIN per UPS (rileva ACCESS-DENIED). Errore autenticazione disconnette completamente (nessun tentativo di riconnessione)",
+        "es": "Test de conexión verifica LOGIN por SAI (detecta ACCESS-DENIED). Fallo de autenticación desconecta completamente (sin reconexión)",
+        "pl": "Test połączenia weryfikuje LOGIN per UPS (wykrywa ACCESS-DENIED). Błąd autoryzacji całkowicie rozłącza (bez ponownego łączenia)",
+        "uk": "Тест підключення перевіряє LOGIN для кожного ДБЖ (виявляє ACCESS-DENIED). Помилка авторизації повністю від'єднує (без повторних спроб)",
+        "zh-cn": "连接测试现在验证每个UPS的LOGIN（捕获ACCESS-DENIED）。认证失败完全断开连接（无重连垃圾日志）"
+      },
       "0.1.2": {
         "en": "Auth failure keeps adapter alive with yellow status — connection test button stays usable. Admin layout improved (fields grouped cleanly)",
         "de": "Authentifizierungsfehler hält Adapter am Leben mit gelbem Status — Verbindungstest-Button bleibt nutzbar. Admin-Layout verbessert (Felder sauber gruppiert)",

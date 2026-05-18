@@ -55,6 +55,9 @@ async function dispatchMessage(obj, deps) {
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
           if (username && password) {
             await testClient.authenticate(username, password);
+            for (const ups of upsList) {
+              await testClient.login(ups.name);
+            }
             deps.sendTo(
               obj.from,
               obj.command,
