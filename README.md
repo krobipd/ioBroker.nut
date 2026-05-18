@@ -168,7 +168,7 @@ nut.0.
 -->
 ### **WORK IN PROGRESS**
 
-- Initial release — complete TypeScript rewrite of the NUT adapter
+- Initial release — complete rewrite of the NUT adapter
 - Multi-UPS support: automatic discovery of all UPS devices on a NUT server
 - Persistent TCP connection with reconnect and exponential backoff
 - Dynamic state creation with proper data types and units
