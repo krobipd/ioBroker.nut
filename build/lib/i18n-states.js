@@ -4,20 +4,18 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
+  if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
   }
   return to;
 };
-var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var i18n_states_exports = {};
 __export(i18n_states_exports, {
   CHANNEL_I18N: () => CHANNEL_I18N,
@@ -25,7 +23,7 @@ __export(i18n_states_exports, {
   FLAG_I18N: () => FLAG_I18N,
   STATE_NAMES: () => STATE_NAMES,
   VARIABLE_I18N: () => VARIABLE_I18N,
-  tName: () => tName,
+  tName: () => tName
 });
 module.exports = __toCommonJS(i18n_states_exports);
 const STATE_NAMES = {
@@ -41,7 +39,7 @@ const STATE_NAMES = {
     es: "Informaci\xF3n del adaptador",
     pl: "Informacje o adapterze",
     uk: "\u0406\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0456\u044F \u043F\u0440\u043E \u0430\u0434\u0430\u043F\u0442\u0435\u0440",
-    "zh-cn": "\u9002\u914D\u5668\u4FE1\u606F",
+    "zh-cn": "\u9002\u914D\u5668\u4FE1\u606F"
   },
   connectionStatus: {
     en: "Connection status",
@@ -54,7 +52,7 @@ const STATE_NAMES = {
     es: "Estado de conexi\xF3n",
     pl: "Stan po\u0142\u0105czenia",
     uk: "\u0421\u0442\u0430\u043D \u0437'\u0454\u0434\u043D\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u8FDE\u63A5\u72B6\u6001",
+    "zh-cn": "\u8FDE\u63A5\u72B6\u6001"
   },
   // ──────── NUT domain channels ────────
   channelBattery: {
@@ -68,7 +66,7 @@ const STATE_NAMES = {
     es: "Bater\xEDa",
     pl: "Bateria",
     uk: "\u0411\u0430\u0442\u0430\u0440\u0435\u044F",
-    "zh-cn": "\u7535\u6C60",
+    "zh-cn": "\u7535\u6C60"
   },
   channelDevice: {
     en: "Device",
@@ -81,7 +79,7 @@ const STATE_NAMES = {
     es: "Dispositivo",
     pl: "Urz\u0105dzenie",
     uk: "\u041F\u0440\u0438\u0441\u0442\u0440\u0456\u0439",
-    "zh-cn": "\u8BBE\u5907",
+    "zh-cn": "\u8BBE\u5907"
   },
   channelDriver: {
     en: "Driver",
@@ -94,7 +92,7 @@ const STATE_NAMES = {
     es: "Controlador",
     pl: "Sterownik",
     uk: "\u0414\u0440\u0430\u0439\u0432\u0435\u0440",
-    "zh-cn": "\u9A71\u52A8\u7A0B\u5E8F",
+    "zh-cn": "\u9A71\u52A8\u7A0B\u5E8F"
   },
   channelInput: {
     en: "Input power",
@@ -107,7 +105,7 @@ const STATE_NAMES = {
     es: "Potencia de entrada",
     pl: "Moc wej\u015Bciowa",
     uk: "\u0412\u0445\u0456\u0434\u043D\u0430 \u043F\u043E\u0442\u0443\u0436\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u8F93\u5165\u529F\u7387",
+    "zh-cn": "\u8F93\u5165\u529F\u7387"
   },
   channelOutput: {
     en: "Output power",
@@ -120,7 +118,7 @@ const STATE_NAMES = {
     es: "Potencia de salida",
     pl: "Moc wyj\u015Bciowa",
     uk: "\u0412\u0438\u0445\u0456\u0434\u043D\u0430 \u043F\u043E\u0442\u0443\u0436\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u8F93\u51FA\u529F\u7387",
+    "zh-cn": "\u8F93\u51FA\u529F\u7387"
   },
   channelUps: {
     en: "UPS",
@@ -133,7 +131,7 @@ const STATE_NAMES = {
     es: "SAI",
     pl: "UPS",
     uk: "\u0414\u0411\u0416",
-    "zh-cn": "UPS",
+    "zh-cn": "UPS"
   },
   channelOutlet: {
     en: "Outlets",
@@ -146,7 +144,7 @@ const STATE_NAMES = {
     es: "Tomas",
     pl: "Gniazdka",
     uk: "\u0420\u043E\u0437\u0435\u0442\u043A\u0438",
-    "zh-cn": "\u63D2\u5EA7",
+    "zh-cn": "\u63D2\u5EA7"
   },
   channelAmbient: {
     en: "Ambient sensors",
@@ -159,7 +157,7 @@ const STATE_NAMES = {
     es: "Sensores ambientales",
     pl: "Czujniki otoczenia",
     uk: "\u0414\u0430\u0442\u0447\u0438\u043A\u0438 \u043D\u0430\u0432\u043A\u043E\u043B\u0438\u0448\u043D\u044C\u043E\u0433\u043E \u0441\u0435\u0440\u0435\u0434\u043E\u0432\u0438\u0449\u0430",
-    "zh-cn": "\u73AF\u5883\u4F20\u611F\u5668",
+    "zh-cn": "\u73AF\u5883\u4F20\u611F\u5668"
   },
   channelStatus: {
     en: "Status flags",
@@ -172,7 +170,7 @@ const STATE_NAMES = {
     es: "Indicadores de estado",
     pl: "Flagi stanu",
     uk: "\u041F\u0440\u0430\u043F\u043E\u0440\u0446\u0456 \u0441\u0442\u0430\u043D\u0443",
-    "zh-cn": "\u72B6\u6001\u6807\u5FD7",
+    "zh-cn": "\u72B6\u6001\u6807\u5FD7"
   },
   channelCommands: {
     en: "Commands",
@@ -185,7 +183,7 @@ const STATE_NAMES = {
     es: "Comandos",
     pl: "Polecenia",
     uk: "\u041A\u043E\u043C\u0430\u043D\u0434\u0438",
-    "zh-cn": "\u547D\u4EE4",
+    "zh-cn": "\u547D\u4EE4"
   },
   // ──────── Status states ────────
   statusRaw: {
@@ -199,7 +197,7 @@ const STATE_NAMES = {
     es: "Estado sin procesar",
     pl: "Stan surowy",
     uk: "\u041D\u0435\u043E\u0431\u0440\u043E\u0431\u043B\u0435\u043D\u0438\u0439 \u0441\u0442\u0430\u043D",
-    "zh-cn": "\u539F\u59CB\u72B6\u6001",
+    "zh-cn": "\u539F\u59CB\u72B6\u6001"
   },
   statusSeverity: {
     en: "Severity level",
@@ -212,7 +210,7 @@ const STATE_NAMES = {
     es: "Nivel de gravedad",
     pl: "Poziom wa\u017Cno\u015Bci",
     uk: "\u0420\u0456\u0432\u0435\u043D\u044C \u0441\u0435\u0440\u0439\u043E\u0437\u043D\u043E\u0441\u0442\u0456",
-    "zh-cn": "\u4E25\u91CD\u7A0B\u5EA6",
+    "zh-cn": "\u4E25\u91CD\u7A0B\u5EA6"
   },
   statusDisplay: {
     en: "Status display",
@@ -225,7 +223,7 @@ const STATE_NAMES = {
     es: "Visualizaci\xF3n del estado",
     pl: "Wy\u015Bwietlanie stanu",
     uk: "\u0412\u0456\u0434\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u043D\u044F \u0441\u0442\u0430\u043D\u0443",
-    "zh-cn": "\u72B6\u6001\u663E\u793A",
+    "zh-cn": "\u72B6\u6001\u663E\u793A"
   },
   upsName: {
     en: "UPS name",
@@ -238,7 +236,7 @@ const STATE_NAMES = {
     es: "Nombre del SAI",
     pl: "Nazwa UPS",
     uk: "\u0406\u043C'\u044F \u0414\u0411\u0416",
-    "zh-cn": "UPS\u540D\u79F0",
+    "zh-cn": "UPS\u540D\u79F0"
   },
   upsDescription: {
     en: "UPS description",
@@ -251,7 +249,7 @@ const STATE_NAMES = {
     es: "Descripci\xF3n del SAI",
     pl: "Opis UPS",
     uk: "\u041E\u043F\u0438\u0441 \u0414\u0411\u0416",
-    "zh-cn": "UPS\u63CF\u8FF0",
+    "zh-cn": "UPS\u63CF\u8FF0"
   },
   upsOnline: {
     en: "Online",
@@ -264,7 +262,7 @@ const STATE_NAMES = {
     es: "En l\xEDnea",
     pl: "Online",
     uk: "\u041E\u043D\u043B\u0430\u0439\u043D",
-    "zh-cn": "\u5728\u7EBF",
+    "zh-cn": "\u5728\u7EBF"
   },
   channelUpsInfo: {
     en: "Information",
@@ -277,7 +275,7 @@ const STATE_NAMES = {
     es: "Informaci\xF3n",
     pl: "Informacja",
     uk: "\u0406\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0456\u044F",
-    "zh-cn": "\u4FE1\u606F",
+    "zh-cn": "\u4FE1\u606F"
   },
   // ──────── Status flag names ────────
   flagOnline: {
@@ -291,7 +289,7 @@ const STATE_NAMES = {
     es: "En l\xEDnea",
     pl: "Online",
     uk: "\u041E\u043D\u043B\u0430\u0439\u043D",
-    "zh-cn": "\u5728\u7EBF",
+    "zh-cn": "\u5728\u7EBF"
   },
   flagOnBattery: {
     en: "On battery",
@@ -304,7 +302,7 @@ const STATE_NAMES = {
     es: "En bater\xEDa",
     pl: "Na baterii",
     uk: "\u041D\u0430 \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u4F7F\u7528\u7535\u6C60",
+    "zh-cn": "\u4F7F\u7528\u7535\u6C60"
   },
   flagLowBattery: {
     en: "Low battery",
@@ -317,7 +315,7 @@ const STATE_NAMES = {
     es: "Bater\xEDa baja",
     pl: "Niski poziom baterii",
     uk: "\u041D\u0438\u0437\u044C\u043A\u0438\u0439 \u0437\u0430\u0440\u044F\u0434",
-    "zh-cn": "\u7535\u91CF\u4F4E",
+    "zh-cn": "\u7535\u91CF\u4F4E"
   },
   flagHighBattery: {
     en: "High battery",
@@ -330,7 +328,7 @@ const STATE_NAMES = {
     es: "Bater\xEDa llena",
     pl: "Pe\u0142na bateria",
     uk: "\u041F\u043E\u0432\u043D\u0438\u0439 \u0437\u0430\u0440\u044F\u0434",
-    "zh-cn": "\u7535\u91CF\u6EE1",
+    "zh-cn": "\u7535\u91CF\u6EE1"
   },
   flagReplaceBattery: {
     en: "Replace battery",
@@ -343,7 +341,7 @@ const STATE_NAMES = {
     es: "Reemplazar bater\xEDa",
     pl: "Wymie\u0144 bateri\u0119",
     uk: "\u0417\u0430\u043C\u0456\u043D\u0456\u0442\u044C \u0431\u0430\u0442\u0430\u0440\u0435\u044E",
-    "zh-cn": "\u66F4\u6362\u7535\u6C60",
+    "zh-cn": "\u66F4\u6362\u7535\u6C60"
   },
   flagCharging: {
     en: "Charging",
@@ -356,7 +354,7 @@ const STATE_NAMES = {
     es: "Cargando",
     pl: "\u0141adowanie",
     uk: "\u0417\u0430\u0440\u044F\u0434\u043A\u0430",
-    "zh-cn": "\u5145\u7535\u4E2D",
+    "zh-cn": "\u5145\u7535\u4E2D"
   },
   flagDischarging: {
     en: "Discharging",
@@ -369,7 +367,7 @@ const STATE_NAMES = {
     es: "Descargando",
     pl: "Roz\u0142adowywanie",
     uk: "\u0420\u043E\u0437\u0440\u044F\u0434\u043A\u0430",
-    "zh-cn": "\u653E\u7535\u4E2D",
+    "zh-cn": "\u653E\u7535\u4E2D"
   },
   flagBypass: {
     en: "Bypass active",
@@ -382,7 +380,7 @@ const STATE_NAMES = {
     es: "Bypass activo",
     pl: "Bypass aktywny",
     uk: "\u041E\u0431\u0445\u0456\u0434 \u0430\u043A\u0442\u0438\u0432\u043D\u0438\u0439",
-    "zh-cn": "\u65C1\u8DEF\u6FC0\u6D3B",
+    "zh-cn": "\u65C1\u8DEF\u6FC0\u6D3B"
   },
   flagCalibrating: {
     en: "Calibrating",
@@ -395,7 +393,7 @@ const STATE_NAMES = {
     es: "Calibrando",
     pl: "Kalibracja",
     uk: "\u041A\u0430\u043B\u0456\u0431\u0440\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u6821\u51C6\u4E2D",
+    "zh-cn": "\u6821\u51C6\u4E2D"
   },
   flagOff: {
     en: "Offline",
@@ -408,7 +406,7 @@ const STATE_NAMES = {
     es: "Apagado",
     pl: "Wy\u0142\u0105czony",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0435\u043D\u043E",
-    "zh-cn": "\u79BB\u7EBF",
+    "zh-cn": "\u79BB\u7EBF"
   },
   flagOverloaded: {
     en: "Overloaded",
@@ -421,7 +419,7 @@ const STATE_NAMES = {
     es: "Sobrecargado",
     pl: "Przeci\u0105\u017Cony",
     uk: "\u041F\u0435\u0440\u0435\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043E",
-    "zh-cn": "\u8FC7\u8F7D",
+    "zh-cn": "\u8FC7\u8F7D"
   },
   flagTrimming: {
     en: "Trimming voltage",
@@ -434,7 +432,7 @@ const STATE_NAMES = {
     es: "Recorte de voltaje",
     pl: "Przycinanie napi\u0119cia",
     uk: "\u0417\u043D\u0438\u0436\u0435\u043D\u043D\u044F \u043D\u0430\u043F\u0440\u0443\u0433\u0438",
-    "zh-cn": "\u524A\u51CF\u7535\u538B",
+    "zh-cn": "\u524A\u51CF\u7535\u538B"
   },
   flagBoosting: {
     en: "Boosting voltage",
@@ -447,7 +445,7 @@ const STATE_NAMES = {
     es: "Aumento de voltaje",
     pl: "Wzmacnianie napi\u0119cia",
     uk: "\u041F\u0456\u0434\u0432\u0438\u0449\u0435\u043D\u043D\u044F \u043D\u0430\u043F\u0440\u0443\u0433\u0438",
-    "zh-cn": "\u5347\u538B",
+    "zh-cn": "\u5347\u538B"
   },
   flagForcedShutdown: {
     en: "Forced shutdown",
@@ -460,7 +458,7 @@ const STATE_NAMES = {
     es: "Apagado forzado",
     pl: "Wymuszone wy\u0142\u0105czenie",
     uk: "\u041F\u0440\u0438\u043C\u0443\u0441\u043E\u0432\u0435 \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u5F3A\u5236\u5173\u673A",
+    "zh-cn": "\u5F3A\u5236\u5173\u673A"
   },
   flagAlarm: {
     en: "Alarm",
@@ -473,7 +471,7 @@ const STATE_NAMES = {
     es: "Alarma",
     pl: "Alarm",
     uk: "\u0422\u0440\u0438\u0432\u043E\u0433\u0430",
-    "zh-cn": "\u8B66\u62A5",
+    "zh-cn": "\u8B66\u62A5"
   },
   flagCommEstablished: {
     en: "Communication OK",
@@ -486,7 +484,7 @@ const STATE_NAMES = {
     es: "Comunicaci\xF3n OK",
     pl: "Komunikacja OK",
     uk: "\u0417\u0432'\u044F\u0437\u043E\u043A \u0432\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E",
-    "zh-cn": "\u901A\u4FE1\u6B63\u5E38",
+    "zh-cn": "\u901A\u4FE1\u6B63\u5E38"
   },
   flagCommLost: {
     en: "Communication lost",
@@ -499,7 +497,7 @@ const STATE_NAMES = {
     es: "Comunicaci\xF3n perdida",
     pl: "Komunikacja utracona",
     uk: "\u0417\u0432'\u044F\u0437\u043E\u043A \u0432\u0442\u0440\u0430\u0447\u0435\u043D\u043E",
-    "zh-cn": "\u901A\u4FE1\u4E22\u5931",
+    "zh-cn": "\u901A\u4FE1\u4E22\u5931"
   },
   flagTesting: {
     en: "Testing",
@@ -512,7 +510,7 @@ const STATE_NAMES = {
     es: "Probando",
     pl: "Testowanie",
     uk: "\u0422\u0435\u0441\u0442\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u6D4B\u8BD5\u4E2D",
+    "zh-cn": "\u6D4B\u8BD5\u4E2D"
   },
   flagHighEfficiency: {
     en: "High efficiency",
@@ -525,7 +523,7 @@ const STATE_NAMES = {
     es: "Alta eficiencia",
     pl: "Wysoka wydajno\u015B\u0107",
     uk: "\u0412\u0438\u0441\u043E\u043A\u0430 \u0435\u0444\u0435\u043A\u0442\u0438\u0432\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u9AD8\u6548\u6A21\u5F0F",
+    "zh-cn": "\u9AD8\u6548\u6A21\u5F0F"
   },
   // ──────── Command names ────────
   cmdBeeperDisable: {
@@ -539,7 +537,7 @@ const STATE_NAMES = {
     es: "Desactivar pitido",
     pl: "Wy\u0142\u0105cz brz\u0119czyk",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u0437\u0432\u0443\u043A",
-    "zh-cn": "\u7981\u7528\u8702\u9E23\u5668",
+    "zh-cn": "\u7981\u7528\u8702\u9E23\u5668"
   },
   cmdBeeperEnable: {
     en: "Enable beeper",
@@ -552,7 +550,7 @@ const STATE_NAMES = {
     es: "Activar pitido",
     pl: "W\u0142\u0105cz brz\u0119czyk",
     uk: "\u0423\u0432\u0456\u043C\u043A\u043D\u0443\u0442\u0438 \u0437\u0432\u0443\u043A",
-    "zh-cn": "\u542F\u7528\u8702\u9E23\u5668",
+    "zh-cn": "\u542F\u7528\u8702\u9E23\u5668"
   },
   cmdBeeperMute: {
     en: "Mute beeper",
@@ -565,7 +563,7 @@ const STATE_NAMES = {
     es: "Silenciar pitido",
     pl: "Wycisz brz\u0119czyk",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u0437\u0432\u0443\u043A \u0442\u0438\u043C\u0447\u0430\u0441\u043E\u0432\u043E",
-    "zh-cn": "\u9759\u97F3\u8702\u9E23\u5668",
+    "zh-cn": "\u9759\u97F3\u8702\u9E23\u5668"
   },
   cmdLoadOff: {
     en: "Turn off load",
@@ -578,7 +576,7 @@ const STATE_NAMES = {
     es: "Apagar carga",
     pl: "Wy\u0142\u0105cz obci\u0105\u017Cenie",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u043D\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u5173\u95ED\u8D1F\u8F7D",
+    "zh-cn": "\u5173\u95ED\u8D1F\u8F7D"
   },
   cmdLoadOn: {
     en: "Turn on load",
@@ -591,7 +589,7 @@ const STATE_NAMES = {
     es: "Encender carga",
     pl: "W\u0142\u0105cz obci\u0105\u017Cenie",
     uk: "\u0423\u0432\u0456\u043C\u043A\u043D\u0443\u0442\u0438 \u043D\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u6253\u5F00\u8D1F\u8F7D",
+    "zh-cn": "\u6253\u5F00\u8D1F\u8F7D"
   },
   cmdLoadOffDelay: {
     en: "Turn off load (delayed)",
@@ -604,7 +602,7 @@ const STATE_NAMES = {
     es: "Apagar carga (retrasado)",
     pl: "Wy\u0142\u0105cz obci\u0105\u017Cenie (op\xF3\u017Anione)",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u043D\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043D\u044F (\u0432\u0456\u0434\u043A\u043B\u0430\u0434\u0435\u043D\u043E)",
-    "zh-cn": "\u5EF6\u65F6\u5173\u95ED\u8D1F\u8F7D",
+    "zh-cn": "\u5EF6\u65F6\u5173\u95ED\u8D1F\u8F7D"
   },
   cmdLoadOnDelay: {
     en: "Turn on load (delayed)",
@@ -617,7 +615,7 @@ const STATE_NAMES = {
     es: "Encender carga (retrasado)",
     pl: "W\u0142\u0105cz obci\u0105\u017Cenie (op\xF3\u017Anione)",
     uk: "\u0423\u0432\u0456\u043C\u043A\u043D\u0443\u0442\u0438 \u043D\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043D\u044F (\u0432\u0456\u0434\u043A\u043B\u0430\u0434\u0435\u043D\u043E)",
-    "zh-cn": "\u5EF6\u65F6\u6253\u5F00\u8D1F\u8F7D",
+    "zh-cn": "\u5EF6\u65F6\u6253\u5F00\u8D1F\u8F7D"
   },
   cmdShutdownReturn: {
     en: "Shutdown and return",
@@ -630,7 +628,7 @@ const STATE_NAMES = {
     es: "Apagar y volver",
     pl: "Wy\u0142\u0105cz i przywr\xF3\u0107",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u0456 \u043F\u043E\u0432\u0435\u0440\u043D\u0443\u0442\u0438",
-    "zh-cn": "\u5173\u673A\u5E76\u6062\u590D",
+    "zh-cn": "\u5173\u673A\u5E76\u6062\u590D"
   },
   cmdShutdownStayoff: {
     en: "Shutdown and stay off",
@@ -643,7 +641,7 @@ const STATE_NAMES = {
     es: "Apagar y mantener apagado",
     pl: "Wy\u0142\u0105cz na sta\u0142e",
     uk: "\u0412\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u043D\u0430\u0437\u0430\u0432\u0436\u0434\u0438",
-    "zh-cn": "\u5173\u673A\u5E76\u4FDD\u6301\u5173\u95ED",
+    "zh-cn": "\u5173\u673A\u5E76\u4FDD\u6301\u5173\u95ED"
   },
   cmdShutdownStop: {
     en: "Stop shutdown",
@@ -656,7 +654,7 @@ const STATE_NAMES = {
     es: "Detener apagado",
     pl: "Zatrzymaj wy\u0142\u0105czanie",
     uk: "\u0417\u0443\u043F\u0438\u043D\u0438\u0442\u0438 \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u505C\u6B62\u5173\u673A",
+    "zh-cn": "\u505C\u6B62\u5173\u673A"
   },
   cmdShutdownReboot: {
     en: "Reboot UPS",
@@ -669,7 +667,7 @@ const STATE_NAMES = {
     es: "Reiniciar SAI",
     pl: "Restartuj UPS",
     uk: "\u041F\u0435\u0440\u0435\u0437\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0438\u0442\u0438 \u0414\u0411\u0416",
-    "zh-cn": "\u91CD\u542FUPS",
+    "zh-cn": "\u91CD\u542FUPS"
   },
   cmdTestBatteryStart: {
     en: "Start battery test",
@@ -682,7 +680,7 @@ const STATE_NAMES = {
     es: "Iniciar prueba de bater\xEDa",
     pl: "Rozpocznij test baterii",
     uk: "\u041F\u043E\u0447\u0430\u0442\u0438 \u0442\u0435\u0441\u0442 \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u5F00\u59CB\u7535\u6C60\u6D4B\u8BD5",
+    "zh-cn": "\u5F00\u59CB\u7535\u6C60\u6D4B\u8BD5"
   },
   cmdTestBatteryStop: {
     en: "Stop battery test",
@@ -695,7 +693,7 @@ const STATE_NAMES = {
     es: "Detener prueba de bater\xEDa",
     pl: "Zatrzymaj test baterii",
     uk: "\u0417\u0443\u043F\u0438\u043D\u0438\u0442\u0438 \u0442\u0435\u0441\u0442 \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u505C\u6B62\u7535\u6C60\u6D4B\u8BD5",
+    "zh-cn": "\u505C\u6B62\u7535\u6C60\u6D4B\u8BD5"
   },
   cmdCalibrateStart: {
     en: "Start calibration",
@@ -708,7 +706,7 @@ const STATE_NAMES = {
     es: "Iniciar calibraci\xF3n",
     pl: "Rozpocznij kalibracj\u0119",
     uk: "\u041F\u043E\u0447\u0430\u0442\u0438 \u043A\u0430\u043B\u0456\u0431\u0440\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u5F00\u59CB\u6821\u51C6",
+    "zh-cn": "\u5F00\u59CB\u6821\u51C6"
   },
   cmdCalibrateStop: {
     en: "Stop calibration",
@@ -721,8 +719,8 @@ const STATE_NAMES = {
     es: "Detener calibraci\xF3n",
     pl: "Zatrzymaj kalibracj\u0119",
     uk: "\u0417\u0443\u043F\u0438\u043D\u0438\u0442\u0438 \u043A\u0430\u043B\u0456\u0431\u0440\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u505C\u6B62\u6821\u51C6",
-  },
+    "zh-cn": "\u505C\u6B62\u6821\u51C6"
+  }
 };
 const CHANNEL_I18N = {
   battery: "channelBattery",
@@ -735,7 +733,7 @@ const CHANNEL_I18N = {
   ambient: "channelAmbient",
   status: "channelStatus",
   commands: "channelCommands",
-  info: "channelUpsInfo",
+  info: "channelUpsInfo"
 };
 const FLAG_I18N = {
   online: "flagOnline",
@@ -756,7 +754,7 @@ const FLAG_I18N = {
   commEstablished: "flagCommEstablished",
   commLost: "flagCommLost",
   testing: "flagTesting",
-  highEfficiency: "flagHighEfficiency",
+  highEfficiency: "flagHighEfficiency"
 };
 const COMMAND_I18N = {
   "beeper.disable": "cmdBeeperDisable",
@@ -773,7 +771,7 @@ const COMMAND_I18N = {
   "test.battery.start": "cmdTestBatteryStart",
   "test.battery.stop": "cmdTestBatteryStop",
   "calibrate.start": "cmdCalibrateStart",
-  "calibrate.stop": "cmdCalibrateStop",
+  "calibrate.stop": "cmdCalibrateStop"
 };
 function tName(key) {
   var _a;
@@ -792,7 +790,7 @@ const VARIABLE_I18N = {
     es: "Carga",
     pl: "\u0141adunek",
     uk: "\u0417\u0430\u0440\u044F\u0434",
-    "zh-cn": "\u7535\u91CF",
+    "zh-cn": "\u7535\u91CF"
   },
   "battery.charge.low": {
     en: "Low charge threshold",
@@ -805,7 +803,7 @@ const VARIABLE_I18N = {
     es: "Umbral de carga baja",
     pl: "Pr\xF3g niskiego \u0142adunku",
     uk: "\u041F\u043E\u0440\u0456\u0433 \u043D\u0438\u0437\u044C\u043A\u043E\u0433\u043E \u0437\u0430\u0440\u044F\u0434\u0443",
-    "zh-cn": "\u4F4E\u7535\u91CF\u9608\u503C",
+    "zh-cn": "\u4F4E\u7535\u91CF\u9608\u503C"
   },
   "battery.runtime": {
     en: "Runtime remaining",
@@ -818,7 +816,7 @@ const VARIABLE_I18N = {
     es: "Tiempo restante",
     pl: "Pozosta\u0142y czas pracy",
     uk: "\u0417\u0430\u043B\u0438\u0448\u043A\u043E\u0432\u0438\u0439 \u0447\u0430\u0441 \u0440\u043E\u0431\u043E\u0442\u0438",
-    "zh-cn": "\u5269\u4F59\u8FD0\u884C\u65F6\u95F4",
+    "zh-cn": "\u5269\u4F59\u8FD0\u884C\u65F6\u95F4"
   },
   "battery.type": {
     en: "Battery type",
@@ -831,7 +829,7 @@ const VARIABLE_I18N = {
     es: "Tipo de bater\xEDa",
     pl: "Typ baterii",
     uk: "\u0422\u0438\u043F \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u7535\u6C60\u7C7B\u578B",
+    "zh-cn": "\u7535\u6C60\u7C7B\u578B"
   },
   "battery.voltage": {
     en: "Battery voltage",
@@ -844,7 +842,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de bater\xEDa",
     pl: "Napi\u0119cie baterii",
     uk: "\u041D\u0430\u043F\u0440\u0443\u0433\u0430 \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u7535\u6C60\u7535\u538B",
+    "zh-cn": "\u7535\u6C60\u7535\u538B"
   },
   "battery.temperature": {
     en: "Battery temperature",
@@ -857,7 +855,7 @@ const VARIABLE_I18N = {
     es: "Temperatura de bater\xEDa",
     pl: "Temperatura baterii",
     uk: "\u0422\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u7535\u6C60\u6E29\u5EA6",
+    "zh-cn": "\u7535\u6C60\u6E29\u5EA6"
   },
   "battery.capacity": {
     en: "Battery capacity",
@@ -870,7 +868,7 @@ const VARIABLE_I18N = {
     es: "Capacidad de bater\xEDa",
     pl: "Pojemno\u015B\u0107 baterii",
     uk: "\u0404\u043C\u043D\u0456\u0441\u0442\u044C \u0431\u0430\u0442\u0430\u0440\u0435\u0457",
-    "zh-cn": "\u7535\u6C60\u5BB9\u91CF",
+    "zh-cn": "\u7535\u6C60\u5BB9\u91CF"
   },
   "battery.charger.status": {
     en: "Charger status",
@@ -883,7 +881,7 @@ const VARIABLE_I18N = {
     es: "Estado del cargador",
     pl: "Stan \u0142adowarki",
     uk: "\u0421\u0442\u0430\u043D \u0437\u0430\u0440\u044F\u0434\u043D\u043E\u0433\u043E",
-    "zh-cn": "\u5145\u7535\u5668\u72B6\u6001",
+    "zh-cn": "\u5145\u7535\u5668\u72B6\u6001"
   },
   // ── device ──
   "device.mfr": {
@@ -897,7 +895,7 @@ const VARIABLE_I18N = {
     es: "Fabricante",
     pl: "Producent",
     uk: "\u0412\u0438\u0440\u043E\u0431\u043D\u0438\u043A",
-    "zh-cn": "\u5236\u9020\u5546",
+    "zh-cn": "\u5236\u9020\u5546"
   },
   "device.model": {
     en: "Model",
@@ -910,7 +908,7 @@ const VARIABLE_I18N = {
     es: "Modelo",
     pl: "Model",
     uk: "\u041C\u043E\u0434\u0435\u043B\u044C",
-    "zh-cn": "\u578B\u53F7",
+    "zh-cn": "\u578B\u53F7"
   },
   "device.serial": {
     en: "Serial number",
@@ -923,7 +921,7 @@ const VARIABLE_I18N = {
     es: "N\xFAmero de serie",
     pl: "Numer seryjny",
     uk: "\u0421\u0435\u0440\u0456\u0439\u043D\u0438\u0439 \u043D\u043E\u043C\u0435\u0440",
-    "zh-cn": "\u5E8F\u5217\u53F7",
+    "zh-cn": "\u5E8F\u5217\u53F7"
   },
   "device.type": {
     en: "Device type",
@@ -936,7 +934,7 @@ const VARIABLE_I18N = {
     es: "Tipo de dispositivo",
     pl: "Typ urz\u0105dzenia",
     uk: "\u0422\u0438\u043F \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u044E",
-    "zh-cn": "\u8BBE\u5907\u7C7B\u578B",
+    "zh-cn": "\u8BBE\u5907\u7C7B\u578B"
   },
   // ── driver ──
   "driver.name": {
@@ -950,7 +948,7 @@ const VARIABLE_I18N = {
     es: "Nombre del controlador",
     pl: "Nazwa sterownika",
     uk: "\u0406\u043C'\u044F \u0434\u0440\u0430\u0439\u0432\u0435\u0440\u0430",
-    "zh-cn": "\u9A71\u52A8\u540D\u79F0",
+    "zh-cn": "\u9A71\u52A8\u540D\u79F0"
   },
   "driver.version": {
     en: "Driver version",
@@ -963,7 +961,7 @@ const VARIABLE_I18N = {
     es: "Versi\xF3n del controlador",
     pl: "Wersja sterownika",
     uk: "\u0412\u0435\u0440\u0441\u0456\u044F \u0434\u0440\u0430\u0439\u0432\u0435\u0440\u0430",
-    "zh-cn": "\u9A71\u52A8\u7248\u672C",
+    "zh-cn": "\u9A71\u52A8\u7248\u672C"
   },
   "driver.version.data": {
     en: "Driver data version",
@@ -976,7 +974,7 @@ const VARIABLE_I18N = {
     es: "Versi\xF3n de datos del controlador",
     pl: "Wersja danych sterownika",
     uk: "\u0412\u0435\u0440\u0441\u0456\u044F \u0434\u0430\u043D\u0438\u0445 \u0434\u0440\u0430\u0439\u0432\u0435\u0440\u0430",
-    "zh-cn": "\u9A71\u52A8\u6570\u636E\u7248\u672C",
+    "zh-cn": "\u9A71\u52A8\u6570\u636E\u7248\u672C"
   },
   "driver.version.internal": {
     en: "Driver internal version",
@@ -989,7 +987,7 @@ const VARIABLE_I18N = {
     es: "Versi\xF3n interna del controlador",
     pl: "Wewn\u0119trzna wersja sterownika",
     uk: "\u0412\u043D\u0443\u0442\u0440\u0456\u0448\u043D\u044F \u0432\u0435\u0440\u0441\u0456\u044F \u0434\u0440\u0430\u0439\u0432\u0435\u0440\u0430",
-    "zh-cn": "\u9A71\u52A8\u5185\u90E8\u7248\u672C",
+    "zh-cn": "\u9A71\u52A8\u5185\u90E8\u7248\u672C"
   },
   "driver.parameter.pollfreq": {
     en: "Poll frequency",
@@ -1002,7 +1000,7 @@ const VARIABLE_I18N = {
     es: "Frecuencia de consulta",
     pl: "Cz\u0119stotliwo\u015B\u0107 odpytywania",
     uk: "\u0427\u0430\u0441\u0442\u043E\u0442\u0430 \u043E\u043F\u0438\u0442\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u8F6E\u8BE2\u9891\u7387",
+    "zh-cn": "\u8F6E\u8BE2\u9891\u7387"
   },
   "driver.parameter.pollinterval": {
     en: "Poll interval",
@@ -1015,7 +1013,7 @@ const VARIABLE_I18N = {
     es: "Intervalo de consulta",
     pl: "Interwa\u0142 odpytywania",
     uk: "\u0406\u043D\u0442\u0435\u0440\u0432\u0430\u043B \u043E\u043F\u0438\u0442\u0443\u0432\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u8F6E\u8BE2\u95F4\u9694",
+    "zh-cn": "\u8F6E\u8BE2\u95F4\u9694"
   },
   // ── input ──
   "input.voltage": {
@@ -1029,7 +1027,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de entrada",
     pl: "Napi\u0119cie wej\u015Bciowe",
     uk: "\u0412\u0445\u0456\u0434\u043D\u0430 \u043D\u0430\u043F\u0440\u0443\u0433\u0430",
-    "zh-cn": "\u8F93\u5165\u7535\u538B",
+    "zh-cn": "\u8F93\u5165\u7535\u538B"
   },
   "input.frequency": {
     en: "Input frequency",
@@ -1042,7 +1040,7 @@ const VARIABLE_I18N = {
     es: "Frecuencia de entrada",
     pl: "Cz\u0119stotliwo\u015B\u0107 wej\u015Bciowa",
     uk: "\u0412\u0445\u0456\u0434\u043D\u0430 \u0447\u0430\u0441\u0442\u043E\u0442\u0430",
-    "zh-cn": "\u8F93\u5165\u9891\u7387",
+    "zh-cn": "\u8F93\u5165\u9891\u7387"
   },
   "input.transfer.high": {
     en: "High transfer voltage",
@@ -1055,7 +1053,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de transferencia alto",
     pl: "G\xF3rne napi\u0119cie prze\u0142\u0105czania",
     uk: "\u0412\u0435\u0440\u0445\u043D\u044F \u043D\u0430\u043F\u0440\u0443\u0433\u0430 \u043F\u0435\u0440\u0435\u043C\u0438\u043A\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u9AD8\u8F6C\u6362\u7535\u538B",
+    "zh-cn": "\u9AD8\u8F6C\u6362\u7535\u538B"
   },
   "input.transfer.low": {
     en: "Low transfer voltage",
@@ -1068,7 +1066,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de transferencia bajo",
     pl: "Dolne napi\u0119cie prze\u0142\u0105czania",
     uk: "\u041D\u0438\u0436\u043D\u044F \u043D\u0430\u043F\u0440\u0443\u0433\u0430 \u043F\u0435\u0440\u0435\u043C\u0438\u043A\u0430\u043D\u043D\u044F",
-    "zh-cn": "\u4F4E\u8F6C\u6362\u7535\u538B",
+    "zh-cn": "\u4F4E\u8F6C\u6362\u7535\u538B"
   },
   "input.voltage.extended": {
     en: "Extended voltage range",
@@ -1081,7 +1079,7 @@ const VARIABLE_I18N = {
     es: "Rango de voltaje extendido",
     pl: "Rozszerzony zakres napi\u0119cia",
     uk: "\u0420\u043E\u0437\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u0456\u0430\u043F\u0430\u0437\u043E\u043D \u043D\u0430\u043F\u0440\u0443\u0433\u0438",
-    "zh-cn": "\u6269\u5C55\u7535\u538B\u8303\u56F4",
+    "zh-cn": "\u6269\u5C55\u7535\u538B\u8303\u56F4"
   },
   // ── output ──
   "output.voltage": {
@@ -1095,7 +1093,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de salida",
     pl: "Napi\u0119cie wyj\u015Bciowe",
     uk: "\u0412\u0438\u0445\u0456\u0434\u043D\u0430 \u043D\u0430\u043F\u0440\u0443\u0433\u0430",
-    "zh-cn": "\u8F93\u51FA\u7535\u538B",
+    "zh-cn": "\u8F93\u51FA\u7535\u538B"
   },
   "output.frequency": {
     en: "Output frequency",
@@ -1108,7 +1106,7 @@ const VARIABLE_I18N = {
     es: "Frecuencia de salida",
     pl: "Cz\u0119stotliwo\u015B\u0107 wyj\u015Bciowa",
     uk: "\u0412\u0438\u0445\u0456\u0434\u043D\u0430 \u0447\u0430\u0441\u0442\u043E\u0442\u0430",
-    "zh-cn": "\u8F93\u51FA\u9891\u7387",
+    "zh-cn": "\u8F93\u51FA\u9891\u7387"
   },
   "output.voltage.nominal": {
     en: "Nominal output voltage",
@@ -1121,7 +1119,7 @@ const VARIABLE_I18N = {
     es: "Voltaje de salida nominal",
     pl: "Nominalne napi\u0119cie wyj\u015Bciowe",
     uk: "\u041D\u043E\u043C\u0456\u043D\u0430\u043B\u044C\u043D\u0430 \u0432\u0438\u0445\u0456\u0434\u043D\u0430 \u043D\u0430\u043F\u0440\u0443\u0433\u0430",
-    "zh-cn": "\u989D\u5B9A\u8F93\u51FA\u7535\u538B",
+    "zh-cn": "\u989D\u5B9A\u8F93\u51FA\u7535\u538B"
   },
   "output.frequency.nominal": {
     en: "Nominal output frequency",
@@ -1134,7 +1132,7 @@ const VARIABLE_I18N = {
     es: "Frecuencia de salida nominal",
     pl: "Nominalna cz\u0119stotliwo\u015B\u0107 wyj\u015Bciowa",
     uk: "\u041D\u043E\u043C\u0456\u043D\u0430\u043B\u044C\u043D\u0430 \u0432\u0438\u0445\u0456\u0434\u043D\u0430 \u0447\u0430\u0441\u0442\u043E\u0442\u0430",
-    "zh-cn": "\u989D\u5B9A\u8F93\u51FA\u9891\u7387",
+    "zh-cn": "\u989D\u5B9A\u8F93\u51FA\u9891\u7387"
   },
   "output.current": {
     en: "Output current",
@@ -1147,7 +1145,7 @@ const VARIABLE_I18N = {
     es: "Corriente de salida",
     pl: "Pr\u0105d wyj\u015Bciowy",
     uk: "\u0412\u0438\u0445\u0456\u0434\u043D\u0438\u0439 \u0441\u0442\u0440\u0443\u043C",
-    "zh-cn": "\u8F93\u51FA\u7535\u6D41",
+    "zh-cn": "\u8F93\u51FA\u7535\u6D41"
   },
   // ── ups ──
   "ups.status": {
@@ -1161,7 +1159,7 @@ const VARIABLE_I18N = {
     es: "Estado del SAI",
     pl: "Stan UPS",
     uk: "\u0421\u0442\u0430\u043D \u0414\u0411\u0416",
-    "zh-cn": "UPS\u72B6\u6001",
+    "zh-cn": "UPS\u72B6\u6001"
   },
   "ups.load": {
     en: "Load",
@@ -1174,7 +1172,7 @@ const VARIABLE_I18N = {
     es: "Carga",
     pl: "Obci\u0105\u017Cenie",
     uk: "\u041D\u0430\u0432\u0430\u043D\u0442\u0430\u0436\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u8D1F\u8F7D",
+    "zh-cn": "\u8D1F\u8F7D"
   },
   "ups.power": {
     en: "Apparent power",
@@ -1187,7 +1185,7 @@ const VARIABLE_I18N = {
     es: "Potencia aparente",
     pl: "Moc pozorna",
     uk: "\u041F\u043E\u0432\u043D\u0430 \u043F\u043E\u0442\u0443\u0436\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u89C6\u5728\u529F\u7387",
+    "zh-cn": "\u89C6\u5728\u529F\u7387"
   },
   "ups.realpower": {
     en: "Real power",
@@ -1200,7 +1198,7 @@ const VARIABLE_I18N = {
     es: "Potencia real",
     pl: "Moc czynna",
     uk: "\u0420\u0435\u0430\u043B\u044C\u043D\u0430 \u043F\u043E\u0442\u0443\u0436\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u6709\u529F\u529F\u7387",
+    "zh-cn": "\u6709\u529F\u529F\u7387"
   },
   "ups.power.nominal": {
     en: "Nominal power",
@@ -1213,7 +1211,7 @@ const VARIABLE_I18N = {
     es: "Potencia nominal",
     pl: "Moc nominalna",
     uk: "\u041D\u043E\u043C\u0456\u043D\u0430\u043B\u044C\u043D\u0430 \u043F\u043E\u0442\u0443\u0436\u043D\u0456\u0441\u0442\u044C",
-    "zh-cn": "\u989D\u5B9A\u529F\u7387",
+    "zh-cn": "\u989D\u5B9A\u529F\u7387"
   },
   "ups.temperature": {
     en: "UPS temperature",
@@ -1226,7 +1224,7 @@ const VARIABLE_I18N = {
     es: "Temperatura del SAI",
     pl: "Temperatura UPS",
     uk: "\u0422\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0414\u0411\u0416",
-    "zh-cn": "UPS\u6E29\u5EA6",
+    "zh-cn": "UPS\u6E29\u5EA6"
   },
   "ups.delay.shutdown": {
     en: "Shutdown delay",
@@ -1239,7 +1237,7 @@ const VARIABLE_I18N = {
     es: "Retardo de apagado",
     pl: "Op\xF3\u017Anienie wy\u0142\u0105czenia",
     uk: "\u0417\u0430\u0442\u0440\u0438\u043C\u043A\u0430 \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u5173\u673A\u5EF6\u8FDF",
+    "zh-cn": "\u5173\u673A\u5EF6\u8FDF"
   },
   "ups.delay.start": {
     en: "Start delay",
@@ -1252,7 +1250,7 @@ const VARIABLE_I18N = {
     es: "Retardo de inicio",
     pl: "Op\xF3\u017Anienie startu",
     uk: "\u0417\u0430\u0442\u0440\u0438\u043C\u043A\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0443",
-    "zh-cn": "\u542F\u52A8\u5EF6\u8FDF",
+    "zh-cn": "\u542F\u52A8\u5EF6\u8FDF"
   },
   "ups.timer.shutdown": {
     en: "Shutdown timer",
@@ -1265,7 +1263,7 @@ const VARIABLE_I18N = {
     es: "Temporizador de apagado",
     pl: "Timer wy\u0142\u0105czenia",
     uk: "\u0422\u0430\u0439\u043C\u0435\u0440 \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043D\u044F",
-    "zh-cn": "\u5173\u673A\u8BA1\u65F6\u5668",
+    "zh-cn": "\u5173\u673A\u8BA1\u65F6\u5668"
   },
   "ups.timer.start": {
     en: "Start timer",
@@ -1278,7 +1276,7 @@ const VARIABLE_I18N = {
     es: "Temporizador de inicio",
     pl: "Timer startu",
     uk: "\u0422\u0430\u0439\u043C\u0435\u0440 \u0437\u0430\u043F\u0443\u0441\u043A\u0443",
-    "zh-cn": "\u542F\u52A8\u8BA1\u65F6\u5668",
+    "zh-cn": "\u542F\u52A8\u8BA1\u65F6\u5668"
   },
   "ups.firmware": {
     en: "Firmware version",
@@ -1291,7 +1289,7 @@ const VARIABLE_I18N = {
     es: "Versi\xF3n de firmware",
     pl: "Wersja oprogramowania",
     uk: "\u0412\u0435\u0440\u0441\u0456\u044F \u043F\u0440\u043E\u0448\u0438\u0432\u043A\u0438",
-    "zh-cn": "\u56FA\u4EF6\u7248\u672C",
+    "zh-cn": "\u56FA\u4EF6\u7248\u672C"
   },
   "ups.beeper.status": {
     en: "Beeper status",
@@ -1304,7 +1302,7 @@ const VARIABLE_I18N = {
     es: "Estado del pitido",
     pl: "Stan brz\u0119czyka",
     uk: "\u0421\u0442\u0430\u043D \u0437\u0432\u0443\u043A\u043E\u0432\u043E\u0433\u043E \u0441\u0438\u0433\u043D\u0430\u043B\u0443",
-    "zh-cn": "\u8702\u9E23\u5668\u72B6\u6001",
+    "zh-cn": "\u8702\u9E23\u5668\u72B6\u6001"
   },
   "ups.mfr": {
     en: "UPS manufacturer",
@@ -1317,7 +1315,7 @@ const VARIABLE_I18N = {
     es: "Fabricante del SAI",
     pl: "Producent UPS",
     uk: "\u0412\u0438\u0440\u043E\u0431\u043D\u0438\u043A \u0414\u0411\u0416",
-    "zh-cn": "UPS\u5236\u9020\u5546",
+    "zh-cn": "UPS\u5236\u9020\u5546"
   },
   "ups.model": {
     en: "UPS model",
@@ -1330,7 +1328,7 @@ const VARIABLE_I18N = {
     es: "Modelo del SAI",
     pl: "Model UPS",
     uk: "\u041C\u043E\u0434\u0435\u043B\u044C \u0414\u0411\u0416",
-    "zh-cn": "UPS\u578B\u53F7",
+    "zh-cn": "UPS\u578B\u53F7"
   },
   "ups.serial": {
     en: "UPS serial number",
@@ -1343,7 +1341,7 @@ const VARIABLE_I18N = {
     es: "N\xFAmero de serie del SAI",
     pl: "Numer seryjny UPS",
     uk: "\u0421\u0435\u0440\u0456\u0439\u043D\u0438\u0439 \u043D\u043E\u043C\u0435\u0440 \u0414\u0411\u0416",
-    "zh-cn": "UPS\u5E8F\u5217\u53F7",
+    "zh-cn": "UPS\u5E8F\u5217\u53F7"
   },
   "ups.vendorid": {
     en: "Vendor ID",
@@ -1356,7 +1354,7 @@ const VARIABLE_I18N = {
     es: "ID del proveedor",
     pl: "ID dostawcy",
     uk: "ID \u043F\u043E\u0441\u0442\u0430\u0447\u0430\u043B\u044C\u043D\u0438\u043A\u0430",
-    "zh-cn": "\u4F9B\u5E94\u5546ID",
+    "zh-cn": "\u4F9B\u5E94\u5546ID"
   },
   "ups.productid": {
     en: "Product ID",
@@ -1369,7 +1367,7 @@ const VARIABLE_I18N = {
     es: "ID del producto",
     pl: "ID produktu",
     uk: "ID \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u0443",
-    "zh-cn": "\u4EA7\u54C1ID",
+    "zh-cn": "\u4EA7\u54C1ID"
   },
   // ── outlet ──
   "outlet.desc": {
@@ -1383,7 +1381,7 @@ const VARIABLE_I18N = {
     es: "Descripci\xF3n de la toma",
     pl: "Opis gniazdka",
     uk: "\u041E\u043F\u0438\u0441 \u0440\u043E\u0437\u0435\u0442\u043A\u0438",
-    "zh-cn": "\u63D2\u5EA7\u63CF\u8FF0",
+    "zh-cn": "\u63D2\u5EA7\u63CF\u8FF0"
   },
   "outlet.id": {
     en: "Outlet ID",
@@ -1396,7 +1394,7 @@ const VARIABLE_I18N = {
     es: "ID de la toma",
     pl: "ID gniazdka",
     uk: "ID \u0440\u043E\u0437\u0435\u0442\u043A\u0438",
-    "zh-cn": "\u63D2\u5EA7ID",
+    "zh-cn": "\u63D2\u5EA7ID"
   },
   "outlet.switchable": {
     en: "Switchable",
@@ -1409,7 +1407,7 @@ const VARIABLE_I18N = {
     es: "Conmutable",
     pl: "Prze\u0142\u0105czalny",
     uk: "\u041F\u0435\u0440\u0435\u043C\u0438\u043A\u0430\u0454\u0442\u044C\u0441\u044F",
-    "zh-cn": "\u53EF\u5207\u6362",
+    "zh-cn": "\u53EF\u5207\u6362"
   },
   "outlet.status": {
     en: "Outlet status",
@@ -1422,7 +1420,7 @@ const VARIABLE_I18N = {
     es: "Estado de la toma",
     pl: "Stan gniazdka",
     uk: "\u0421\u0442\u0430\u043D \u0440\u043E\u0437\u0435\u0442\u043A\u0438",
-    "zh-cn": "\u63D2\u5EA7\u72B6\u6001",
+    "zh-cn": "\u63D2\u5EA7\u72B6\u6001"
   },
   // ── ambient ──
   "ambient.temperature": {
@@ -1436,7 +1434,7 @@ const VARIABLE_I18N = {
     es: "Temperatura ambiente",
     pl: "Temperatura otoczenia",
     uk: "\u0422\u0435\u043C\u043F\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043E\u0432\u043A\u0456\u043B\u043B\u044F",
-    "zh-cn": "\u73AF\u5883\u6E29\u5EA6",
+    "zh-cn": "\u73AF\u5883\u6E29\u5EA6"
   },
   "ambient.humidity": {
     en: "Ambient humidity",
@@ -1449,17 +1447,16 @@ const VARIABLE_I18N = {
     es: "Humedad ambiente",
     pl: "Wilgotno\u015B\u0107 otoczenia",
     uk: "\u0412\u043E\u043B\u043E\u0433\u0456\u0441\u0442\u044C \u0434\u043E\u0432\u043A\u0456\u043B\u043B\u044F",
-    "zh-cn": "\u73AF\u5883\u6E7F\u5EA6",
-  },
+    "zh-cn": "\u73AF\u5883\u6E7F\u5EA6"
+  }
 };
 // Annotate the CommonJS export names for ESM import in node:
-0 &&
-  (module.exports = {
-    CHANNEL_I18N,
-    COMMAND_I18N,
-    FLAG_I18N,
-    STATE_NAMES,
-    VARIABLE_I18N,
-    tName,
-  });
+0 && (module.exports = {
+  CHANNEL_I18N,
+  COMMAND_I18N,
+  FLAG_I18N,
+  STATE_NAMES,
+  VARIABLE_I18N,
+  tName
+});
 //# sourceMappingURL=i18n-states.js.map

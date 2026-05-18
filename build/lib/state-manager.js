@@ -4,25 +4,23 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
+  if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
   }
   return to;
 };
-var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var state_manager_exports = {};
 __export(state_manager_exports, {
   StateManager: () => StateManager,
   nutVarToReadableName: () => nutVarToReadableName,
-  nutVarToStateId: () => nutVarToStateId,
+  nutVarToStateId: () => nutVarToStateId
 });
 module.exports = __toCommonJS(state_manager_exports);
 var import_i18n_states = require("./i18n-states");
@@ -35,7 +33,7 @@ const STATUS_FLAG_ROLES = {
   onBattery: "indicator.alarm",
   forcedShutdown: "indicator.alarm",
   alarm: "indicator.alarm",
-  commLost: "indicator.alarm",
+  commLost: "indicator.alarm"
 };
 function nutVarToStateId(upsName, nutVarName) {
   const firstDot = nutVarName.indexOf(".");
@@ -49,7 +47,7 @@ function nutVarToStateId(upsName, nutVarName) {
 function nutVarToReadableName(nutVarName) {
   const firstDot = nutVarName.indexOf(".");
   const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
-  return leaf.replace(/\./g, " ").replace(/^./, c => c.toUpperCase());
+  return leaf.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 class StateManager {
   adapter;
@@ -72,10 +70,10 @@ class StateManager {
       common: {
         name: description,
         statusStates: {
-          onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
-        },
+          onlineId: `${this.adapter.namespace}.${upsName}.info.online`
+        }
       },
-      native: {},
+      native: {}
     });
     this.createdIds.add(upsName);
     await this.ensureChannel(upsName, "info");
@@ -84,14 +82,14 @@ class StateManager {
       role: "indicator.reachable",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("upsOnline"),
+      name: (0, import_i18n_states.tName)("upsOnline")
     });
     await this.ensureState(`${upsName}.info.description`, {
       type: "string",
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("upsDescription"),
+      name: (0, import_i18n_states.tName)("upsDescription")
     });
     await this.adapter.setState(`${upsName}.info.description`, { val: description, ack: true });
   }
@@ -107,14 +105,8 @@ class StateManager {
     if (description && description !== "Description unavailable") {
       return;
     }
-    const mfr =
-      (_b = (_a = variables.find(v => v.name === "device.mfr")) == null ? void 0 : _a.value) == null
-        ? void 0
-        : _b.trim();
-    const model =
-      (_d = (_c = variables.find(v => v.name === "device.model")) == null ? void 0 : _c.value) == null
-        ? void 0
-        : _d.trim();
+    const mfr = (_b = (_a = variables.find((v) => v.name === "device.mfr")) == null ? void 0 : _a.value) == null ? void 0 : _b.trim();
+    const model = (_d = (_c = variables.find((v) => v.name === "device.model")) == null ? void 0 : _c.value) == null ? void 0 : _d.trim();
     if (mfr || model) {
       const name = [mfr, model].filter(Boolean).join(" ");
       await this.adapter.extendObjectAsync(upsName, { common: { name } });
@@ -133,7 +125,7 @@ class StateManager {
     await this.ensureObject(id, {
       type: "channel",
       common: { name },
-      native: {},
+      native: {}
     });
   }
   /**
@@ -160,8 +152,7 @@ class StateManager {
       const stateId = nutVarToStateId(upsName, v.name);
       const states = (0, import_type_detector.detectStates)(v.name);
       const genericName = v.name.replace(/\.\d+\./, ".");
-      const i18nName =
-        (_a = import_i18n_states.VARIABLE_I18N[v.name]) != null ? _a : import_i18n_states.VARIABLE_I18N[genericName];
+      const i18nName = (_a = import_i18n_states.VARIABLE_I18N[v.name]) != null ? _a : import_i18n_states.VARIABLE_I18N[genericName];
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
@@ -169,7 +160,7 @@ class StateManager {
         read: detected.read,
         write: detected.write,
         name: i18nName != null ? i18nName : nutVarToReadableName(v.name),
-        states,
+        states
       });
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
     }
@@ -189,7 +180,7 @@ class StateManager {
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusRaw"),
+      name: (0, import_i18n_states.tName)("statusRaw")
     });
     await this.adapter.setState(`${upsName}.status.raw`, { val: result.raw, ack: true });
     await this.ensureState(`${upsName}.status.severity`, {
@@ -197,7 +188,7 @@ class StateManager {
       role: "value",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusSeverity"),
+      name: (0, import_i18n_states.tName)("statusSeverity")
     });
     await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
     await this.ensureState(`${upsName}.status.display`, {
@@ -205,11 +196,11 @@ class StateManager {
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusDisplay"),
+      name: (0, import_i18n_states.tName)("statusDisplay")
     });
     await this.adapter.setState(`${upsName}.status.display`, {
       val: (0, import_status_parser.getDisplayString)(rawStatus),
-      ack: true,
+      ack: true
     });
     for (const flagKey of import_status_parser.ALL_FLAG_KEYS) {
       const stateId = `${upsName}.status.${flagKey}`;
@@ -219,7 +210,7 @@ class StateManager {
         role: (_a = STATUS_FLAG_ROLES[flagKey]) != null ? _a : "indicator",
         read: true,
         write: false,
-        name: flagI18nKey ? (0, import_i18n_states.tName)(flagI18nKey) : flagKey,
+        name: flagI18nKey ? (0, import_i18n_states.tName)(flagI18nKey) : flagKey
       });
       await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
     }
@@ -240,10 +231,8 @@ class StateManager {
         role: "button",
         read: false,
         write: true,
-        name: cmdI18nKey
-          ? (0, import_i18n_states.tName)(cmdI18nKey)
-          : cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
-        def: false,
+        name: cmdI18nKey ? (0, import_i18n_states.tName)(cmdI18nKey) : cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase()),
+        def: false
       });
     }
   }
@@ -328,7 +317,7 @@ class StateManager {
     await this.adapter.setObjectNotExistsAsync(id, {
       type: obj.type,
       common: obj.common,
-      native: obj.native,
+      native: obj.native
     });
     this.createdIds.add(id);
   }
@@ -339,7 +328,7 @@ class StateManager {
     await this.adapter.setObjectNotExistsAsync(id, {
       type: "state",
       common,
-      native: {},
+      native: {}
     });
     this.createdIds.add(id);
   }
@@ -370,10 +359,9 @@ class StateManager {
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 &&
-  (module.exports = {
-    StateManager,
-    nutVarToReadableName,
-    nutVarToStateId,
-  });
+0 && (module.exports = {
+  StateManager,
+  nutVarToReadableName,
+  nutVarToStateId
+});
 //# sourceMappingURL=state-manager.js.map

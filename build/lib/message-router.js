@@ -4,24 +4,22 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
+  if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
   }
   return to;
 };
-var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var message_router_exports = {};
 __export(message_router_exports, {
   dispatchMessage: () => dispatchMessage,
-  makeTestClientFactory: () => makeTestClientFactory,
+  makeTestClientFactory: () => makeTestClientFactory
 });
 module.exports = __toCommonJS(message_router_exports);
 var import_coerce = require("./coerce");
@@ -30,9 +28,7 @@ function makeTestClientFactory(NutClientClass, logger) {
 }
 async function dispatchMessage(obj, deps) {
   var _a, _b;
-  deps.log.debug(
-    `onMessage: command='${obj == null ? void 0 : obj.command}' from='${obj == null ? void 0 : obj.from}' has-callback=${!!(obj == null ? void 0 : obj.callback)}`,
-  );
+  deps.log.debug(`onMessage: command='${obj == null ? void 0 : obj.command}' from='${obj == null ? void 0 : obj.from}' has-callback=${!!(obj == null ? void 0 : obj.callback)}`);
   if (!obj.callback) {
     return;
   }
@@ -55,7 +51,7 @@ async function dispatchMessage(obj, deps) {
         try {
           await testClient.connect();
           const upsList = await testClient.listUps();
-          const names = upsList.map(u => u.name).join(", ");
+          const names = upsList.map((u) => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
           if (username && password) {
             await testClient.authenticate(username, password);
@@ -66,14 +62,14 @@ async function dispatchMessage(obj, deps) {
               obj.from,
               obj.command,
               { success: true, message: `Connected and authenticated \u2014 ${upsList.length} UPS(es): ${names}` },
-              obj.callback,
+              obj.callback
             );
           } else {
             deps.sendTo(
               obj.from,
               obj.command,
               { success: true, message: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
-              obj.callback,
+              obj.callback
             );
           }
         } finally {
@@ -92,9 +88,8 @@ async function dispatchMessage(obj, deps) {
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 &&
-  (module.exports = {
-    dispatchMessage,
-    makeTestClientFactory,
-  });
+0 && (module.exports = {
+  dispatchMessage,
+  makeTestClientFactory
+});
 //# sourceMappingURL=message-router.js.map

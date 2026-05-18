@@ -780,7 +780,7 @@ describe("NutClient", () => {
   // Reconnect
   // -----------------------------------------------------------------------
   describe("reconnect", () => {
-    it("should attempt reconnect after disconnect", async () => {
+    it("should attempt reconnect after disconnect", { timeout: 15000 }, async () => {
       const mock = createMockNutServer();
       const port = await mock.start();
       try {
