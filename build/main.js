@@ -110,7 +110,7 @@ class NutAdapter extends utils.Adapter {
         this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
       } catch (err) {
         this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
-        this.terminate(11);
+        this.log.info(`NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`);
         return;
       }
     }

@@ -29,6 +29,19 @@
                     "lg": 3,
                     "xl": 3
                 },
+                "pollInterval": {
+                    "type": "number",
+                    "label": "label_pollInterval",
+                    "help": "help_pollInterval",
+                    "min": 5,
+                    "max": 300,
+                    "default": 15,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
                 "networkInterface": {
                     "newLine": true,
                     "type": "ip",
@@ -43,21 +56,8 @@
                     "lg": 6,
                     "xl": 6
                 },
-                "pollInterval": {
-                    "newLine": true,
-                    "type": "number",
-                    "label": "label_pollInterval",
-                    "help": "help_pollInterval",
-                    "min": 5,
-                    "max": 300,
-                    "default": 15,
-                    "xs": 12,
-                    "sm": 12,
-                    "md": 6,
-                    "lg": 6,
-                    "xl": 6
-                },
                 "username": {
+                    "newLine": true,
                     "type": "text",
                     "label": "label_username",
                     "help": "help_username",
@@ -77,6 +77,7 @@
                     "xl": 6
                 },
                 "checkConnection": {
+                    "newLine": true,
                     "type": "sendTo",
                     "command": "checkConnection",
                     "jsonData": "{\"host\": \"${data.host}\", \"port\": ${data.port}, \"username\": \"${data.username}\", \"password\": \"${data.password}\"}",

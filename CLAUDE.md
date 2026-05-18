@@ -47,7 +47,7 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 7. **Network-Interface-Selector** — govee/hassemu-Pattern, wichtig für Multi-Homed-Server
 8. **Dot-Depth-Sortierung** — Variables nach Punkttiefe sortiert, damit Parent-States vor Children existieren (battery.charge vor battery.charge.low)
 9. **Dots→Dashes nach Channel** — `battery.charge.low` → stateId `ups0.battery.charge-low`. Erster Dot = Channel-Trenner, restliche Dots werden Dashes (kompatibel zum alten Apollon77-Adapter)
-10. **Auth-Failure = terminate** — bei konfiguriertem username+password und ACCESS-DENIED stoppt der Adapter (exit code 11) statt weiterzulaufen ohne Berechtigung
+10. **Auth-Failure = stay alive, yellow** — bei konfiguriertem username+password und ACCESS-DENIED bleibt der Adapter am Leben mit `info.connection = false` (gelb in Admin), startet kein Polling. sendTo-Button (Verbindung testen) funktioniert weiter — User kann Credentials korrigieren und testen bevor er speichert
 11. **Per-UPS info.online** — `indicator.reachable` Boolean mit `statusStates.onlineId` auf Device-Objekt (beszel-Pattern)
 12. **Legacy-Cleanup** — `cleanupLegacyObjects()` löscht Root-Level-Orphans (alter Adapter) und v0.1.0-Dot-Style-Objekte in einem Pass
 
