@@ -246,6 +246,10 @@ This adapter is free and open source. If you find it useful, consider buying me 
 
 ---
 
+*Developed with assistance from Claude.ai*
+
+---
+
 ## License
 
 MIT License
