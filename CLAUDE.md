@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.1.1 (9-Bug-Fix nach Live-Test, npm publish blockiert bis Apollon77-Transfer)
+- **Version:** 0.1.2 (Auth-Failure UX + Admin-Layout, npm publish blockiert bis Apollon77-Transfer)
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -75,6 +75,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights |
 |---------|------------|
+| 0.1.2 | **Auth-Failure UX** — Auth failure no longer terminates adapter, stays alive with yellow status (info.connection=false) so connection test button remains usable. Admin layout improved (host+port+poll on one row, credentials paired). |
 | 0.1.1 | **9-Bug-Fix** — Upgrade-Pfad (Legacy-Cleanup), Dots→Dashes in State-IDs, Auth-Failure→terminate, checkConnection testet Auth, per-UPS info.online, Commands nach Auth, readable State-Namen, Log-Reihenfolge, Admin-Layout. 254 unit + 57 package = 311 tests. |
 | 0.1.0 | **Initial release** — complete TypeScript rewrite. Multi-UPS support via LIST UPS, persistent TCP connection with reconnect, dynamic state creation with proper types/units, parsed ups.status flags as booleans + severity, instant commands (INSTCMD) and writable variables (SET VAR) with safety gates, network interface selector, connection test button, 11-language admin UI. |
 
