@@ -169,7 +169,7 @@ nut.0.
 ### **WORK IN PROGRESS**
 
 - Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
-- Fixed auth failure now fully disconnects from NUT server (no reconnect attempts, no log spam)
+- Fixed auth failure now fully disconnects from NUT server — no further connection attempts until adapter restart
 
 ### 0.1.2 (2026-05-18)
 
