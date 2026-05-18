@@ -166,7 +166,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.1 (2026-05-18)
 
 - Fixed upgrade path from previous adapter version (orphaned root-level objects are now cleaned up automatically)
 - Fixed NUT variable dots converted to dashes in state IDs (matching previous adapter behavior)
