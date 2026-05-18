@@ -3,7 +3,7 @@
     "name": "nut",
     "version": "0.1.0",
     "news": {
-      "NEXT": {
+      "0.1.0": {
         "en": "Initial release",
         "de": "Erstveröffentlichung",
         "ru": "Первый выпуск",
@@ -43,7 +43,9 @@
       "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
-    "authors": ["krobi <krobi@power-dreams.com>"],
+    "authors": [
+      "krobi <krobi@power-dreams.com>"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -76,10 +78,25 @@
       {
         "admin": ">=7.8.23"
       }
+    ],
+    "keywords": [
+      "ups",
+      "nut",
+      "network ups tools",
+      "uninterruptible power supply",
+      "usv",
+      "battery",
+      "power"
     ]
   },
-  "encryptedNative": ["username", "password"],
-  "protectedNative": ["username", "password"],
+  "encryptedNative": [
+    "username",
+    "password"
+  ],
+  "protectedNative": [
+    "username",
+    "password"
+  ],
   "native": {
     "host": "",
     "port": 3493,
