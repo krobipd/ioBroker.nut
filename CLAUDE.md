@@ -67,6 +67,12 @@ src/lib/message-router.test.ts  → onMessage-Dispatcher (12 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
 
+## Versionshistorie
+
+| Version | Highlights |
+|---------|------------|
+| 0.1.0 | **Initial release** — complete TypeScript rewrite. Multi-UPS support via LIST UPS, persistent TCP connection with reconnect, dynamic state creation with proper types/units, parsed ups.status flags as booleans + severity, instant commands (INSTCMD) and writable variables (SET VAR) with safety gates, network interface selector, connection test button, 11-language admin UI. 236 unit + 57 package = 293 tests. |
+
 ## Befehle
 
 ```bash

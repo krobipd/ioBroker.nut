@@ -17,7 +17,7 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      # @types/node must track engines.node (>=22). Block major bumps so
+      # @types/node must track engines.node (>=20). Block major bumps so
       # type defs cannot drift ahead of the supported runtime range.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
