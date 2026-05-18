@@ -28,6 +28,7 @@ export const STATUS_FLAGS: Record<string, string> = {
   COMM: "commEstablished",
   NOCOMM: "commLost",
   TEST: "testing",
+  HE: "highEfficiency",
 };
 
 /** All known flag keys for creating default-false states. */
@@ -61,6 +62,42 @@ export function parseStatus(rawStatus: string): StatusResult {
   const severity = computeSeverity(activeTokens);
 
   return { raw: rawStatus, flags, severity };
+}
+
+const DISPLAY_LABELS: Record<string, string> = {
+  OL: "Online",
+  OB: "On Battery",
+  LB: "Low Battery",
+  HB: "High Battery",
+  RB: "Replace Battery",
+  CHRG: "Charging",
+  DISCHRG: "Discharging",
+  BYPASS: "Bypass",
+  CAL: "Calibrating",
+  OFF: "Offline",
+  OVER: "Overloaded",
+  TRIM: "Trimming",
+  BOOST: "Boosting",
+  FSD: "Forced Shutdown",
+  ALARM: "Alarm",
+  COMM: "Communication OK",
+  NOCOMM: "Communication Lost",
+  TEST: "Testing",
+  HE: "High Efficiency",
+};
+
+/**
+ * Convert raw ups.status to human-readable display string.
+ *
+ * @param rawStatus Raw ups.status value (e.g. "OL CHRG")
+ */
+export function getDisplayString(rawStatus: string): string {
+  return rawStatus
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length > 0)
+    .map(t => DISPLAY_LABELS[t] ?? t)
+    .join(", ");
 }
 
 function computeSeverity(tokens: Set<string>): number {

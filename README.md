@@ -43,24 +43,24 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 
 ### Connection
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| **NUT Server Host** | Hostname or IP address of the NUT server | — |
-| **Port** | NUT server port | `3493` |
-| **Network Interface** | Bind outgoing connections to a specific local IP (optional) | all |
-| **Poll Interval (s)** | How often to query the NUT server (5–300) | `15` |
-| **Username** | NUT username (optional — required for commands and writable variables) | — |
-| **Password** | NUT password | — |
+| Option                | Description                                                            | Default |
+| --------------------- | ---------------------------------------------------------------------- | ------- |
+| **NUT Server Host**   | Hostname or IP address of the NUT server                               | —       |
+| **Port**              | NUT server port                                                        | `3493`  |
+| **Network Interface** | Bind outgoing connections to a specific local IP (optional)            | all     |
+| **Poll Interval (s)** | How often to query the NUT server (5–300)                              | `15`    |
+| **Username**          | NUT username (optional — required for commands and writable variables) | —       |
+| **Password**          | NUT password                                                           | —       |
 
 Use the **Test Connection** button to verify the server is reachable and see discovered UPS devices.
 
 ### Advanced
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| **Command Timeout (s)** | Timeout for individual NUT protocol commands (1–30) | `5` |
-| **Enable Commands** | Allow sending instant commands (INSTCMD) to the UPS | off |
-| **Enable SET VAR** | Allow changing writable UPS variables | off |
+| Option                  | Description                                         | Default |
+| ----------------------- | --------------------------------------------------- | ------- |
+| **Command Timeout (s)** | Timeout for individual NUT protocol commands (1–30) | `5`     |
+| **Enable Commands**     | Allow sending instant commands (INSTCMD) to the UPS | off     |
+| **Enable SET VAR**      | Allow changing writable UPS variables               | off     |
 
 Both command features require a NUT user with appropriate permissions configured on the NUT server.
 
@@ -75,7 +75,7 @@ nut.0.
 ├── info.connection                    — Connection to NUT server (bool)
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
-    │   ├── name                       — UPS identifier
+    │   ├── online                     — UPS reachable (bool)
     │   └── description                — UPS description from server
     ├── battery/
     │   ├── battery.charge             — Battery level (%, number)
@@ -108,6 +108,7 @@ nut.0.
     │   └── ...
     ├── status/                        — Parsed status flags
     │   ├── raw                        — Original status string
+    │   ├── display                    — Human-readable status (e.g. "Online, Charging")
     │   ├── severity                   — 0=OK, 1=Info, 2=Warning, 3=Critical, 4=Emergency
     │   ├── online                     — On line power (bool)
     │   ├── onBattery                  — Running on battery (bool)
@@ -118,7 +119,8 @@ nut.0.
     │   ├── overloaded                 — UPS is overloaded (bool)
     │   ├── forcedShutdown             — Forced shutdown in progress (bool)
     │   ├── alarm                      — Alarm active (bool)
-    │   └── ...                        — (18 flags total)
+    │   ├── highEfficiency             — ECO / high efficiency mode (bool)
+    │   └── ...                        — (19 flags total)
     └── commands/                      — Instant commands (if enabled)
         ├── beeper.enable              — Button: enable beeper
         ├── beeper.disable             — Button: disable beeper
@@ -128,33 +130,37 @@ nut.0.
 
 ### Status Severity Levels
 
-| Level | Meaning | Typical Flags |
-|-------|---------|---------------|
-| 0 | OK | OL, OL CHRG, OL HB |
-| 1 | Info | TRIM, BOOST, CAL |
-| 2 | Warning | OB (without LB), RB, BYPASS |
-| 3 | Critical | OB + LB |
-| 4 | Emergency | FSD |
+| Level | Meaning   | Typical Flags               |
+| ----- | --------- | --------------------------- |
+| 0     | OK        | OL, OL CHRG, OL HB          |
+| 1     | Info      | TRIM, BOOST, CAL            |
+| 2     | Warning   | OB (without LB), RB, BYPASS |
+| 3     | Critical  | OB + LB                     |
+| 4     | Emergency | FSD                         |
 
 ---
 
 ## Troubleshooting
 
 ### Connection failed
+
 - Verify the NUT server is reachable from the ioBroker host: `nc -zv <host> 3493`
 - Check firewall rules for TCP port 3493
 - Use the Test Connection button in the admin UI
 
 ### Commands not working
+
 - Ensure **Enable Commands** is checked in the Advanced tab
 - A NUT username and password with `instcmds` permission must be configured
 - Check the NUT server's `upsd.users` configuration
 
 ### Writable variables not working
+
 - Ensure **Enable SET VAR** is checked in the Advanced tab
 - The NUT user needs `actions = SET` permission on the NUT server
 
 ### States not updating
+
 - Check `info.connection` — if `false`, the TCP connection is down
 - Check the ioBroker log for NUT error codes (e.g. `DATA-STALE` means the UPS driver lost contact)
 - Verify the poll interval is appropriate for your setup
@@ -162,10 +168,26 @@ nut.0.
 ---
 
 ## Changelog
+
 <!--
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
+- Fixed `input.voltage.extended` incorrectly tagged with unit "V" — now correctly detected as string
+- Fixed missing unit "%" for humidity and percent-suffix variables
+- Added human-readable status display (e.g. "Online, Charging" instead of "OL CHRG")
+- Added HE (High Efficiency / ECO mode) status flag recognition
+- Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
+- Added `common.states` for known enum variables (battery.charger.status, ups.beeper.status, outlet switches)
+- Device name now shows manufacturer + model when NUT server description is unavailable
+- Specific ioBroker roles for status flags (indicator.lowbat, indicator.alarm, indicator.maintenance)
+- Specific ioBroker roles for variable types (value.voltage, value.current, value.power, value.temperature, value.interval)
+- State names, status flags, and command buttons translated to 11 languages
+
 ### 0.1.3 (2026-05-18)
 
 - Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
@@ -251,4 +273,4 @@ SOFTWARE.
 
 ---
 
-*Developed with assistance from Claude.ai*
+_Developed with assistance from Claude.ai_

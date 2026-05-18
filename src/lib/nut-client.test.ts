@@ -21,12 +21,7 @@ function createMockNutServer(handler?: MockHandler): {
 
   const defaultHandler: MockHandler = (cmd: string): string | string[] | null => {
     if (cmd === "LIST UPS") {
-      return [
-        'BEGIN LIST UPS',
-        'UPS ups0 "Main UPS"',
-        'UPS ups1 "Backup UPS"',
-        'END LIST UPS',
-      ];
+      return ["BEGIN LIST UPS", 'UPS ups0 "Main UPS"', 'UPS ups1 "Backup UPS"', "END LIST UPS"];
     }
     if (cmd.startsWith("LIST VAR ")) {
       const ups = cmd.split(" ")[2];
@@ -40,20 +35,11 @@ function createMockNutServer(handler?: MockHandler): {
     }
     if (cmd.startsWith("LIST RW ")) {
       const ups = cmd.split(" ")[2];
-      return [
-        `BEGIN LIST RW ${ups}`,
-        `RW ${ups} ups.delay.shutdown "20"`,
-        `END LIST RW ${ups}`,
-      ];
+      return [`BEGIN LIST RW ${ups}`, `RW ${ups} ups.delay.shutdown "20"`, `END LIST RW ${ups}`];
     }
     if (cmd.startsWith("LIST CMD ")) {
       const ups = cmd.split(" ")[2];
-      return [
-        `BEGIN LIST CMD ${ups}`,
-        `CMD ${ups} beeper.enable`,
-        `CMD ${ups} load.off`,
-        `END LIST CMD ${ups}`,
-      ];
+      return [`BEGIN LIST CMD ${ups}`, `CMD ${ups} beeper.enable`, `CMD ${ups} load.off`, `END LIST CMD ${ups}`];
     }
     if (cmd.startsWith("LIST ENUM ")) {
       const parts = cmd.split(" ");
@@ -99,7 +85,7 @@ function createMockNutServer(handler?: MockHandler): {
     return "ERR UNKNOWN-COMMAND";
   };
 
-  const server = net.createServer((socket) => {
+  const server = net.createServer(socket => {
     let buf = "";
     socket.setEncoding("utf8");
     socket.on("data", (data: string) => {
@@ -128,10 +114,12 @@ function createMockNutServer(handler?: MockHandler): {
 
   return {
     server,
-    get port() { return port; },
+    get port() {
+      return port;
+    },
     commands,
     start: () =>
-      new Promise<number>((resolve) => {
+      new Promise<number>(resolve => {
         server.listen(0, "127.0.0.1", () => {
           const addr = server.address() as net.AddressInfo;
           port = addr.port;
@@ -139,7 +127,7 @@ function createMockNutServer(handler?: MockHandler): {
         });
       }),
     stop: () =>
-      new Promise<void>((resolve) => {
+      new Promise<void>(resolve => {
         server.close(() => resolve());
       }),
   };
@@ -206,7 +194,7 @@ describe("NutClient", () => {
     });
 
     it("should handle empty UPS list", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd === "LIST UPS") {
           return ["BEGIN LIST UPS", "END LIST UPS"];
         }
@@ -225,13 +213,9 @@ describe("NutClient", () => {
     });
 
     it("should handle escaped quotes in UPS description", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd === "LIST UPS") {
-          return [
-            "BEGIN LIST UPS",
-            'UPS ups0 "Main \\"backup\\" UPS"',
-            "END LIST UPS",
-          ];
+          return ["BEGIN LIST UPS", 'UPS ups0 "Main \\"backup\\" UPS"', "END LIST UPS"];
         }
         return "ERR UNKNOWN-COMMAND";
       });
@@ -271,7 +255,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on unknown UPS", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd === "LIST VAR unknown") return "ERR UNKNOWN-UPS";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -383,7 +367,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on VAR-NOT-SUPPORTED", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) return "ERR VAR-NOT-SUPPORTED";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -432,7 +416,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on SET-FAILED", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("SET VAR")) return "ERR SET-FAILED";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -469,7 +453,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on INSTCMD-FAILED", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("INSTCMD")) return "ERR INSTCMD-FAILED";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -507,7 +491,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on INVALID-PASSWORD", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("USERNAME")) return "OK";
         if (cmd.startsWith("PASSWORD")) return "ERR INVALID-PASSWORD";
         return "ERR UNKNOWN-COMMAND";
@@ -526,7 +510,7 @@ describe("NutClient", () => {
     });
 
     it("should reject on INVALID-USERNAME", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("USERNAME")) return "ERR INVALID-USERNAME";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -563,7 +547,7 @@ describe("NutClient", () => {
     });
 
     it("should handle ALREADY-LOGGED-IN gracefully", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("LOGIN")) return "ERR ALREADY-LOGGED-IN";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -586,7 +570,7 @@ describe("NutClient", () => {
   // -----------------------------------------------------------------------
   describe("error handling", () => {
     it("should parse NUT error codes", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) return "ERR ACCESS-DENIED";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -608,7 +592,7 @@ describe("NutClient", () => {
     });
 
     it("should handle DATA-STALE error", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("LIST VAR")) return "ERR DATA-STALE";
         return "ERR UNKNOWN-COMMAND";
       });
@@ -674,11 +658,7 @@ describe("NutClient", () => {
         const client = new NutClient("127.0.0.1", port);
         await client.connect();
 
-        const [ups, vars, cmds] = await Promise.all([
-          client.listUps(),
-          client.listVar("ups0"),
-          client.listCmd("ups0"),
-        ]);
+        const [ups, vars, cmds] = await Promise.all([client.listUps(), client.listVar("ups0"), client.listCmd("ups0")]);
 
         expect(ups.length).toBe(2);
         expect(vars.length).toBe(3);
@@ -696,7 +676,7 @@ describe("NutClient", () => {
 
     it("should process next command after error", async () => {
       let callCount = 0;
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) {
           callCount++;
           if (callCount === 1) return "ERR VAR-NOT-SUPPORTED";
@@ -721,7 +701,7 @@ describe("NutClient", () => {
 
     it("should process next command after timeout", async () => {
       let firstCall = true;
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) {
           if (firstCall) {
             firstCall = false;
@@ -821,7 +801,7 @@ describe("NutClient", () => {
         mock.server.getConnections((_err, _count) => {});
 
         // Wait for reconnect
-        await new Promise<void>((resolve) => {
+        await new Promise<void>(resolve => {
           const check = setInterval(() => {
             if (reconnected) {
               clearInterval(check);
@@ -861,8 +841,8 @@ describe("NutClient", () => {
         await client.listUps();
         client.destroy();
 
-        expect(logs.some((l) => l.includes("Connected to NUT server"))).toBe(true);
-        expect(logs.some((l) => l.includes(">> LIST UPS"))).toBe(true);
+        expect(logs.some(l => l.includes("Connected to NUT server"))).toBe(true);
+        expect(logs.some(l => l.includes(">> LIST UPS"))).toBe(true);
       } finally {
         await mock.stop();
       }
@@ -874,7 +854,7 @@ describe("NutClient", () => {
   // -----------------------------------------------------------------------
   describe("multi-line parsing", () => {
     it("should handle large LIST VAR responses", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd === "LIST VAR bigups") {
           const lines = ["BEGIN LIST VAR bigups"];
           for (let i = 0; i < 100; i++) {
@@ -900,7 +880,7 @@ describe("NutClient", () => {
     });
 
     it("should handle chunked TCP data", async () => {
-      const server = net.createServer((socket) => {
+      const server = net.createServer(socket => {
         socket.setEncoding("utf8");
         let buf = "";
         socket.on("data", (data: string) => {
@@ -910,7 +890,7 @@ describe("NutClient", () => {
             // Send response in multiple chunks with delays
             socket.write("BEGIN LIST UPS\n");
             setTimeout(() => {
-              socket.write('UPS ups');
+              socket.write("UPS ups");
               setTimeout(() => {
                 socket.write('0 "Test UPS"\n');
                 setTimeout(() => {
@@ -922,7 +902,7 @@ describe("NutClient", () => {
         });
       });
 
-      const port = await new Promise<number>((resolve) => {
+      const port = await new Promise<number>(resolve => {
         server.listen(0, "127.0.0.1", () => {
           resolve((server.address() as net.AddressInfo).port);
         });
@@ -935,12 +915,12 @@ describe("NutClient", () => {
         expect(ups).toEqual([{ name: "ups0", description: "Test UPS" }]);
         client.destroy();
       } finally {
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        await new Promise<void>(resolve => server.close(() => resolve()));
       }
     });
 
     it("should handle values with escaped backslashes", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) {
           return 'VAR ups0 test.var "path\\\\to\\\\file"';
         }
@@ -972,11 +952,7 @@ describe("NutClient", () => {
         await client.authenticate("admin", "secret");
         await client.login("ups0");
 
-        expect(mock.commands).toEqual([
-          "USERNAME admin",
-          "PASSWORD secret",
-          "LOGIN ups0",
-        ]);
+        expect(mock.commands).toEqual(["USERNAME admin", "PASSWORD secret", "LOGIN ups0"]);
         client.destroy();
       } finally {
         await mock.stop();
@@ -984,7 +960,7 @@ describe("NutClient", () => {
     });
 
     it("should reject login without prior auth", async () => {
-      const mock = createMockNutServer((cmd) => {
+      const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("LOGIN")) return "ERR USERNAME-REQUIRED";
         return "OK";
       });

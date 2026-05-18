@@ -2,7 +2,7 @@ import * as utils from "@iobroker/adapter-core";
 import { coerceCommandTimeoutMs, coerceHost, coercePollIntervalSec, coercePort, errText } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
-import { StateManager } from "./lib/state-manager";
+import { nutVarToStateId, StateManager } from "./lib/state-manager";
 import type { AdapterConfig, UpsInfo } from "./lib/types";
 
 class NutAdapter extends utils.Adapter {
@@ -14,6 +14,7 @@ class NutAdapter extends utils.Adapter {
   private failedUps = new Set<string>();
   private discoveredUps = new Map<string, UpsInfo>();
   private authenticated = false;
+  private enrichedUps = new Set<string>();
   private testClients = new Set<NutClient>();
   private unhandledRejectionHandler: ((reason: unknown) => void) | null = null;
   private uncaughtExceptionHandler: ((err: Error) => void) | null = null;
@@ -171,6 +172,7 @@ class NutAdapter extends utils.Adapter {
         this.log.warn(`Re-authentication after reconnect failed: ${errText(err)}`);
       }
     }
+    this.enrichedUps.clear();
     await this.discover();
   }
 
@@ -221,9 +223,48 @@ class NutAdapter extends utils.Adapter {
           const rwNames = new Set(rwVars.map(v => v.name));
           await this.stateManager.updateVariables(upsName, variables, rwNames);
 
+          const upsDesc = this.discoveredUps.get(upsName);
+          await this.stateManager.updateDeviceName(upsName, upsDesc?.description ?? "", variables);
+
           const statusVar = variables.find(v => v.name === "ups.status");
           if (statusVar) {
             await this.stateManager.updateStatusFlags(upsName, statusVar.value);
+          }
+
+          if (!this.enrichedUps.has(upsName) && rwVars.length > 0) {
+            for (const rw of rwVars) {
+              const stateId = nutVarToStateId(upsName, rw.name);
+              try {
+                const enumVals = await this.client.listEnum(upsName, rw.name);
+                if (enumVals.length > 0) {
+                  const states: Record<string, string> = {};
+                  for (const v of enumVals) {
+                    states[v] = v;
+                  }
+                  await this.stateManager.enrichStateMetadata(stateId, { states });
+                }
+              } catch {
+                /* LIST ENUM not supported for this var */
+              }
+              try {
+                const ranges = await this.client.listRange(upsName, rw.name);
+                if (ranges.length > 0) {
+                  const min = parseFloat(ranges[0].min);
+                  const max = parseFloat(ranges[0].max);
+                  const patch: { min?: number; max?: number } = {};
+                  if (!Number.isNaN(min)) {
+                    patch.min = min;
+                  }
+                  if (!Number.isNaN(max)) {
+                    patch.max = max;
+                  }
+                  await this.stateManager.enrichStateMetadata(stateId, patch);
+                }
+              } catch {
+                /* LIST RANGE not supported for this var */
+              }
+            }
+            this.enrichedUps.add(upsName);
           }
 
           await this.setStateAsync(`${upsName}.info.online`, { val: true, ack: true });

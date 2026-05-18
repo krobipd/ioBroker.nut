@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.1.3",
     "news": {
+      "NEXT": {
+        "en": "Fixed vendorid/productid losing leading zeros, fixed voltage.extended unit. Human-readable status display. HE (ECO mode) flag. ENUM/RANGE metadata for writable variables. Device name fallback from manufacturer + model. Specific roles for status flags and variables. 11-language translations for state names, flags, and commands",
+        "de": "Korrektur vendorid/productid verlor führende Nullen, voltage.extended-Unit korrigiert. Menschenlesbarer Status-Display. HE (ECO-Modus) Flag. ENUM/RANGE-Metadaten für schreibbare Variablen. Gerätename-Fallback aus Hersteller + Modell. Spezifische Rollen für Status-Flags und Variablen. 11-Sprachen-Übersetzungen für State-Namen, Flags und Befehle",
+        "ru": "Исправлено: vendorid/productid теряли ведущие нули, исправлена единица voltage.extended. Человекочитаемый статус. Флаг HE (ЭКО-режим). Метаданные ENUM/RANGE для записываемых переменных. Имя устройства из производителя + модели. Специфические роли для флагов и переменных. Переводы на 11 языков",
+        "pt": "Corrigido vendorid/productid perdia zeros à esquerda, unidade voltage.extended corrigida. Exibição de status legível. Flag HE (modo ECO). Metadados ENUM/RANGE para variáveis graváveis. Nome do dispositivo do fabricante + modelo. Funções específicas para flags e variáveis. Traduções em 11 idiomas",
+        "nl": "Correctie vendorid/productid verloor voorloopnullen, voltage.extended-eenheid gecorrigeerd. Leesbare statusweergave. HE (ECO-modus) vlag. ENUM/RANGE-metadata voor schrijfbare variabelen. Apparaatnaam-fallback van fabrikant + model. Specifieke rollen voor statusvlaggen en variabelen. Vertalingen in 11 talen",
+        "fr": "Correction vendorid/productid perdait les zéros initiaux, unité voltage.extended corrigée. Affichage de statut lisible. Drapeau HE (mode ECO). Métadonnées ENUM/RANGE pour les variables modifiables. Nom d'appareil du fabricant + modèle. Rôles spécifiques pour les drapeaux et variables. Traductions en 11 langues",
+        "it": "Corretto vendorid/productid perdeva gli zeri iniziali, unità voltage.extended corretta. Visualizzazione stato leggibile. Flag HE (modalità ECO). Metadati ENUM/RANGE per variabili scrivibili. Nome dispositivo da produttore + modello. Ruoli specifici per flag e variabili. Traduzioni in 11 lingue",
+        "es": "Corregido vendorid/productid perdía ceros iniciales, unidad voltage.extended corregida. Visualización de estado legible. Flag HE (modo ECO). Metadatos ENUM/RANGE para variables escribibles. Nombre del dispositivo del fabricante + modelo. Roles específicos para flags y variables. Traducciones en 11 idiomas",
+        "pl": "Poprawiono vendorid/productid tracił wiodące zera, poprawiono jednostkę voltage.extended. Czytelny wyświetlacz statusu. Flaga HE (tryb ECO). Metadane ENUM/RANGE dla zmiennych zapisywalnych. Nazwa urządzenia z producenta + modelu. Specyficzne role dla flag i zmiennych. Tłumaczenia na 11 języków",
+        "uk": "Виправлено vendorid/productid втрачав початкові нулі, виправлено одиницю voltage.extended. Зрозуміле відображення статусу. Прапор HE (режим ECO). Метадані ENUM/RANGE для записуваних змінних. Ім'я пристрою з виробника + моделі. Специфічні ролі для прапорів і змінних. Переклади на 11 мов",
+        "zh-cn": "修复vendorid/productid丢失前导零，修复voltage.extended单位。可读状态显示。HE（ECO模式）标志。可写变量的ENUM/RANGE元数据。设备名称回退到制造商+型号。状态标志和变量的特定角色。状态名称、标志和命令的11种语言翻译"
+      },
       "0.1.3": {
         "en": "Connection test now verifies LOGIN per UPS (catches ACCESS-DENIED). Auth failure fully disconnects (no reconnect spam)",
         "de": "Verbindungstest prüft jetzt LOGIN pro USV (erkennt ACCESS-DENIED). Auth-Fehler trennt vollständig (kein Reconnect-Spam)",
@@ -82,10 +95,7 @@
       "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
-    "authors": [
-      "Apollon77 <ingo@fischer-ka.de>",
-      "krobi <krobi@power-dreams.com>"
-    ],
+    "authors": ["Apollon77 <ingo@fischer-ka.de>", "krobi <krobi@power-dreams.com>"],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -119,24 +129,10 @@
         "admin": ">=7.8.23"
       }
     ],
-    "keywords": [
-      "ups",
-      "nut",
-      "network ups tools",
-      "uninterruptible power supply",
-      "usv",
-      "battery",
-      "power"
-    ]
+    "keywords": ["ups", "nut", "network ups tools", "uninterruptible power supply", "usv", "battery", "power"]
   },
-  "encryptedNative": [
-    "username",
-    "password"
-  ],
-  "protectedNative": [
-    "username",
-    "password"
-  ],
+  "encryptedNative": ["username", "password"],
+  "protectedNative": ["username", "password"],
   "native": {
     "host": "",
     "port": 3493,

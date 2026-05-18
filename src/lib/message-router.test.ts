@@ -133,10 +133,7 @@ describe("dispatchMessage", () => {
   describe("checkConnection", () => {
     it("should return error for missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ command: "checkConnection", message: { host: "", port: 3493 } }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "", port: 3493 } }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect(h.sends[0].response).toEqual({ success: false, message: "Host is required" });
@@ -164,10 +161,7 @@ describe("dispatchMessage", () => {
 
     it("should use default port 3493 when port is not a number", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ command: "checkConnection", message: { host: "myhost" } }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "myhost" } }), h.deps);
 
       expect(h.createdClients).toEqual([{ host: "myhost", port: 3493 }]);
     });
@@ -223,11 +217,7 @@ describe("dispatchMessage", () => {
     });
 
     it("should return failure when auth fails", async () => {
-      const h = makeHarness(
-        [{ name: "ups0", description: "Eaton" }],
-        undefined,
-        new Error("ACCESS-DENIED"),
-      );
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, new Error("ACCESS-DENIED"));
       await dispatchMessage(
         buildMessage({
           command: "checkConnection",
@@ -243,12 +233,7 @@ describe("dispatchMessage", () => {
     });
 
     it("should return failure when login fails after successful auth", async () => {
-      const h = makeHarness(
-        [{ name: "ups0", description: "Eaton" }],
-        undefined,
-        undefined,
-        new Error("ACCESS-DENIED"),
-      );
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, undefined, new Error("ACCESS-DENIED"));
       await dispatchMessage(
         buildMessage({
           command: "checkConnection",
@@ -264,11 +249,7 @@ describe("dispatchMessage", () => {
     });
 
     it("should still call onTestClientDone when auth fails", async () => {
-      const h = makeHarness(
-        [{ name: "ups0", description: "Eaton" }],
-        undefined,
-        new Error("ACCESS-DENIED"),
-      );
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, new Error("ACCESS-DENIED"));
       await dispatchMessage(
         buildMessage({
           command: "checkConnection",
@@ -282,12 +263,7 @@ describe("dispatchMessage", () => {
     });
 
     it("should still call onTestClientDone when login fails", async () => {
-      const h = makeHarness(
-        [{ name: "ups0", description: "Eaton" }],
-        undefined,
-        undefined,
-        new Error("ACCESS-DENIED"),
-      );
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, undefined, new Error("ACCESS-DENIED"));
       await dispatchMessage(
         buildMessage({
           command: "checkConnection",
@@ -307,10 +283,7 @@ describe("dispatchMessage", () => {
   describe("obj.message coercion", () => {
     it("should treat null obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ message: null as unknown as ioBroker.Message["message"] }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ message: null as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect(h.sends[0].response).toEqual({ success: false, message: "Host is required" });
@@ -318,10 +291,7 @@ describe("dispatchMessage", () => {
 
     it("should treat string obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ message: "junk" as unknown as ioBroker.Message["message"] }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ message: "junk" as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect((h.sends[0].response as { success: boolean }).success).toBe(false);
@@ -329,10 +299,7 @@ describe("dispatchMessage", () => {
 
     it("should treat array obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ message: [] as unknown as ioBroker.Message["message"] }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ message: [] as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect((h.sends[0].response as { success: boolean }).success).toBe(false);
@@ -345,10 +312,7 @@ describe("dispatchMessage", () => {
   describe("test-client lifecycle hooks", () => {
     it("should call onTestClientCreated then onTestClientDone on success", async () => {
       const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
-      await dispatchMessage(
-        buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }), h.deps);
 
       expect(h.registered).toHaveLength(1);
       expect(h.completed).toHaveLength(1);
@@ -374,10 +338,7 @@ describe("dispatchMessage", () => {
         onTestClientCreated: c => registered.push(c),
         onTestClientDone: c => completed.push(c),
       };
-      await dispatchMessage(
-        buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
-        deps,
-      );
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }), deps);
 
       expect(registered).toHaveLength(1);
       expect(completed).toHaveLength(1);
@@ -388,10 +349,7 @@ describe("dispatchMessage", () => {
 
     it("should not register a test-client when host is missing", async () => {
       const h = makeHarness();
-      await dispatchMessage(
-        buildMessage({ command: "checkConnection", message: { host: "" } }),
-        h.deps,
-      );
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "" } }), h.deps);
 
       expect(h.registered).toHaveLength(0);
       expect(h.completed).toHaveLength(0);

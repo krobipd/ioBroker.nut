@@ -4,28 +4,39 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
+  if ((from && typeof from === "object") || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        });
   }
   return to;
 };
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var state_manager_exports = {};
 __export(state_manager_exports, {
   StateManager: () => StateManager,
   nutVarToReadableName: () => nutVarToReadableName,
-  nutVarToStateId: () => nutVarToStateId
+  nutVarToStateId: () => nutVarToStateId,
 });
 module.exports = __toCommonJS(state_manager_exports);
 var import_i18n_states = require("./i18n-states");
 var import_status_parser = require("./status-parser");
 var import_type_detector = require("./type-detector");
+const STATUS_FLAG_ROLES = {
+  lowBattery: "indicator.lowbat",
+  overloaded: "indicator.alarm",
+  replaceBattery: "indicator.maintenance",
+  onBattery: "indicator.alarm",
+  forcedShutdown: "indicator.alarm",
+  alarm: "indicator.alarm",
+  commLost: "indicator.alarm",
+};
 function nutVarToStateId(upsName, nutVarName) {
   const firstDot = nutVarName.indexOf(".");
   if (firstDot < 0) {
@@ -38,7 +49,7 @@ function nutVarToStateId(upsName, nutVarName) {
 function nutVarToReadableName(nutVarName) {
   const firstDot = nutVarName.indexOf(".");
   const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
-  return leaf.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase());
+  return leaf.replace(/\./g, " ").replace(/^./, c => c.toUpperCase());
 }
 class StateManager {
   adapter;
@@ -61,10 +72,10 @@ class StateManager {
       common: {
         name: description,
         statusStates: {
-          onlineId: `${this.adapter.namespace}.${upsName}.info.online`
-        }
+          onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
+        },
       },
-      native: {}
+      native: {},
     });
     this.createdIds.add(upsName);
     await this.ensureChannel(upsName, "info");
@@ -73,24 +84,41 @@ class StateManager {
       role: "indicator.reachable",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("upsOnline")
+      name: (0, import_i18n_states.tName)("upsOnline"),
     });
-    await this.ensureState(`${upsName}.info.name`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: (0, import_i18n_states.tName)("upsName")
-    });
-    await this.adapter.setState(`${upsName}.info.name`, { val: upsName, ack: true });
     await this.ensureState(`${upsName}.info.description`, {
       type: "string",
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("upsDescription")
+      name: (0, import_i18n_states.tName)("upsDescription"),
     });
     await this.adapter.setState(`${upsName}.info.description`, { val: description, ack: true });
+  }
+  /**
+   * Update device common.name from LIST VAR data when LIST UPS description is unusable.
+   *
+   * @param upsName UPS identifier
+   * @param description UPS description from LIST UPS
+   * @param variables Variables from LIST VAR
+   */
+  async updateDeviceName(upsName, description, variables) {
+    var _a, _b, _c, _d;
+    if (description && description !== "Description unavailable") {
+      return;
+    }
+    const mfr =
+      (_b = (_a = variables.find(v => v.name === "device.mfr")) == null ? void 0 : _a.value) == null
+        ? void 0
+        : _b.trim();
+    const model =
+      (_d = (_c = variables.find(v => v.name === "device.model")) == null ? void 0 : _c.value) == null
+        ? void 0
+        : _d.trim();
+    if (mfr || model) {
+      const name = [mfr, model].filter(Boolean).join(" ");
+      await this.adapter.extendObjectAsync(upsName, { common: { name } });
+    }
   }
   /**
    * Ensure a channel exists for a NUT domain (e.g. "battery", "ups").
@@ -105,7 +133,7 @@ class StateManager {
     await this.ensureObject(id, {
       type: "channel",
       common: { name },
-      native: {}
+      native: {},
     });
   }
   /**
@@ -118,6 +146,7 @@ class StateManager {
    * @param rwNames Set of writable variable names from LIST RW
    */
   async updateVariables(upsName, variables, rwNames) {
+    var _a;
     const sorted = [...variables].sort((a, b) => {
       const depthA = a.name.split(".").length;
       const depthB = b.name.split(".").length;
@@ -129,13 +158,18 @@ class StateManager {
       const isWritable = rwNames.has(v.name);
       const detected = (0, import_type_detector.detectType)(v.name, v.value, isWritable);
       const stateId = nutVarToStateId(upsName, v.name);
+      const states = (0, import_type_detector.detectStates)(v.name);
+      const genericName = v.name.replace(/\.\d+\./, ".");
+      const i18nName =
+        (_a = import_i18n_states.VARIABLE_I18N[v.name]) != null ? _a : import_i18n_states.VARIABLE_I18N[genericName];
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: nutVarToReadableName(v.name)
+        name: i18nName != null ? i18nName : nutVarToReadableName(v.name),
+        states,
       });
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
     }
@@ -147,6 +181,7 @@ class StateManager {
    * @param rawStatus Raw ups.status value
    */
   async updateStatusFlags(upsName, rawStatus) {
+    var _a;
     await this.ensureChannel(upsName, "status");
     const result = (0, import_status_parser.parseStatus)(rawStatus);
     await this.ensureState(`${upsName}.status.raw`, {
@@ -154,7 +189,7 @@ class StateManager {
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusRaw")
+      name: (0, import_i18n_states.tName)("statusRaw"),
     });
     await this.adapter.setState(`${upsName}.status.raw`, { val: result.raw, ack: true });
     await this.ensureState(`${upsName}.status.severity`, {
@@ -162,17 +197,29 @@ class StateManager {
       role: "value",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusSeverity")
+      name: (0, import_i18n_states.tName)("statusSeverity"),
     });
     await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
+    await this.ensureState(`${upsName}.status.display`, {
+      type: "string",
+      role: "text",
+      read: true,
+      write: false,
+      name: (0, import_i18n_states.tName)("statusDisplay"),
+    });
+    await this.adapter.setState(`${upsName}.status.display`, {
+      val: (0, import_status_parser.getDisplayString)(rawStatus),
+      ack: true,
+    });
     for (const flagKey of import_status_parser.ALL_FLAG_KEYS) {
       const stateId = `${upsName}.status.${flagKey}`;
+      const flagI18nKey = import_i18n_states.FLAG_I18N[flagKey];
       await this.ensureState(stateId, {
         type: "boolean",
-        role: "indicator",
+        role: (_a = STATUS_FLAG_ROLES[flagKey]) != null ? _a : "indicator",
         read: true,
         write: false,
-        name: flagKey
+        name: flagI18nKey ? (0, import_i18n_states.tName)(flagI18nKey) : flagKey,
       });
       await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
     }
@@ -187,13 +234,16 @@ class StateManager {
     await this.ensureChannel(upsName, "commands");
     for (const cmd of commands) {
       const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
+      const cmdI18nKey = import_i18n_states.COMMAND_I18N[cmd.name];
       await this.ensureState(stateId, {
         type: "boolean",
         role: "button",
         read: false,
         write: true,
-        name: cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase()),
-        def: false
+        name: cmdI18nKey
+          ? (0, import_i18n_states.tName)(cmdI18nKey)
+          : cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
+        def: false,
       });
     }
   }
@@ -278,7 +328,7 @@ class StateManager {
     await this.adapter.setObjectNotExistsAsync(id, {
       type: obj.type,
       common: obj.common,
-      native: obj.native
+      native: obj.native,
     });
     this.createdIds.add(id);
   }
@@ -289,15 +339,41 @@ class StateManager {
     await this.adapter.setObjectNotExistsAsync(id, {
       type: "state",
       common,
-      native: {}
+      native: {},
     });
     this.createdIds.add(id);
   }
+  /**
+   * Enrich an existing state with ENUM/RANGE metadata from the NUT server.
+   * Uses extendObjectAsync to deep-merge — overwrites only the provided keys.
+   *
+   * @param id State object ID
+   * @param patch Metadata to apply (states for ENUM, min/max for RANGE)
+   * @param patch.states ENUM value map
+   * @param patch.min RANGE minimum
+   * @param patch.max RANGE maximum
+   */
+  async enrichStateMetadata(id, patch) {
+    const common = {};
+    if (patch.states) {
+      common.states = patch.states;
+    }
+    if (patch.min !== void 0) {
+      common.min = patch.min;
+    }
+    if (patch.max !== void 0) {
+      common.max = patch.max;
+    }
+    if (Object.keys(common).length > 0) {
+      await this.adapter.extendObjectAsync(id, { common });
+    }
+  }
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  StateManager,
-  nutVarToReadableName,
-  nutVarToStateId
-});
+0 &&
+  (module.exports = {
+    StateManager,
+    nutVarToReadableName,
+    nutVarToStateId,
+  });
 //# sourceMappingURL=state-manager.js.map

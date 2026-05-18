@@ -1,10 +1,20 @@
 import type * as utils from "@iobroker/adapter-core";
-import { CHANNEL_I18N, tName } from "./i18n-states";
-import { ALL_FLAG_KEYS, parseStatus } from "./status-parser";
-import { detectType } from "./type-detector";
+import { CHANNEL_I18N, COMMAND_I18N, FLAG_I18N, tName, VARIABLE_I18N } from "./i18n-states";
+import { ALL_FLAG_KEYS, getDisplayString, parseStatus } from "./status-parser";
+import { detectStates, detectType } from "./type-detector";
 import type { NutCommand, NutVariable } from "./types";
 
 type LocalizedName = ioBroker.StringOrTranslated;
+
+const STATUS_FLAG_ROLES: Record<string, string> = {
+  lowBattery: "indicator.lowbat",
+  overloaded: "indicator.alarm",
+  replaceBattery: "indicator.maintenance",
+  onBattery: "indicator.alarm",
+  forcedShutdown: "indicator.alarm",
+  alarm: "indicator.alarm",
+  commLost: "indicator.alarm",
+};
 
 /**
  * Convert NUT variable name to ioBroker state ID (dots after channel → dashes).
@@ -74,15 +84,6 @@ export class StateManager {
       name: tName("upsOnline"),
     });
 
-    await this.ensureState(`${upsName}.info.name`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: tName("upsName"),
-    });
-    await this.adapter.setState(`${upsName}.info.name`, { val: upsName, ack: true });
-
     await this.ensureState(`${upsName}.info.description`, {
       type: "string",
       role: "text",
@@ -91,6 +92,29 @@ export class StateManager {
       name: tName("upsDescription"),
     });
     await this.adapter.setState(`${upsName}.info.description`, { val: description, ack: true });
+  }
+
+  /**
+   * Update device common.name from LIST VAR data when LIST UPS description is unusable.
+   *
+   * @param upsName UPS identifier
+   * @param description UPS description from LIST UPS
+   * @param variables Variables from LIST VAR
+   */
+  async updateDeviceName(
+    upsName: string,
+    description: string,
+    variables: Array<{ name: string; value: string }>,
+  ): Promise<void> {
+    if (description && description !== "Description unavailable") {
+      return;
+    }
+    const mfr = variables.find(v => v.name === "device.mfr")?.value?.trim();
+    const model = variables.find(v => v.name === "device.model")?.value?.trim();
+    if (mfr || model) {
+      const name = [mfr, model].filter(Boolean).join(" ");
+      await this.adapter.extendObjectAsync(upsName, { common: { name } });
+    }
   }
 
   /**
@@ -135,13 +159,17 @@ export class StateManager {
       const detected = detectType(v.name, v.value, isWritable);
 
       const stateId = nutVarToStateId(upsName, v.name);
+      const states = detectStates(v.name);
+      const genericName = v.name.replace(/\.\d+\./, ".");
+      const i18nName = VARIABLE_I18N[v.name] ?? VARIABLE_I18N[genericName];
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: nutVarToReadableName(v.name),
+        name: i18nName ?? nutVarToReadableName(v.name),
+        states,
       });
 
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
@@ -177,14 +205,27 @@ export class StateManager {
     });
     await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
 
+    await this.ensureState(`${upsName}.status.display`, {
+      type: "string",
+      role: "text",
+      read: true,
+      write: false,
+      name: tName("statusDisplay"),
+    });
+    await this.adapter.setState(`${upsName}.status.display`, {
+      val: getDisplayString(rawStatus),
+      ack: true,
+    });
+
     for (const flagKey of ALL_FLAG_KEYS) {
       const stateId = `${upsName}.status.${flagKey}`;
+      const flagI18nKey = FLAG_I18N[flagKey];
       await this.ensureState(stateId, {
         type: "boolean",
-        role: "indicator",
+        role: STATUS_FLAG_ROLES[flagKey] ?? "indicator",
         read: true,
         write: false,
-        name: flagKey,
+        name: flagI18nKey ? tName(flagI18nKey) : flagKey,
       });
       await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
     }
@@ -201,12 +242,13 @@ export class StateManager {
 
     for (const cmd of commands) {
       const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
+      const cmdI18nKey = COMMAND_I18N[cmd.name];
       await this.ensureState(stateId, {
         type: "boolean",
         role: "button",
         read: false,
         write: true,
-        name: cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
+        name: cmdI18nKey ? tName(cmdI18nKey) : cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
         def: false,
       });
     }
@@ -326,6 +368,9 @@ export class StateManager {
       name: LocalizedName;
       unit?: string;
       def?: boolean;
+      states?: Record<string, string>;
+      min?: number;
+      max?: number;
     },
   ): Promise<void> {
     if (this.createdIds.has(id)) {
@@ -337,5 +382,34 @@ export class StateManager {
       native: {},
     });
     this.createdIds.add(id);
+  }
+
+  /**
+   * Enrich an existing state with ENUM/RANGE metadata from the NUT server.
+   * Uses extendObjectAsync to deep-merge — overwrites only the provided keys.
+   *
+   * @param id State object ID
+   * @param patch Metadata to apply (states for ENUM, min/max for RANGE)
+   * @param patch.states ENUM value map
+   * @param patch.min RANGE minimum
+   * @param patch.max RANGE maximum
+   */
+  async enrichStateMetadata(
+    id: string,
+    patch: { states?: Record<string, string>; min?: number; max?: number },
+  ): Promise<void> {
+    const common: Record<string, unknown> = {};
+    if (patch.states) {
+      common.states = patch.states;
+    }
+    if (patch.min !== undefined) {
+      common.min = patch.min;
+    }
+    if (patch.max !== undefined) {
+      common.max = patch.max;
+    }
+    if (Object.keys(common).length > 0) {
+      await this.adapter.extendObjectAsync(id, { common });
+    }
   }
 }

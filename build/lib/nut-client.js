@@ -6,31 +6,36 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
+  if ((from && typeof from === "object") || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        });
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toESM = (mod, isNodeMode, target) => (
+  (target = mod != null ? __create(__getProtoOf(mod)) : {}),
+  __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod,
+  )
+);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var nut_client_exports = {};
 __export(nut_client_exports, {
   NutClient: () => NutClient,
   NutError: () => NutError,
-  NutTimeoutError: () => NutTimeoutError
+  NutTimeoutError: () => NutTimeoutError,
 });
 module.exports = __toCommonJS(nut_client_exports);
 var net = __toESM(require("node:net"));
@@ -83,7 +88,8 @@ class NutClient {
     this.host = host;
     this.port = port;
     this.localAddress = options == null ? void 0 : options.localAddress;
-    this.commandTimeout = (_a = options == null ? void 0 : options.commandTimeout) != null ? _a : import_types.NUT_DEFAULT_COMMAND_TIMEOUT;
+    this.commandTimeout =
+      (_a = options == null ? void 0 : options.commandTimeout) != null ? _a : import_types.NUT_DEFAULT_COMMAND_TIMEOUT;
     this.log = options == null ? void 0 : options.logger;
   }
   /**
@@ -103,7 +109,7 @@ class NutClient {
       }
       const opts = {
         host: this.host,
-        port: this.port
+        port: this.port,
       };
       if (this.localAddress) {
         opts.localAddress = this.localAddress;
@@ -117,10 +123,10 @@ class NutClient {
         resolve();
       });
       this.socket.setEncoding("utf8");
-      this.socket.on("data", (data) => {
+      this.socket.on("data", data => {
         this.onData(data);
       });
-      this.socket.on("error", (err) => {
+      this.socket.on("error", err => {
         var _a;
         (_a = this.log) == null ? void 0 : _a.debug(`Socket error: ${err.message}`);
         if (!this.connected) {
@@ -329,7 +335,7 @@ class NutClient {
         if (((_a = this.active) == null ? void 0 : _a.command) === command) {
           this.active = null;
         } else {
-          this.queue = this.queue.filter((e) => e.command !== command);
+          this.queue = this.queue.filter(e => e.command !== command);
         }
         reject(new NutTimeoutError(command));
         this.processQueue();
@@ -353,7 +359,9 @@ class NutClient {
       const query = this.active.command.replace(/^LIST\s+/, "");
       this.multiLineExpectedEnd = `END LIST ${query}`;
     }
-    (_b = this.socket) == null ? void 0 : _b.write(`${this.active.command}
+    (_b = this.socket) == null
+      ? void 0
+      : _b.write(`${this.active.command}
 `);
   }
   onData(data) {
@@ -427,16 +435,18 @@ class NutClient {
         return;
       }
       (_a2 = this.log) == null ? void 0 : _a2.debug(`Attempting reconnect to ${this.host}:${this.port}`);
-      this.connect().then(() => {
-        var _a3, _b;
-        (_a3 = this.log) == null ? void 0 : _a3.info(`Reconnected to NUT server ${this.host}:${this.port}`);
-        (_b = this.onReconnectHandler) == null ? void 0 : _b.call(this);
-      }).catch((err) => {
-        var _a3;
-        (_a3 = this.log) == null ? void 0 : _a3.debug(`Reconnect failed: ${err.message}`);
-        this.reconnectDelay = Math.min(this.reconnectDelay * 2, 6e4);
-        this.scheduleReconnect();
-      });
+      this.connect()
+        .then(() => {
+          var _a3, _b;
+          (_a3 = this.log) == null ? void 0 : _a3.info(`Reconnected to NUT server ${this.host}:${this.port}`);
+          (_b = this.onReconnectHandler) == null ? void 0 : _b.call(this);
+        })
+        .catch(err => {
+          var _a3;
+          (_a3 = this.log) == null ? void 0 : _a3.debug(`Reconnect failed: ${err.message}`);
+          this.reconnectDelay = Math.min(this.reconnectDelay * 2, 6e4);
+          this.scheduleReconnect();
+        });
     }, this.reconnectDelay);
   }
 }
@@ -447,9 +457,10 @@ function escapeNut(s) {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  NutClient,
-  NutError,
-  NutTimeoutError
-});
+0 &&
+  (module.exports = {
+    NutClient,
+    NutError,
+    NutTimeoutError,
+  });
 //# sourceMappingURL=nut-client.js.map

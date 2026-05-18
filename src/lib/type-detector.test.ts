@@ -1,4 +1,4 @@
-import { detectType } from "./type-detector";
+import { detectStates, detectType } from "./type-detector";
 
 describe("type-detector", () => {
   // -----------------------------------------------------------------------
@@ -160,8 +160,14 @@ describe("type-detector", () => {
       expect(detectType("input.voltage", "221.0", false).unit).toBe("V");
     });
 
-    it("should assign V for voltage subtypes", () => {
-      expect(detectType("input.voltage.extended", "no", false).unit).toBe("V");
+    it("should not assign V for input.voltage.extended (boolean string, not a voltage)", () => {
+      expect(detectType("input.voltage.extended", "no", false).unit).toBeUndefined();
+    });
+
+    it("should not assign V for input.voltage.extended=yes", () => {
+      const r = detectType("input.voltage.extended", "yes", false);
+      expect(r.unit).toBeUndefined();
+      expect(r.type).toBe("string");
     });
 
     it("should assign Hz for frequency", () => {
@@ -220,6 +226,18 @@ describe("type-detector", () => {
       expect(detectType("ups.efficiency", "95", false).unit).toBe("%");
     });
 
+    it("should assign % for ambient.humidity", () => {
+      expect(detectType("ambient.humidity", "45", false).unit).toBe("%");
+    });
+
+    it("should assign % for ambient.1.humidity", () => {
+      expect(detectType("ambient.1.humidity", "55", false).unit).toBe("%");
+    });
+
+    it("should assign % for *.percent suffix", () => {
+      expect(detectType("battery.charge.percent", "100", false).unit).toBe("%");
+    });
+
     it("should have no unit for string variables", () => {
       expect(detectType("device.mfr", "EATON", false).unit).toBeUndefined();
     });
@@ -257,7 +275,27 @@ describe("type-detector", () => {
       expect(detectType("device.mfr", "EATON", false).role).toBe("text");
     });
 
-    it("should assign level for writable numbers", () => {
+    it("should assign value.current for current vars", () => {
+      expect(detectType("output.current", "2.5", false).role).toBe("value.current");
+    });
+
+    it("should assign value.power for power vars", () => {
+      expect(detectType("ups.power", "159", false).role).toBe("value.power");
+    });
+
+    it("should assign value.power for realpower vars", () => {
+      expect(detectType("ups.realpower", "147", false).role).toBe("value.power");
+    });
+
+    it("should assign value.interval for battery.runtime", () => {
+      expect(detectType("battery.runtime", "2050", false).role).toBe("value.interval");
+    });
+
+    it("should assign value.interval for ups.timer.*", () => {
+      expect(detectType("ups.timer.shutdown", "-1", false).role).toBe("value.interval");
+    });
+
+    it("should assign level for writable delay", () => {
       expect(detectType("ups.delay.shutdown", "20", true).role).toBe("level");
     });
 
@@ -300,12 +338,19 @@ describe("type-detector", () => {
     it("should handle ups.productid as string (ffff)", () => {
       const r = detectType("ups.productid", "ffff", false);
       expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("ffff");
     });
 
-    it("should handle ups.vendorid as string (0463)", () => {
+    it("should handle ups.productid preserving leading zeros (0001)", () => {
+      const r = detectType("ups.productid", "0001", false);
+      expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("0001");
+    });
+
+    it("should handle ups.vendorid as string preserving leading zeros (0463)", () => {
       const r = detectType("ups.vendorid", "0463", false);
-      expect(r.type).toBe("number");
-      expect(r.parsedValue).toBe(463);
+      expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("0463");
     });
 
     it("should handle driver.version.usb as string", () => {
@@ -344,6 +389,46 @@ describe("type-detector", () => {
     it("should handle outlet.1.status as string", () => {
       const r = detectType("outlet.1.status", "on", false);
       expect(r.type).toBe("string");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // detectStates (enum values)
+  // -----------------------------------------------------------------------
+  describe("detectStates", () => {
+    it("should return enum states for battery.charger.status", () => {
+      const s = detectStates("battery.charger.status");
+      expect(s).toEqual({
+        charging: "charging",
+        discharging: "discharging",
+        floating: "floating",
+        resting: "resting",
+      });
+    });
+
+    it("should return enum states for ups.beeper.status", () => {
+      const s = detectStates("ups.beeper.status");
+      expect(s).toEqual({ enabled: "enabled", disabled: "disabled", muted: "muted" });
+    });
+
+    it("should return on/off for outlet.status", () => {
+      expect(detectStates("outlet.status")).toEqual({ on: "on", off: "off" });
+    });
+
+    it("should return on/off for outlet.1.status", () => {
+      expect(detectStates("outlet.1.status")).toEqual({ on: "on", off: "off" });
+    });
+
+    it("should return on/off for outlet.2.switch", () => {
+      expect(detectStates("outlet.2.switch")).toEqual({ on: "on", off: "off" });
+    });
+
+    it("should return undefined for unknown variables", () => {
+      expect(detectStates("battery.charge")).toBeUndefined();
+    });
+
+    it("should return undefined for ups.status (not an enum)", () => {
+      expect(detectStates("ups.status")).toBeUndefined();
     });
   });
 });

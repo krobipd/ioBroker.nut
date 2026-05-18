@@ -4,21 +4,24 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
+  if ((from && typeof from === "object") || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        });
   }
   return to;
 };
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var type_detector_exports = {};
 __export(type_detector_exports, {
-  detectType: () => detectType
+  detectStates: () => detectStates,
+  detectType: () => detectType,
 });
 module.exports = __toCommonJS(type_detector_exports);
 const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
@@ -34,13 +37,16 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "name",
   "desc",
   "location",
-  "contact"
+  "contact",
+  "vendorid",
+  "productid",
 ]);
 const KNOWN_STRING_PREFIXES = [
   "driver.flag.",
   "driver.parameter.port",
   "driver.parameter.synchronous",
-  "driver.version."
+  "driver.version.",
+  "input.voltage.extended",
 ];
 function detectType(varName, rawValue, isWritable) {
   const isString = isKnownString(varName);
@@ -52,7 +58,7 @@ function detectType(varName, rawValue, isWritable) {
       unit,
       read: true,
       write: isWritable,
-      parsedValue: rawValue
+      parsedValue: rawValue,
     };
   }
   const num = parseFloat(rawValue);
@@ -63,7 +69,7 @@ function detectType(varName, rawValue, isWritable) {
       unit,
       read: true,
       write: isWritable,
-      parsedValue: num
+      parsedValue: num,
     };
   }
   return {
@@ -72,7 +78,7 @@ function detectType(varName, rawValue, isWritable) {
     unit,
     read: true,
     write: isWritable,
-    parsedValue: rawValue
+    parsedValue: rawValue,
   };
 }
 function isKnownString(varName) {
@@ -94,7 +100,7 @@ function isKnownString(varName) {
   return false;
 }
 function detectUnit(varName) {
-  if (varName.includes("voltage")) {
+  if (varName.includes("voltage") && !varName.endsWith(".extended")) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -106,7 +112,10 @@ function detectUnit(varName) {
   if (varName.includes("charge")) {
     return "%";
   }
-  if (varName.endsWith(".load") || varName.endsWith(".efficiency")) {
+  if (varName.includes("humidity")) {
+    return "%";
+  }
+  if (varName.endsWith(".load") || varName.endsWith(".efficiency") || varName.endsWith(".percent")) {
     return "%";
   }
   if (varName.includes("temperature")) {
@@ -139,13 +148,47 @@ function detectRole(varName, type, isWritable) {
   if (varName === "ups.status") {
     return "text";
   }
+  if (varName.includes("current")) {
+    return "value.current";
+  }
+  if (varName.includes("power")) {
+    return isWritable ? "level" : "value.power";
+  }
+  if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
+    return isWritable ? "level" : "value.interval";
+  }
   if (isWritable) {
     return type === "number" ? "level" : "text";
   }
   return type === "number" ? "value" : "text";
 }
+const KNOWN_ENUM_STATES = {
+  "battery.charger.status": {
+    charging: "charging",
+    discharging: "discharging",
+    floating: "floating",
+    resting: "resting",
+  },
+  "ups.beeper.status": {
+    enabled: "enabled",
+    disabled: "disabled",
+    muted: "muted",
+  },
+};
+const OUTLET_ON_OFF = { on: "on", off: "off" };
+function detectStates(varName) {
+  if (KNOWN_ENUM_STATES[varName]) {
+    return KNOWN_ENUM_STATES[varName];
+  }
+  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
+    return OUTLET_ON_OFF;
+  }
+  return void 0;
+}
 // Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  detectType
-});
+0 &&
+  (module.exports = {
+    detectStates,
+    detectType,
+  });
 //# sourceMappingURL=type-detector.js.map

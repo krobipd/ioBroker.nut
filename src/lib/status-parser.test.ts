@@ -1,4 +1,4 @@
-import { ALL_FLAG_KEYS, parseStatus, STATUS_FLAGS } from "./status-parser";
+import { ALL_FLAG_KEYS, getDisplayString, parseStatus, STATUS_FLAGS } from "./status-parser";
 
 describe("status-parser", () => {
   // -----------------------------------------------------------------------
@@ -96,6 +96,11 @@ describe("status-parser", () => {
       const r = parseStatus("TEST");
       expect(r.flags.testing).toBe(true);
     });
+
+    it("should parse HE as highEfficiency", () => {
+      const r = parseStatus("HE");
+      expect(r.flags.highEfficiency).toBe(true);
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -133,6 +138,12 @@ describe("status-parser", () => {
       expect(r.flags.online).toBe(true);
       expect(r.flags.highBattery).toBe(true);
     });
+
+    it("should parse OL HE", () => {
+      const r = parseStatus("OL HE");
+      expect(r.flags.online).toBe(true);
+      expect(r.flags.highEfficiency).toBe(true);
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -162,6 +173,14 @@ describe("status-parser", () => {
 
     it("should be 0 for OL HB (OK)", () => {
       expect(parseStatus("OL HB").severity).toBe(0);
+    });
+
+    it("should be 0 for HE (OK — informational)", () => {
+      expect(parseStatus("HE").severity).toBe(0);
+    });
+
+    it("should be 0 for OL HE (OK — informational)", () => {
+      expect(parseStatus("OL HE").severity).toBe(0);
     });
 
     it("should be 1 for TRIM (Info)", () => {
@@ -241,8 +260,8 @@ describe("status-parser", () => {
   // Constants
   // -----------------------------------------------------------------------
   describe("constants", () => {
-    it("should have 18 status flags", () => {
-      expect(Object.keys(STATUS_FLAGS).length).toBe(18);
+    it("should have 19 status flags", () => {
+      expect(Object.keys(STATUS_FLAGS).length).toBe(19);
     });
 
     it("should have matching ALL_FLAG_KEYS", () => {
@@ -252,6 +271,39 @@ describe("status-parser", () => {
     it("should have unique flag key names", () => {
       const unique = new Set(ALL_FLAG_KEYS);
       expect(unique.size).toBe(ALL_FLAG_KEYS.length);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Display string
+  // -----------------------------------------------------------------------
+  describe("getDisplayString", () => {
+    it("should convert OL to Online", () => {
+      expect(getDisplayString("OL")).toBe("Online");
+    });
+
+    it("should convert OL CHRG to Online, Charging", () => {
+      expect(getDisplayString("OL CHRG")).toBe("Online, Charging");
+    });
+
+    it("should convert OB LB to On Battery, Low Battery", () => {
+      expect(getDisplayString("OB LB")).toBe("On Battery, Low Battery");
+    });
+
+    it("should convert OB LB FSD to three labels", () => {
+      expect(getDisplayString("OB LB FSD")).toBe("On Battery, Low Battery, Forced Shutdown");
+    });
+
+    it("should pass through unknown tokens", () => {
+      expect(getDisplayString("OL UNKNOWN")).toBe("Online, UNKNOWN");
+    });
+
+    it("should handle empty string", () => {
+      expect(getDisplayString("")).toBe("");
+    });
+
+    it("should handle OL HE", () => {
+      expect(getDisplayString("OL HE")).toBe("Online, High Efficiency");
     });
   });
 

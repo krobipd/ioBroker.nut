@@ -90,7 +90,7 @@ describe("StateManager", () => {
       expect(objects.get("ups0")?.type).toBe("device");
     });
 
-    it("should create info channel, info.online, info.name and info.description", async () => {
+    it("should create info channel, info.online, and info.description", async () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -100,8 +100,7 @@ describe("StateManager", () => {
       expect(objects.get("ups0.info")?.type).toBe("channel");
       expect(objects.has("ups0.info.online")).toBe(true);
       expect(objects.get("ups0.info.online")?.common.role).toBe("indicator.reachable");
-      expect(states.has("ups0.info.name")).toBe(true);
-      expect(states.get("ups0.info.name")?.val).toBe("ups0");
+      expect(objects.has("ups0.info.name")).toBe(false);
       expect(states.has("ups0.info.description")).toBe(true);
       expect(states.get("ups0.info.description")?.val).toBe("Main UPS");
     });
@@ -135,6 +134,83 @@ describe("StateManager", () => {
 
       expect(objects.has("ups0")).toBe(true);
       expect(objects.has("ups1")).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Device name fallback
+  // -----------------------------------------------------------------------
+  describe("updateDeviceName", () => {
+    it("should not update name when description is usable", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "My Custom UPS");
+      await sm.updateDeviceName("ups0", "My Custom UPS", [
+        { name: "device.mfr", value: "EATON" },
+        { name: "device.model", value: "Ellipse PRO 1600" },
+      ]);
+
+      expect(objects.get("ups0")?.common.name).toBe("My Custom UPS");
+    });
+
+    it("should update name from mfr+model when description is unavailable", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      await sm.updateDeviceName("ups0", "Description unavailable", [
+        { name: "device.mfr", value: "EATON" },
+        { name: "device.model", value: "Ellipse PRO 1600 " },
+      ]);
+
+      expect(objects.get("ups0")?.common.name).toBe("EATON Ellipse PRO 1600");
+    });
+
+    it("should trim trailing spaces from model", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      await sm.updateDeviceName("ups0", "Description unavailable", [
+        { name: "device.mfr", value: "EATON" },
+        { name: "device.model", value: "  PRO 1600  " },
+      ]);
+
+      expect(objects.get("ups0")?.common.name).toBe("EATON PRO 1600");
+    });
+
+    it("should use only model when mfr is missing", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      await sm.updateDeviceName("ups0", "Description unavailable", [{ name: "device.model", value: "Smart-UPS 1500" }]);
+
+      expect(objects.get("ups0")?.common.name).toBe("Smart-UPS 1500");
+    });
+
+    it("should update name when description is empty", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "");
+      await sm.updateDeviceName("ups0", "", [
+        { name: "device.mfr", value: "APC" },
+        { name: "device.model", value: "Back-UPS 600" },
+      ]);
+
+      expect(objects.get("ups0")?.common.name).toBe("APC Back-UPS 600");
+    });
+
+    it("should not update if neither mfr nor model available", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      await sm.updateDeviceName("ups0", "Description unavailable", [{ name: "battery.charge", value: "100" }]);
+
+      expect(objects.get("ups0")?.common.name).toBe("Description unavailable");
     });
   });
 
@@ -185,10 +261,14 @@ describe("StateManager", () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "100" },
-        { name: "ups.status", value: "OL" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "battery.charge", value: "100" },
+          { name: "ups.status", value: "OL" },
+        ],
+        new Set(),
+      );
 
       expect(objects.has("ups0.battery.charge")).toBe(true);
       expect(states.get("ups0.battery.charge")?.val).toBe(100);
@@ -199,9 +279,7 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "100" },
-      ], new Set());
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
 
       expect(objects.has("ups0.battery")).toBe(true);
     });
@@ -210,9 +288,7 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "ups.delay.shutdown", value: "20" },
-      ], new Set(["ups.delay.shutdown"]));
+      await sm.updateVariables("ups0", [{ name: "ups.delay.shutdown", value: "20" }], new Set(["ups.delay.shutdown"]));
 
       const common = objects.get("ups0.ups.delay-shutdown")?.common;
       expect(common?.write).toBe(true);
@@ -222,11 +298,15 @@ describe("StateManager", () => {
       const { adapter, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "100" },
-        { name: "device.mfr", value: "EATON" },
-        { name: "input.voltage", value: "221.0" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "battery.charge", value: "100" },
+          { name: "device.mfr", value: "EATON" },
+          { name: "input.voltage", value: "221.0" },
+        ],
+        new Set(),
+      );
 
       expect(states.get("ups0.battery.charge")?.val).toBe(100);
       expect(states.get("ups0.device.mfr")?.val).toBe("EATON");
@@ -237,10 +317,14 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge.low", value: "15" },
-        { name: "battery.charge", value: "100" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "battery.charge.low", value: "15" },
+          { name: "battery.charge", value: "100" },
+        ],
+        new Set(),
+      );
 
       const keys = [...objects.keys()];
       const chargeIdx = keys.indexOf("ups0.battery.charge");
@@ -252,12 +336,10 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge.low", value: "15" },
-      ], new Set());
+      await sm.updateVariables("ups0", [{ name: "battery.charge.low", value: "15" }], new Set());
 
       const common = objects.get("ups0.battery.charge-low")?.common;
-      expect(common?.name).toBe("Charge low");
+      expect((common?.name as any).en).toBe("Low charge threshold");
     });
   });
 
@@ -318,10 +400,7 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.createCommandButtons("ups0", [
-        { name: "beeper.enable" },
-        { name: "load.off" },
-      ]);
+      await sm.createCommandButtons("ups0", [{ name: "beeper.enable" }, { name: "load.off" }]);
 
       expect(objects.has("ups0.commands")).toBe(true);
       expect(objects.has("ups0.commands.beeper-enable")).toBe(true);
@@ -331,7 +410,7 @@ describe("StateManager", () => {
       expect(common?.role).toBe("button");
       expect(common?.write).toBe(true);
       expect(common?.read).toBe(false);
-      expect(common?.name).toBe("Beeper enable");
+      expect((common?.name as any).en).toBe("Enable beeper");
     });
   });
 
@@ -402,15 +481,11 @@ describe("StateManager", () => {
 
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "100" },
-      ], new Set());
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
 
       const firstCount = callCount;
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "95" },
-      ], new Set());
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "95" }], new Set());
 
       // Second call should skip object creation (cached)
       expect(callCount).toBe(firstCount);
@@ -425,10 +500,14 @@ describe("StateManager", () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "battery.charge", value: "100" },
-        { name: "battery.charge.low", value: "15" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "battery.charge", value: "100" },
+          { name: "battery.charge.low", value: "15" },
+        ],
+        new Set(),
+      );
 
       expect(objects.has("ups0.battery.charge")).toBe(true);
       expect(objects.has("ups0.battery.charge-low")).toBe(true);
@@ -440,11 +519,15 @@ describe("StateManager", () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "driver.version", value: "2.8.0" },
-        { name: "driver.version.data", value: "MGE HID 1.46" },
-        { name: "driver.version.internal", value: "0.47" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "driver.version", value: "2.8.0" },
+          { name: "driver.version.data", value: "MGE HID 1.46" },
+          { name: "driver.version.internal", value: "0.47" },
+        ],
+        new Set(),
+      );
 
       expect(objects.has("ups0.driver.version")).toBe(true);
       expect(objects.has("ups0.driver.version-data")).toBe(true);
@@ -456,12 +539,16 @@ describe("StateManager", () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      await sm.updateVariables("ups0", [
-        { name: "outlet.desc", value: "Main Outlet" },
-        { name: "outlet.1.desc", value: "PowerShare 1" },
-        { name: "outlet.1.status", value: "on" },
-        { name: "outlet.2.desc", value: "PowerShare 2" },
-      ], new Set());
+      await sm.updateVariables(
+        "ups0",
+        [
+          { name: "outlet.desc", value: "Main Outlet" },
+          { name: "outlet.1.desc", value: "PowerShare 1" },
+          { name: "outlet.1.status", value: "on" },
+          { name: "outlet.2.desc", value: "PowerShare 2" },
+        ],
+        new Set(),
+      );
 
       expect(objects.has("ups0.outlet.desc")).toBe(true);
       expect(objects.has("ups0.outlet.1-desc")).toBe(true);
@@ -628,6 +715,61 @@ describe("StateManager", () => {
       const dIdx = deletedIds.indexOf("ups0.a.b.c.d");
       const cIdx = deletedIds.indexOf("ups0.a.b.c");
       expect(dIdx).toBeLessThan(cIdx);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // enrichStateMetadata
+  // -----------------------------------------------------------------------
+  describe("enrichStateMetadata", () => {
+    it("should set common.states via extendObjectAsync", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.output.voltage-nominal", {
+        type: "state",
+        common: { type: "number", role: "level", name: "Voltage nominal" },
+        native: {},
+      });
+
+      await sm.enrichStateMetadata("ups0.output.voltage-nominal", {
+        states: { "200": "200", "208": "208", "220": "220", "230": "230", "240": "240" },
+      });
+
+      const common = objects.get("ups0.output.voltage-nominal")?.common as any;
+      expect(common.states).toEqual({ "200": "200", "208": "208", "220": "220", "230": "230", "240": "240" });
+    });
+
+    it("should set common.min and common.max via extendObjectAsync", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.ups.delay-shutdown", {
+        type: "state",
+        common: { type: "number", role: "level", name: "Delay shutdown" },
+        native: {},
+      });
+
+      await sm.enrichStateMetadata("ups0.ups.delay-shutdown", { min: 10, max: 300 });
+
+      const common = objects.get("ups0.ups.delay-shutdown")?.common as any;
+      expect(common.min).toBe(10);
+      expect(common.max).toBe(300);
+    });
+
+    it("should not call extendObjectAsync when patch is empty", async () => {
+      let extendCalled = false;
+      const { adapter } = createMockAdapter();
+      const origExtend = adapter.extendObjectAsync;
+      adapter.extendObjectAsync = async (...args: any[]) => {
+        extendCalled = true;
+        return origExtend(...args);
+      };
+      const sm = new StateManager(adapter);
+
+      await sm.enrichStateMetadata("ups0.some.state", {});
+
+      expect(extendCalled).toBe(false);
     });
   });
 });

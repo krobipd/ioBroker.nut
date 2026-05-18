@@ -13,6 +13,8 @@ const KNOWN_STRING_SUFFIXES = new Set([
   "desc",
   "location",
   "contact",
+  "vendorid",
+  "productid",
 ]);
 
 /** Known-string exact prefixes — always string. */
@@ -21,6 +23,7 @@ const KNOWN_STRING_PREFIXES = [
   "driver.parameter.port",
   "driver.parameter.synchronous",
   "driver.version.",
+  "input.voltage.extended",
 ];
 
 /** Result of type detection for a NUT variable. */
@@ -106,7 +109,7 @@ function isKnownString(varName: string): boolean {
 }
 
 function detectUnit(varName: string): string | undefined {
-  if (varName.includes("voltage")) {
+  if (varName.includes("voltage") && !varName.endsWith(".extended")) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -118,7 +121,10 @@ function detectUnit(varName: string): string | undefined {
   if (varName.includes("charge")) {
     return "%";
   }
-  if (varName.endsWith(".load") || varName.endsWith(".efficiency")) {
+  if (varName.includes("humidity")) {
+    return "%";
+  }
+  if (varName.endsWith(".load") || varName.endsWith(".efficiency") || varName.endsWith(".percent")) {
     return "%";
   }
   if (varName.includes("temperature")) {
@@ -152,9 +158,49 @@ function detectRole(varName: string, type: "number" | "string", isWritable: bool
   if (varName === "ups.status") {
     return "text";
   }
+  if (varName.includes("current")) {
+    return "value.current";
+  }
+  if (varName.includes("power")) {
+    return isWritable ? "level" : "value.power";
+  }
+  if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
+    return isWritable ? "level" : "value.interval";
+  }
 
   if (isWritable) {
     return type === "number" ? "level" : "text";
   }
   return type === "number" ? "value" : "text";
+}
+
+const KNOWN_ENUM_STATES: Record<string, Record<string, string>> = {
+  "battery.charger.status": {
+    charging: "charging",
+    discharging: "discharging",
+    floating: "floating",
+    resting: "resting",
+  },
+  "ups.beeper.status": {
+    enabled: "enabled",
+    disabled: "disabled",
+    muted: "muted",
+  },
+};
+
+const OUTLET_ON_OFF: Record<string, string> = { on: "on", off: "off" };
+
+/**
+ * Detect common.states for known enum variables.
+ *
+ * @param varName NUT variable name
+ */
+export function detectStates(varName: string): Record<string, string> | undefined {
+  if (KNOWN_ENUM_STATES[varName]) {
+    return KNOWN_ENUM_STATES[varName];
+  }
+  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
+    return OUTLET_ON_OFF;
+  }
+  return undefined;
 }
