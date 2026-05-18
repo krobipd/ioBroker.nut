@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.1.1",
     "news": {
+      "NEXT": {
+        "en": "Auth failure keeps adapter alive with yellow status — connection test button stays usable. Admin layout improved (fields grouped cleanly)",
+        "de": "Authentifizierungsfehler hält Adapter am Leben mit gelbem Status — Verbindungstest-Button bleibt nutzbar. Admin-Layout verbessert (Felder sauber gruppiert)",
+        "ru": "Ошибка аутентификации сохраняет адаптер активным с жёлтым статусом — кнопка проверки соединения остаётся доступной. Улучшен макет админки",
+        "pt": "Falha de autenticação mantém adaptador ativo com status amarelo — botão de teste de conexão continua utilizável. Layout admin melhorado",
+        "nl": "Authenticatiefout houdt adapter actief met gele status — verbindingstest-knop blijft bruikbaar. Admin-layout verbeterd (velden netjes gegroepeerd)",
+        "fr": "Échec d'authentification garde l'adaptateur actif avec statut jaune — bouton de test de connexion reste utilisable. Disposition admin améliorée",
+        "it": "Errore autenticazione mantiene l'adattatore attivo con stato giallo — pulsante test connessione resta utilizzabile. Layout admin migliorato",
+        "es": "Fallo de autenticación mantiene adaptador activo con estado amarillo — botón de prueba de conexión sigue utilizable. Diseño admin mejorado",
+        "pl": "Błąd uwierzytelniania utrzymuje adapter aktywnym ze statusem żółtym — przycisk testu połączenia pozostaje dostępny. Układ admina ulepszony",
+        "uk": "Помилка автентифікації залишає адаптер активним із жовтим статусом — кнопка перевірки з'єднання залишається доступною. Покращено макет адмінки",
+        "zh-cn": "认证失败时适配器保持活动状态（黄色）— 连接测试按钮仍可使用。改进管理界面布局（字段整齐分组）"
+      },
       "0.1.1": {
         "en": "Fixed upgrade path from previous version, auth failure stops adapter, connection test verifies credentials, per-UPS online indicator, human-readable state names, admin layout improvements",
         "de": "Upgrade-Pfad von Vorgängerversion repariert, Auth-Fehler stoppt Adapter, Verbindungstest prüft Zugangsdaten, Online-Indikator pro USV, lesbare State-Namen, Admin-Layout verbessert",
