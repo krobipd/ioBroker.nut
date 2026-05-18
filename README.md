@@ -166,7 +166,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.2 (2026-05-18)
 
 - Fixed authentication failure no longer stops the adapter — stays alive with yellow status so the connection test button remains usable
 - Fixed admin UI layout (host, port and poll interval on one row; username and password paired; test button on separate row)

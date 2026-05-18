@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
-      "NEXT": {
+      "0.1.2": {
         "en": "Auth failure keeps adapter alive with yellow status — connection test button stays usable. Admin layout improved (fields grouped cleanly)",
         "de": "Authentifizierungsfehler hält Adapter am Leben mit gelbem Status — Verbindungstest-Button bleibt nutzbar. Admin-Layout verbessert (Felder sauber gruppiert)",
         "ru": "Ошибка аутентификации сохраняет адаптер активным с жёлтым статусом — кнопка проверки соединения остаётся доступной. Улучшен макет админки",
