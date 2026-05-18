@@ -166,7 +166,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.0 (2026-05-18)
 
 - Initial release — complete rewrite of the NUT adapter
 - Multi-UPS support: automatic discovery of all UPS devices on a NUT server
@@ -177,6 +177,8 @@ nut.0.
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+
+Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
 ## Credits
 
