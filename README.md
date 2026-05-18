@@ -182,7 +182,7 @@ nut.0.
 - Added human-readable status display (e.g. "Online, Charging" instead of "OL CHRG")
 - Added HE (High Efficiency / ECO mode) status flag recognition
 - Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
-- Added `common.states` for known enum variables (battery.charger.status, ups.beeper.status, outlet switches)
+- Added dropdown values for known enum variables (battery charger status, beeper status, outlet switches)
 - Device name now shows manufacturer + model when NUT server description is unavailable
 - Specific ioBroker roles for status flags (indicator.lowbat, indicator.alarm, indicator.maintenance)
 - Specific ioBroker roles for variable types (value.voltage, value.current, value.power, value.temperature, value.interval)

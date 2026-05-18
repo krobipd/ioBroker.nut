@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.1.2 (Auth-Failure UX + Admin-Layout, npm publish blockiert bis Apollon77-Transfer)
+- **Version:** 0.2.0 (14 quality findings: type fixes, status display, HE flag, ENUM/RANGE, device name fallback, specific roles, 11-language i18n. npm publish blockiert bis Apollon77-Transfer)
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -25,7 +25,7 @@ src/lib/
 ├── state-manager.test.ts
 ├── type-detector.ts            → NUT variable → ioBroker type/role/unit Mapping
 ├── type-detector.test.ts
-├── status-parser.ts            → ups.status → 18 booleans + severity (0-4)
+├── status-parser.ts            → ups.status → 19 booleans + severity (0-4) + display string
 ├── status-parser.test.ts
 ├── coerce.ts                   → errText + Boundary-Validators (host, port, pollInterval, commandTimeout)
 ├── coerce.test.ts
@@ -59,15 +59,15 @@ scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (256 unit + 57 package = 313)
+## Tests (293 unit + 57 package = 350)
 
 ```
 src/lib/nut-client.test.ts      → TCP Client (45 tests)
-src/lib/type-detector.test.ts   → Variable-Type-Detection (68 tests)
-src/lib/status-parser.test.ts   → Status-Flag-Parsing (45 tests)
-src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy (40 tests)
-src/lib/coerce.test.ts          → Boundary-Validators (40 tests)
-src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (18 tests)
+src/lib/type-detector.test.ts   → Variable-Type-Detection (82 tests)
+src/lib/status-parser.test.ts   → Status-Flag-Parsing (59 tests)
+src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy + enrichStateMetadata (49 tests)
+src/lib/coerce.test.ts          → Boundary-Validators (38 tests)
+src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (20 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
 
@@ -75,6 +75,8 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights |
 |---------|------------|
+| 0.2.0 | **Quality & Standards (14 findings)** — Fix vendorid/productid leading zeros, voltage.extended unit, humidity/percent units. Human-readable status.display. HE (ECO) flag. ENUM/RANGE metadata for writable vars. Device name fallback mfr+model. Specific roles (indicator.lowbat, value.voltage, etc.). common.states for enums. 11-language i18n for ~50 variables, 19 flags, 15 commands. 293 unit + 57 package = 350 tests. |
+| 0.1.3 | **checkConnection LOGIN + auth-disconnect** — checkConnection verifies LOGIN per UPS (catches ACCESS-DENIED). Auth failure fully disconnects (client.destroy, no reconnect spam). 256 unit + 57 package = 313 tests. |
 | 0.1.2 | **Auth-Failure UX** — Auth failure no longer terminates adapter, stays alive with yellow status (info.connection=false) so connection test button remains usable. Admin layout improved (host+port+poll on one row, credentials paired). |
 | 0.1.1 | **9-Bug-Fix** — Upgrade-Pfad (Legacy-Cleanup), Dots→Dashes in State-IDs, Auth-Failure→terminate, checkConnection testet Auth, per-UPS info.online, Commands nach Auth, readable State-Namen, Log-Reihenfolge, Admin-Layout. 254 unit + 57 package = 311 tests. |
 | 0.1.0 | **Initial release** — complete TypeScript rewrite. Multi-UPS support via LIST UPS, persistent TCP connection with reconnect, dynamic state creation with proper types/units, parsed ups.status flags as booleans + severity, instant commands (INSTCMD) and writable variables (SET VAR) with safety gates, network interface selector, connection test button, 11-language admin UI. |
