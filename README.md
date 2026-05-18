@@ -166,7 +166,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.3 (2026-05-18)
 
 - Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
 - Fixed auth failure now fully disconnects from NUT server — no further connection attempts until adapter restart
