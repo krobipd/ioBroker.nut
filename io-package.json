@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.1",
     "news": {
+      "NEXT": {
+        "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
+        "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
+        "ru": "PNG-иконка заменена на SVG для прозрачного фона и совместимости с тёмной темой",
+        "pt": "Ícone PNG substituído por SVG com fundo transparente e compatibilidade com modo escuro",
+        "nl": "PNG-pictogram vervangen door SVG voor transparante achtergrond en dark-mode compatibiliteit",
+        "fr": "Icône PNG remplacée par SVG pour fond transparent et compatibilité mode sombre",
+        "it": "Icona PNG sostituita con SVG per sfondo trasparente e compatibilità modalità scura",
+        "es": "Icono PNG reemplazado por SVG con fondo transparente y compatibilidad con modo oscuro",
+        "pl": "Ikona PNG zastąpiona przez SVG z przezroczystym tłem i kompatybilnością z trybem ciemnym",
+        "uk": "PNG-іконку замінено на SVG для прозорого фону та сумісності з темною темою",
+        "zh-cn": "PNG图标替换为SVG，支持透明背景和暗色模式"
+      },
       "0.2.1": {
         "en": "Fix state type mismatch on upgrade from v0.1.x. Remove redundant info states. Add missing driver translations.",
         "de": "Typ-Konflikt bei Upgrade von v0.1.x behoben. Redundante Info-States entfernt. Fehlende Treiber-Übersetzungen ergänzt.",

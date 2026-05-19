@@ -172,6 +172,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- Replaced PNG icon with SVG for transparent background and dark-mode compatibility
+
 ### 0.2.1 (2026-05-19)
 
 - Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
