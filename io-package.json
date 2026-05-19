@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "news": {
-      "NEXT": {
+      "0.2.1": {
         "en": "Fix state type mismatch on upgrade from v0.1.x. Remove redundant info states. Add missing driver translations.",
         "de": "Typ-Konflikt bei Upgrade von v0.1.x behoben. Redundante Info-States entfernt. Fehlende Treiber-Übersetzungen ergänzt.",
         "ru": "Исправлен конфликт типов при обновлении с v0.1.x. Удалены лишние состояния info. Добавлены переводы для переменных драйвера.",

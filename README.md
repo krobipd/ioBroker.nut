@@ -172,8 +172,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 0.2.1 (2026-05-19)
 
 - Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
 - Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
