@@ -9,7 +9,7 @@
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/krobipd)
 [![PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/krobipd)
 
-<img src="https://raw.githubusercontent.com/krobipd/ioBroker.nut/main/admin/nut.png" width="100" />
+<img src="https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg" width="100" />
 
 Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://networkupstools.org/). All UPS devices connected to a NUT server are automatically discovered and polled.
 

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="battGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5cb85c"/>
+      <stop offset="100%" stop-color="#3d8b3d"/>
+    </linearGradient>
+  </defs>
+  <!-- Battery terminal -->
+  <rect x="96" y="24" width="64" height="24" rx="4" fill="url(#battGrad)"/>
+  <!-- Battery body -->
+  <rect x="56" y="48" width="144" height="184" rx="16" fill="url(#battGrad)"/>
+  <!-- Inner cutout lines (charge level indicators) -->
+  <rect x="76" y="72" width="104" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+  <rect x="76" y="108" width="104" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+  <rect x="76" y="144" width="104" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+  <rect x="76" y="180" width="104" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+  <!-- Lightning bolt -->
+  <polygon points="148,80 116,148 140,148 108,216 152,136 128,136 160,80" fill="#F5A623"/>
+</svg>

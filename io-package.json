@@ -117,8 +117,8 @@
       "type": "free"
     },
     "platform": "Javascript/Node.js",
-    "icon": "nut.png",
-    "extIcon": "https://raw.githubusercontent.com/krobipd/ioBroker.nut/main/admin/nut.png",
+    "icon": "nut.svg",
+    "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
     "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
     "enabled": true,
     "tier": 3,
