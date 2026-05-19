@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.2.2 (SVG icon with transparent background, dark-mode compatible. npm publish blockiert bis Apollon77-Transfer)
+- **Version:** 0.2.3 (Debug Coverage Wave — all 9 classes at 9/10. npm publish blockiert bis Apollon77-Transfer)
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -75,6 +75,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.2.3   | **Debug Coverage Wave** — 11 patches across state-manager.ts + main.ts. All 9 bug classes at 9/10 (from 7.2). README/changelog user-wording fixes.                                                                                                                                                                                                                                                                              |
 | 0.2.2   | SVG icon with transparent background (dark-mode compatible). extIcon via jsdelivr CDN.                                                                                                                                                                                                                                                                                                                                           |
 | 0.2.1   | **Hotfix** — ensureState uses extendObjectAsync (fixes type mismatch on v0.1.x→v0.2.0 upgrade). Removed redundant info.description and legacy info.name states. Added 4 driver variable translations. 295 unit + 57 package = 352 tests.                                                                                                                                                                                         |
 | 0.2.0   | **Quality & Standards (14 findings)** — Fix vendorid/productid leading zeros, voltage.extended unit, humidity/percent units. Human-readable status.display. HE (ECO) flag. ENUM/RANGE metadata for writable vars. Device name fallback mfr+model. Specific roles (indicator.lowbat, value.voltage, etc.). common.states for enums. 11-language i18n for ~50 variables, 19 flags, 15 commands. 293 unit + 57 package = 350 tests. |
