@@ -206,7 +206,10 @@ class NutAdapter extends utils.Adapter {
         try {
           const [variables, rwVars] = await Promise.all([
             this.client.listVar(upsName),
-            this.client.listRw(upsName).catch(() => [])
+            this.client.listRw(upsName).catch((err) => {
+              this.log.debug(`LIST RW ${upsName} failed (non-critical): ${(0, import_coerce.errText)(err)}`);
+              return [];
+            })
           ]);
           const rwNames = new Set(rwVars.map((v) => v.name));
           await this.stateManager.updateVariables(upsName, variables, rwNames);
@@ -228,7 +231,8 @@ class NutAdapter extends utils.Adapter {
                   }
                   await this.stateManager.enrichStateMetadata(stateId, { states });
                 }
-              } catch {
+              } catch (err) {
+                this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
               }
               try {
                 const ranges = await this.client.listRange(upsName, rw.name);
@@ -244,7 +248,8 @@ class NutAdapter extends utils.Adapter {
                   }
                   await this.stateManager.enrichStateMetadata(stateId, patch);
                 }
-              } catch {
+              } catch (err) {
+                this.log.debug(`LIST RANGE ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
               }
             }
             this.enrichedUps.add(upsName);
@@ -293,17 +298,24 @@ class NutAdapter extends utils.Adapter {
     }
   }
   async onStateChange(id, state) {
-    if (!state || state.ack || !this.client) {
+    if (!state || state.ack) {
       return;
     }
     const config = this.config;
     const localId = id.replace(`${this.namespace}.`, "");
+    this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
+    if (!this.client) {
+      this.log.debug(`onStateChange: ignoring ${localId} \u2014 no client connection`);
+      return;
+    }
     const parts = localId.split(".");
     if (parts.length < 3) {
+      this.log.debug(`onStateChange: unexpected id structure '${localId}', ignoring`);
       return;
     }
     const upsName = parts[0];
     if (!this.discoveredUps.has(upsName)) {
+      this.log.debug(`onStateChange: unknown UPS '${upsName}', ignoring`);
       return;
     }
     if (parts[1] === "commands") {

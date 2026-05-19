@@ -65,6 +65,7 @@ class StateManager {
    * @param description UPS description from LIST UPS
    */
   async ensureUpsDevice(upsName, description) {
+    this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
     await this.adapter.extendObjectAsync(upsName, {
       type: "device",
       common: {
@@ -102,6 +103,11 @@ class StateManager {
     const model = (_d = (_c = variables.find((v) => v.name === "device.model")) == null ? void 0 : _c.value) == null ? void 0 : _d.trim();
     if (mfr || model) {
       const name = [mfr, model].filter(Boolean).join(" ");
+      const cacheKey = `${upsName}.__deviceNameFallback`;
+      if (!this.createdIds.has(cacheKey)) {
+        this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
+        this.createdIds.add(cacheKey);
+      }
       await this.adapter.extendObjectAsync(upsName, { common: { name } });
     }
   }
@@ -132,6 +138,7 @@ class StateManager {
    */
   async updateVariables(upsName, variables, rwNames) {
     var _a;
+    this.adapter.log.debug(`updateVariables ${upsName}: ${variables.length} vars, ${rwNames.size} writable`);
     const sorted = [...variables].sort((a, b) => {
       const depthA = a.name.split(".").length;
       const depthB = b.name.split(".").length;
@@ -168,6 +175,10 @@ class StateManager {
     var _a;
     await this.ensureChannel(upsName, "status");
     const result = (0, import_status_parser.parseStatus)(rawStatus);
+    const activeFlags = import_status_parser.ALL_FLAG_KEYS.filter((k) => result.flags[k]).join(", ") || "none";
+    this.adapter.log.debug(
+      `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`
+    );
     await this.ensureState(`${upsName}.status.raw`, {
       type: "string",
       role: "text",
@@ -346,6 +357,7 @@ class StateManager {
    * @param patch.max RANGE maximum
    */
   async enrichStateMetadata(id, patch) {
+    this.adapter.log.debug(`enrichStateMetadata ${id}: ${JSON.stringify(patch)}`);
     const common = {};
     if (patch.states) {
       common.states = patch.states;

@@ -172,6 +172,10 @@ nut.0.
     ### **WORK IN PROGRESS**
 -->
 
+### **WORK IN PROGRESS**
+
+- Improved debug logging for state creation, polling and command routing — no user-facing changes
+
 ### 0.2.2 (2026-05-19)
 
 - Replaced PNG icon with SVG for transparent background and dark-mode compatibility
@@ -216,18 +220,6 @@ nut.0.
 - Fixed state names now human-readable instead of raw NUT variable names
 - Fixed log message order (auth result before "started" message)
 - Fixed admin UI layout (network interface and poll interval on separate rows)
-
-### 0.1.0 (2026-05-18)
-
-- Initial release — complete rewrite of the NUT adapter
-- Multi-UPS support: automatic discovery of all UPS devices on a NUT server
-- Persistent TCP connection with reconnect and exponential backoff
-- Dynamic state creation with proper data types and units
-- Parsed ups.status flags as individual boolean states with severity level
-- Instant commands (INSTCMD) and writable variables (SET VAR) with safety gates
-- Network interface selector for multi-homed servers
-- Connection test button in admin UI
-- 11-language admin UI and state names
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
@@ -280,4 +272,4 @@ SOFTWARE.
 
 ---
 
-_Developed with assistance from Claude.ai_
+*Developed with assistance from Claude.ai*

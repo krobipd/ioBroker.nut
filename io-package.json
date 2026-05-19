@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.2",
     "news": {
+      "NEXT": {
+        "en": "Improved debug logging for state creation, polling and command routing — no user-facing changes",
+        "de": "Verbessertes Debug-Logging für State-Erstellung, Polling und Kommando-Routing — keine Änderungen für Benutzer",
+        "ru": "Улучшено debug-логирование для создания состояний, опроса и маршрутизации команд — без пользовательских изменений",
+        "pt": "Melhoria no registo debug para criação de estados, polling e encaminhamento de comandos — sem alterações para o utilizador",
+        "nl": "Verbeterde debug-logging voor state-aanmaak, polling en commando-routing — geen wijzigingen voor gebruikers",
+        "fr": "Amélioration des logs debug pour la création d'états, le polling et le routage des commandes — aucune modification pour l'utilisateur",
+        "it": "Migliorato il logging debug per la creazione degli stati, il polling e il routing dei comandi — nessuna modifica per l'utente",
+        "es": "Mejorado el registro debug para creación de estados, polling y enrutamiento de comandos — sin cambios para el usuario",
+        "pl": "Ulepszone logowanie debug dla tworzenia stanów, pollingu i routingu komend — bez zmian dla użytkownika",
+        "uk": "Покращено debug-логування для створення станів, опитування та маршрутизації команд — без змін для користувача",
+        "zh-cn": "改进了状态创建、轮询和命令路由的调试日志——无用户可见更改"
+      },
       "0.2.2": {
         "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
         "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
@@ -80,19 +93,6 @@
         "pl": "Naprawiona ścieżka aktualizacji, błąd uwierzytelniania zatrzymuje adapter, test weryfikuje dane, wskaźnik online per UPS, czytelne nazwy stanów, ulepszony układ admina",
         "uk": "Виправлено шлях оновлення, помилка автентифікації зупиняє адаптер, тест перевіряє облікові дані, онлайн-індикатор для ДБЖ, зрозумілі назви станів, покращено макет адмінки",
         "zh-cn": "修复了从旧版本升级的路径，认证失败停止适配器，连接测试验证凭据，每个UPS的在线指示器，可读的状态名称，改进管理界面布局"
-      },
-      "0.1.0": {
-        "en": "Initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Первый выпуск",
-        "pt": "Lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Version initiale",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "uk": "Початковий випуск",
-        "zh-cn": "初始版本"
       }
     },
     "titleLang": {
