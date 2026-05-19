@@ -13,10 +13,12 @@ function createMockNutServer(handler?: MockHandler): {
   server: net.Server;
   start: () => Promise<number>;
   stop: () => Promise<void>;
+  disconnectAll: () => void;
   port: number;
   commands: string[];
 } {
   const commands: string[] = [];
+  const connections = new Set<net.Socket>();
   let port = 0;
 
   const defaultHandler: MockHandler = (cmd: string): string | string[] | null => {
@@ -87,6 +89,8 @@ function createMockNutServer(handler?: MockHandler): {
 
   const server = net.createServer(socket => {
     let buf = "";
+    connections.add(socket);
+    socket.on("close", () => connections.delete(socket));
     socket.setEncoding("utf8");
     socket.on("data", (data: string) => {
       buf += data;
@@ -130,6 +134,11 @@ function createMockNutServer(handler?: MockHandler): {
       new Promise<void>(resolve => {
         server.close(() => resolve());
       }),
+    disconnectAll: () => {
+      for (const conn of connections) {
+        conn.destroy();
+      }
+    },
   };
 }
 
@@ -780,40 +789,25 @@ describe("NutClient", () => {
   // Reconnect
   // -----------------------------------------------------------------------
   describe("reconnect", () => {
-    it("should attempt reconnect after disconnect", { timeout: 30000 }, async () => {
+    it("should attempt reconnect after disconnect", { timeout: 10000 }, async () => {
       const mock = createMockNutServer();
       const port = await mock.start();
       try {
         const client = new NutClient("127.0.0.1", port, { commandTimeout: 2000 });
-        let reconnected = false;
-        client.setOnReconnect(() => {
-          reconnected = true;
+
+        const reconnected = new Promise<void>((resolve) => {
+          client.setOnReconnect(() => resolve());
         });
 
         await client.connect();
         expect(client.isConnected).toBe(true);
 
-        // Force disconnect all clients
-        for (const conn of (mock.server as any)._connections || []) {
-          conn?.destroy();
-        }
-        // Alternative: close the server-side sockets
-        mock.server.getConnections((_err, _count) => {});
+        // Destroy socket directly — going through TCP (mock.disconnectAll) has timing variance
+        // @ts-expect-error accessing private socket for deterministic disconnect
+        client.socket!.destroy();
 
-        // Wait for reconnect
-        await new Promise<void>(resolve => {
-          const check = setInterval(() => {
-            if (reconnected) {
-              clearInterval(check);
-              resolve();
-            }
-          }, 100);
-          setTimeout(() => {
-            clearInterval(check);
-            resolve();
-          }, 3000);
-        });
-
+        await reconnected;
+        expect(client.isConnected).toBe(true);
         client.destroy();
       } finally {
         await mock.stop();
