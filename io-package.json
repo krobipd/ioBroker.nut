@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "news": {
-      "NEXT": {
+      "0.2.2": {
         "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
         "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
         "ru": "PNG-иконка заменена на SVG для прозрачного фона и совместимости с тёмной темой",

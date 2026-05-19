@@ -172,7 +172,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.2.2 (2026-05-19)
 
 - Replaced PNG icon with SVG for transparent background and dark-mode compatibility
 
