@@ -1015,6 +1015,58 @@ const VARIABLE_I18N = {
     uk: "\u0406\u043D\u0442\u0435\u0440\u0432\u0430\u043B \u043E\u043F\u0438\u0442\u0443\u0432\u0430\u043D\u043D\u044F",
     "zh-cn": "\u8F6E\u8BE2\u95F4\u9694"
   },
+  "driver.parameter.port": {
+    en: "Port",
+    de: "Anschluss",
+    ru: "\u041F\u043E\u0440\u0442",
+    pt: "Porta",
+    nl: "Poort",
+    fr: "Port",
+    it: "Porta",
+    es: "Puerto",
+    pl: "Port",
+    uk: "\u041F\u043E\u0440\u0442",
+    "zh-cn": "\u7AEF\u53E3"
+  },
+  "driver.parameter.synchronous": {
+    en: "Synchronous mode",
+    de: "Synchroner Modus",
+    ru: "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C",
+    pt: "Modo s\xEDncrono",
+    nl: "Synchrone modus",
+    fr: "Mode synchrone",
+    it: "Modalit\xE0 sincrona",
+    es: "Modo s\xEDncrono",
+    pl: "Tryb synchroniczny",
+    uk: "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u0438\u0439 \u0440\u0435\u0436\u0438\u043C",
+    "zh-cn": "\u540C\u6B65\u6A21\u5F0F"
+  },
+  "driver.flag.ignorelb": {
+    en: "Ignore low battery",
+    de: "Niedrige Batterie ignorieren",
+    ru: "\u0418\u0433\u043D\u043E\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043D\u0438\u0437\u043A\u0438\u0439 \u0437\u0430\u0440\u044F\u0434",
+    pt: "Ignorar bateria fraca",
+    nl: "Lage batterij negeren",
+    fr: "Ignorer batterie faible",
+    it: "Ignora batteria scarica",
+    es: "Ignorar bater\xEDa baja",
+    pl: "Ignoruj niski poziom baterii",
+    uk: "\u0406\u0433\u043D\u043E\u0440\u0443\u0432\u0430\u0442\u0438 \u043D\u0438\u0437\u044C\u043A\u0438\u0439 \u0437\u0430\u0440\u044F\u0434",
+    "zh-cn": "\u5FFD\u7565\u4F4E\u7535\u91CF"
+  },
+  "driver.version.usb": {
+    en: "USB library version",
+    de: "USB-Bibliotheksversion",
+    ru: "\u0412\u0435\u0440\u0441\u0438\u044F USB-\u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0438",
+    pt: "Vers\xE3o da biblioteca USB",
+    nl: "USB-bibliotheekversie",
+    fr: "Version de la biblioth\xE8que USB",
+    it: "Versione libreria USB",
+    es: "Versi\xF3n de biblioteca USB",
+    pl: "Wersja biblioteki USB",
+    uk: "\u0412\u0435\u0440\u0441\u0456\u044F USB-\u0431\u0456\u0431\u043B\u0456\u043E\u0442\u0435\u043A\u0438",
+    "zh-cn": "USB\u5E93\u7248\u672C"
+  },
   // ── input ──
   "input.voltage": {
     en: "Input voltage",

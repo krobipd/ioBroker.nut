@@ -75,8 +75,7 @@ nut.0.
 ├── info.connection                    — Connection to NUT server (bool)
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
-    │   ├── online                     — UPS reachable (bool)
-    │   └── description                — UPS description from server
+    │   └── online                     — UPS reachable (bool)
     ├── battery/
     │   ├── battery.charge             — Battery level (%, number)
     │   ├── battery.charge.low         — Low battery threshold (%)
@@ -173,6 +172,13 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
+- Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
+- Added translations for 4 additional driver variables (port, synchronous mode, USB library, ignore low battery flag)
+
 ### 0.2.0 (2026-05-18)
 
 - Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
@@ -245,10 +251,6 @@ This adapter is free and open source. If you find it useful, consider buying me 
 
 ---
 
-*Developed with assistance from Claude.ai*
-
----
-
 ## License
 
 MIT License
@@ -276,4 +278,4 @@ SOFTWARE.
 
 ---
 
-_Developed with assistance from Claude.ai_
+*Developed with assistance from Claude.ai*

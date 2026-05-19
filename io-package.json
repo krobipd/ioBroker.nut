@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.0",
     "news": {
+      "NEXT": {
+        "en": "Fix state type mismatch on upgrade from v0.1.x. Remove redundant info states. Add missing driver translations.",
+        "de": "Typ-Konflikt bei Upgrade von v0.1.x behoben. Redundante Info-States entfernt. Fehlende Treiber-Übersetzungen ergänzt.",
+        "ru": "Исправлен конфликт типов при обновлении с v0.1.x. Удалены лишние состояния info. Добавлены переводы для переменных драйвера.",
+        "pt": "Corrigido conflito de tipo ao atualizar do v0.1.x. Removidos estados info redundantes. Adicionadas traduções de driver em falta.",
+        "nl": "Type-conflict bij upgrade van v0.1.x opgelost. Overbodige info-states verwijderd. Ontbrekende driver-vertalingen toegevoegd.",
+        "fr": "Corrigé le conflit de type lors de la mise à jour depuis v0.1.x. États info redondants supprimés. Traductions de pilote manquantes ajoutées.",
+        "it": "Corretto conflitto di tipo nell aggiornamento da v0.1.x. Rimossi stati info ridondanti. Aggiunte traduzioni driver mancanti.",
+        "es": "Corregido conflicto de tipo al actualizar desde v0.1.x. Eliminados estados info redundantes. Añadidas traducciones de driver faltantes.",
+        "pl": "Naprawiono konflikt typów przy aktualizacji z v0.1.x. Usunięto zbędne stany info. Dodano brakujące tłumaczenia sterownika.",
+        "uk": "Виправлено конфлікт типів при оновленні з v0.1.x. Видалено зайві стани info. Додано відсутні переклади драйвера.",
+        "zh-cn": "修复从v0.1.x升级时的类型冲突。移除冗余info状态。添加缺失的驱动程序翻译。"
+      },
       "0.2.0": {
         "en": "Fixed vendorid/productid leading zeros and voltage.extended unit. Human-readable status display. HE flag. ENUM/RANGE for writable variables. Device name from mfr+model. Specific roles. i18n",
         "de": "Korrektur vendorid/productid führende Nullen und voltage.extended-Unit. Lesbarer Status-Display. HE-Flag. ENUM/RANGE für schreibbare Variablen. Gerätename aus Hersteller+Modell. Rollen. i18n",

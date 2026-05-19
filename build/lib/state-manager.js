@@ -84,14 +84,7 @@ class StateManager {
       write: false,
       name: (0, import_i18n_states.tName)("upsOnline")
     });
-    await this.ensureState(`${upsName}.info.description`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: (0, import_i18n_states.tName)("upsDescription")
-    });
-    await this.adapter.setState(`${upsName}.info.description`, { val: description, ack: true });
+    await this.cleanupDeprecatedInfoStates(upsName);
   }
   /**
    * Update device common.name from LIST VAR data when LIST UPS description is unusable.
@@ -298,6 +291,16 @@ class StateManager {
       this.createdIds.delete(id);
     }
   }
+  async cleanupDeprecatedInfoStates(upsName) {
+    const deprecated = [`${upsName}.info.name`, `${upsName}.info.description`];
+    for (const id of deprecated) {
+      try {
+        await this.adapter.delObjectAsync(id);
+        this.adapter.log.debug(`Removed deprecated state: ${id}`);
+      } catch {
+      }
+    }
+  }
   /**
    * Remove all cached IDs under a prefix.
    *
@@ -325,7 +328,7 @@ class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.setObjectNotExistsAsync(id, {
+    await this.adapter.extendObjectAsync(id, {
       type: "state",
       common,
       native: {}

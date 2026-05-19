@@ -84,14 +84,7 @@ export class StateManager {
       name: tName("upsOnline"),
     });
 
-    await this.ensureState(`${upsName}.info.description`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: tName("upsDescription"),
-    });
-    await this.adapter.setState(`${upsName}.info.description`, { val: description, ack: true });
+    await this.cleanupDeprecatedInfoStates(upsName);
   }
 
   /**
@@ -326,6 +319,18 @@ export class StateManager {
     }
   }
 
+  private async cleanupDeprecatedInfoStates(upsName: string): Promise<void> {
+    const deprecated = [`${upsName}.info.name`, `${upsName}.info.description`];
+    for (const id of deprecated) {
+      try {
+        await this.adapter.delObjectAsync(id);
+        this.adapter.log.debug(`Removed deprecated state: ${id}`);
+      } catch {
+        // Object doesn't exist — nothing to clean up
+      }
+    }
+  }
+
   /**
    * Remove all cached IDs under a prefix.
    *
@@ -376,7 +381,7 @@ export class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.setObjectNotExistsAsync(id, {
+    await this.adapter.extendObjectAsync(id, {
       type: "state",
       common,
       native: {},

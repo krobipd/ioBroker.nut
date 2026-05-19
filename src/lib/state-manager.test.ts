@@ -90,8 +90,8 @@ describe("StateManager", () => {
       expect(objects.get("ups0")?.type).toBe("device");
     });
 
-    it("should create info channel, info.online, and info.description", async () => {
-      const { adapter, objects, states } = createMockAdapter();
+    it("should create info channel and info.online but not info.name or info.description", async () => {
+      const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
@@ -101,8 +101,7 @@ describe("StateManager", () => {
       expect(objects.has("ups0.info.online")).toBe(true);
       expect(objects.get("ups0.info.online")?.common.role).toBe("indicator.reachable");
       expect(objects.has("ups0.info.name")).toBe(false);
-      expect(states.has("ups0.info.description")).toBe(true);
-      expect(states.get("ups0.info.description")?.val).toBe("Main UPS");
+      expect(objects.has("ups0.info.description")).toBe(false);
     });
 
     it("should set statusStates.onlineId on device object", async () => {
@@ -436,6 +435,7 @@ describe("StateManager", () => {
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main");
+      deletedIds.length = 0;
 
       await sm.cleanupRemovedUps(new Set(["ups0"]));
 
@@ -715,6 +715,31 @@ describe("StateManager", () => {
       const dIdx = deletedIds.indexOf("ups0.a.b.c.d");
       const cIdx = deletedIds.indexOf("ups0.a.b.c");
       expect(dIdx).toBeLessThan(cIdx);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // cleanupDeprecatedInfoStates (called from ensureUpsDevice)
+  // -----------------------------------------------------------------------
+  describe("cleanupDeprecatedInfoStates", () => {
+    it("should delete legacy info.name and info.description on device init", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.info.name", { type: "state", common: { name: "UPS Name" }, native: {} });
+      objects.set("ups0.info.description", { type: "state", common: { name: "Description" }, native: {} });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      expect(deletedIds).toContain("ups0.info.name");
+      expect(deletedIds).toContain("ups0.info.description");
+    });
+
+    it("should not fail when deprecated states do not exist", async () => {
+      const { adapter } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await expect(sm.ensureUpsDevice("ups0", "Main UPS")).resolves.not.toThrow();
     });
   });
 
