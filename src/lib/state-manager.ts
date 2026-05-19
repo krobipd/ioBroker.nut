@@ -62,6 +62,7 @@ export class StateManager {
    * @param description UPS description from LIST UPS
    */
   async ensureUpsDevice(upsName: string, description: string): Promise<void> {
+    this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
     await this.adapter.extendObjectAsync(upsName, {
       type: "device",
       common: {
@@ -106,6 +107,11 @@ export class StateManager {
     const model = variables.find(v => v.name === "device.model")?.value?.trim();
     if (mfr || model) {
       const name = [mfr, model].filter(Boolean).join(" ");
+      const cacheKey = `${upsName}.__deviceNameFallback`;
+      if (!this.createdIds.has(cacheKey)) {
+        this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
+        this.createdIds.add(cacheKey);
+      }
       await this.adapter.extendObjectAsync(upsName, { common: { name } });
     }
   }
@@ -138,6 +144,7 @@ export class StateManager {
    * @param rwNames Set of writable variable names from LIST RW
    */
   async updateVariables(upsName: string, variables: NutVariable[], rwNames: Set<string>): Promise<void> {
+    this.adapter.log.debug(`updateVariables ${upsName}: ${variables.length} vars, ${rwNames.size} writable`);
     const sorted = [...variables].sort((a, b) => {
       const depthA = a.name.split(".").length;
       const depthB = b.name.split(".").length;
@@ -179,6 +186,10 @@ export class StateManager {
     await this.ensureChannel(upsName, "status");
 
     const result = parseStatus(rawStatus);
+    const activeFlags = ALL_FLAG_KEYS.filter(k => result.flags[k]).join(", ") || "none";
+    this.adapter.log.debug(
+      `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`,
+    );
 
     await this.ensureState(`${upsName}.status.raw`, {
       type: "string",
@@ -403,6 +414,7 @@ export class StateManager {
     id: string,
     patch: { states?: Record<string, string>; min?: number; max?: number },
   ): Promise<void> {
+    this.adapter.log.debug(`enrichStateMetadata ${id}: ${JSON.stringify(patch)}`);
     const common: Record<string, unknown> = {};
     if (patch.states) {
       common.states = patch.states;

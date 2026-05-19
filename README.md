@@ -26,7 +26,6 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 - Persistent TCP connection with automatic reconnect and exponential backoff
 - Network interface selector for multi-homed servers
 - Connection test button in the admin UI
-- Multi-language admin UI (11 languages)
 
 ---
 
@@ -172,6 +171,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
 ### 0.2.2 (2026-05-19)
 
 - Replaced PNG icon with SVG for transparent background and dark-mode compatibility
@@ -192,8 +192,7 @@ nut.0.
 - Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
 - Added dropdown values for known enum variables (battery charger status, beeper status, outlet switches)
 - Device name now shows manufacturer + model when NUT server description is unavailable
-- Specific ioBroker roles for status flags (indicator.lowbat, indicator.alarm, indicator.maintenance)
-- Specific ioBroker roles for variable types (value.voltage, value.current, value.power, value.temperature, value.interval)
+- Status flags and variables now display with correct icons and categories in admin and vis
 - State names, status flags, and command buttons translated to 11 languages
 
 ### 0.1.3 (2026-05-18)
@@ -281,4 +280,4 @@ SOFTWARE.
 
 ---
 
-*Developed with assistance from Claude.ai*
+_Developed with assistance from Claude.ai_

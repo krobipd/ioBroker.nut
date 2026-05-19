@@ -795,7 +795,7 @@ describe("NutClient", () => {
       try {
         const client = new NutClient("127.0.0.1", port, { commandTimeout: 2000 });
 
-        const reconnected = new Promise<void>((resolve) => {
+        const reconnected = new Promise<void>(resolve => {
           client.setOnReconnect(() => resolve());
         });
 
