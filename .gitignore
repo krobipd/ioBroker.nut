@@ -17,6 +17,7 @@ npm-debug.log*
 
 # ioBroker
 admin/i18n/flat.txt
+admin/*.png
 
 # Build & Test
 coverage/
