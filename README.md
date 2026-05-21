@@ -171,7 +171,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.2.4 (2026-05-21)
 
 - Use community-standard event handler pattern
 
@@ -201,11 +201,6 @@ nut.0.
 - Device name now shows manufacturer + model when NUT server description is unavailable
 - Status flags and variables now display with correct icons and categories in admin and vis
 - State names, status flags, and command buttons translated to 11 languages
-
-### 0.1.3 (2026-05-18)
-
-- Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
-- Fixed auth failure now fully disconnects from NUT server — no further connection attempts until adapter restart
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

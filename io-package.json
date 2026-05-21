@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "news": {
-      "NEXT": {
+      "0.2.4": {
         "en": "Use community-standard event handler pattern",
         "de": "Community-Standard Event-Handler-Pattern verwendet",
         "ru": "Использован стандартный шаблон обработчика событий сообщества",

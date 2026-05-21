@@ -11,6 +11,11 @@
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+## 0.1.3 (2026-05-18)
+
+- Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
+- Fixed auth failure now fully disconnects from NUT server — no further connection attempts until adapter restart
+
 ## 0.1.2 (2026-05-18)
 
 - Fixed authentication failure no longer stops the adapter — stays alive with yellow status so the connection test button remains usable

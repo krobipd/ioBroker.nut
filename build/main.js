@@ -41,16 +41,10 @@ class NutAdapter extends utils.Adapter {
   uncaughtExceptionHandler = null;
   constructor(options = {}) {
     super({ ...options, name: "nut" });
-    this.on("ready", () => {
-      this.onReady().catch((err) => this.log.error(`onReady failed: ${(0, import_coerce.errText)(err)}`));
-    });
-    this.on("stateChange", (id, state) => {
-      this.onStateChange(id, state).catch((err) => this.log.error(`onStateChange failed: ${(0, import_coerce.errText)(err)}`));
-    });
+    this.on("ready", this.onReady.bind(this));
+    this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
-    this.on("message", (obj) => {
-      this.onMessage(obj).catch((err) => this.log.error(`onMessage failed: ${(0, import_coerce.errText)(err)}`));
-    });
+    this.on("message", this.onMessage.bind(this));
     this.unhandledRejectionHandler = (reason) => {
       var _a;
       this.log.error(`Unhandled rejection: ${(0, import_coerce.errText)(reason)}`);
@@ -65,81 +59,87 @@ class NutAdapter extends utils.Adapter {
     process.on("uncaughtException", this.uncaughtExceptionHandler);
   }
   async onReady() {
-    const config = this.config;
-    this.log.debug(
-      `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
-    );
-    await this.setStateAsync("info.connection", { val: false, ack: true });
-    const host = (0, import_coerce.coerceHost)(config.host);
-    if (!host) {
-      this.log.error("NUT server host is required \u2014 check adapter configuration");
-      return;
-    }
-    const port = (0, import_coerce.coercePort)(config.port);
-    const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
-    this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
-    const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
-    this.client = new import_nut_client.NutClient(host, port, {
-      localAddress,
-      commandTimeout: commandTimeoutMs,
-      logger: {
-        debug: (m) => this.log.debug(m),
-        warn: (m) => this.log.warn(m),
-        info: (m) => this.log.info(m)
-      }
-    });
-    this.stateManager = new import_state_manager.StateManager(this);
-    this.client.setOnReconnect(() => {
-      void this.rediscover().catch(
-        (err) => this.log.error(`Rediscovery after reconnect failed: ${(0, import_coerce.errText)(err)}`)
-      );
-    });
     try {
-      await this.client.connect();
-    } catch (err) {
-      this.log.error(`Cannot connect to NUT server ${host}:${port} \u2014 ${(0, import_coerce.errText)(err)}`);
-      return;
-    }
-    await this.discover();
-    if (config.username && config.password) {
-      try {
-        await this.client.authenticate(config.username, config.password);
-        this.authenticated = true;
-        for (const ups of this.discoveredUps.keys()) {
-          await this.client.login(ups);
-        }
-        this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
-      } catch (err) {
-        this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
-        this.log.info(`NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`);
-        this.client.destroy();
+      const config = this.config;
+      this.log.debug(
+        `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
+      );
+      await this.setStateAsync("info.connection", { val: false, ack: true });
+      const host = (0, import_coerce.coerceHost)(config.host);
+      if (!host) {
+        this.log.error("NUT server host is required \u2014 check adapter configuration");
         return;
       }
-    }
-    if (this.authenticated && config.enableCommands) {
-      for (const ups of this.discoveredUps.keys()) {
+      const port = (0, import_coerce.coercePort)(config.port);
+      const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
+      this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
+      const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
+      this.client = new import_nut_client.NutClient(host, port, {
+        localAddress,
+        commandTimeout: commandTimeoutMs,
+        logger: {
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m),
+          info: (m) => this.log.info(m)
+        }
+      });
+      this.stateManager = new import_state_manager.StateManager(this);
+      this.client.setOnReconnect(() => {
+        void this.rediscover().catch(
+          (err) => this.log.error(`Rediscovery after reconnect failed: ${(0, import_coerce.errText)(err)}`)
+        );
+      });
+      try {
+        await this.client.connect();
+      } catch (err) {
+        this.log.error(`Cannot connect to NUT server ${host}:${port} \u2014 ${(0, import_coerce.errText)(err)}`);
+        return;
+      }
+      await this.discover();
+      if (config.username && config.password) {
         try {
-          const commands = await this.client.listCmd(ups);
-          await this.stateManager.createCommandButtons(ups, commands);
-          this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+          await this.client.authenticate(config.username, config.password);
+          this.authenticated = true;
+          for (const ups of this.discoveredUps.keys()) {
+            await this.client.login(ups);
+          }
+          this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
         } catch (err) {
-          this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
+          this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
+          this.log.info(
+            `NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`
+          );
+          this.client.destroy();
+          return;
         }
       }
+      if (this.authenticated && config.enableCommands) {
+        for (const ups of this.discoveredUps.keys()) {
+          try {
+            const commands = await this.client.listCmd(ups);
+            await this.stateManager.createCommandButtons(ups, commands);
+            this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+          } catch (err) {
+            this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
+          }
+        }
+      }
+      await this.poll();
+      const pollSec = (0, import_coerce.coercePollIntervalSec)(config.pollInterval);
+      this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
+      this.pollTimer = this.setInterval(() => {
+        void this.poll();
+      }, pollSec * 1e3);
+      if (config.enableCommands || config.enableSetVar) {
+        await this.subscribeStatesAsync("*");
+      }
+      const authStatus = this.authenticated ? "authenticated" : "no credentials";
+      this.log.info(
+        `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`
+      );
+    } catch (err) {
+      this.log.error(`onReady failed: ${(0, import_coerce.errText)(err)}`);
     }
-    await this.poll();
-    const pollSec = (0, import_coerce.coercePollIntervalSec)(config.pollInterval);
-    this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
-    this.pollTimer = this.setInterval(() => {
-      void this.poll();
-    }, pollSec * 1e3);
-    if (config.enableCommands || config.enableSetVar) {
-      await this.subscribeStatesAsync("*");
-    }
-    const authStatus = this.authenticated ? "authenticated" : "no credentials";
-    this.log.info(
-      `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`
-    );
   }
   async discover() {
     if (!this.client || !this.stateManager) {
@@ -298,76 +298,84 @@ class NutAdapter extends utils.Adapter {
     }
   }
   async onStateChange(id, state) {
-    if (!state || state.ack) {
-      return;
-    }
-    const config = this.config;
-    const localId = id.replace(`${this.namespace}.`, "");
-    this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
-    if (!this.client) {
-      this.log.debug(`onStateChange: ignoring ${localId} \u2014 no client connection`);
-      return;
-    }
-    const parts = localId.split(".");
-    if (parts.length < 3) {
-      this.log.debug(`onStateChange: unexpected id structure '${localId}', ignoring`);
-      return;
-    }
-    const upsName = parts[0];
-    if (!this.discoveredUps.has(upsName)) {
-      this.log.debug(`onStateChange: unknown UPS '${upsName}', ignoring`);
-      return;
-    }
-    if (parts[1] === "commands") {
-      if (!config.enableCommands) {
-        this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
+    try {
+      if (!state || state.ack) {
         return;
       }
-      const cmdName = parts.slice(2).join(".").replace(/-/g, ".");
-      this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
-      try {
-        await this.client.instCmd(upsName, cmdName);
-        this.log.info(`Command executed: ${cmdName} on ${upsName}`);
-      } catch (err) {
-        this.log.error(`Command failed: ${cmdName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+      const config = this.config;
+      const localId = id.replace(`${this.namespace}.`, "");
+      this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
+      if (!this.client) {
+        this.log.debug(`onStateChange: ignoring ${localId} \u2014 no client connection`);
+        return;
       }
-      await this.setStateAsync(id, { val: false, ack: true });
-      return;
-    }
-    if (!config.enableSetVar) {
-      this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
-      return;
-    }
-    const varName = `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
-    const value = String(state.val);
-    this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
-    try {
-      await this.client.setVar(upsName, varName, value);
-      await this.setStateAsync(id, { val: state.val, ack: true });
-      this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
+      const parts = localId.split(".");
+      if (parts.length < 3) {
+        this.log.debug(`onStateChange: unexpected id structure '${localId}', ignoring`);
+        return;
+      }
+      const upsName = parts[0];
+      if (!this.discoveredUps.has(upsName)) {
+        this.log.debug(`onStateChange: unknown UPS '${upsName}', ignoring`);
+        return;
+      }
+      if (parts[1] === "commands") {
+        if (!config.enableCommands) {
+          this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
+          return;
+        }
+        const cmdName = parts.slice(2).join(".").replace(/-/g, ".");
+        this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
+        try {
+          await this.client.instCmd(upsName, cmdName);
+          this.log.info(`Command executed: ${cmdName} on ${upsName}`);
+        } catch (err) {
+          this.log.error(`Command failed: ${cmdName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+        }
+        await this.setStateAsync(id, { val: false, ack: true });
+        return;
+      }
+      if (!config.enableSetVar) {
+        this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
+        return;
+      }
+      const varName = `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
+      const value = String(state.val);
+      this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
+      try {
+        await this.client.setVar(upsName, varName, value);
+        await this.setStateAsync(id, { val: state.val, ack: true });
+        this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
+      } catch (err) {
+        this.log.error(`SET VAR failed: ${varName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+      }
     } catch (err) {
-      this.log.error(`SET VAR failed: ${varName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+      this.log.error(`onStateChange failed: ${(0, import_coerce.errText)(err)}`);
     }
   }
   async onMessage(obj) {
-    await (0, import_message_router.dispatchMessage)(obj, {
-      log: {
-        debug: (m) => this.log.debug(m),
-        warn: (m) => this.log.warn(m)
-      },
-      sendTo: this.sendTo.bind(this),
-      createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, {
-        debug: (m) => this.log.debug(m),
-        warn: (m) => this.log.warn(m),
-        info: (m) => this.log.info(m)
-      }),
-      onTestClientCreated: (client) => {
-        this.testClients.add(client);
-      },
-      onTestClientDone: (client) => {
-        this.testClients.delete(client);
-      }
-    });
+    try {
+      await (0, import_message_router.dispatchMessage)(obj, {
+        log: {
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m)
+        },
+        sendTo: this.sendTo.bind(this),
+        createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, {
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m),
+          info: (m) => this.log.info(m)
+        }),
+        onTestClientCreated: (client) => {
+          this.testClients.add(client);
+        },
+        onTestClientDone: (client) => {
+          this.testClients.delete(client);
+        }
+      });
+    } catch (err) {
+      this.log.error(`onMessage failed: ${(0, import_coerce.errText)(err)}`);
+    }
   }
   onUnload(callback) {
     var _a, _b;
