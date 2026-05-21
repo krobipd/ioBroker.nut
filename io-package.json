@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.3",
     "news": {
+      "NEXT": {
+        "en": "Use community-standard event handler pattern",
+        "de": "Community-Standard Event-Handler-Pattern verwendet",
+        "ru": "Использован стандартный шаблон обработчика событий сообщества",
+        "pt": "Utilizado padrão de manipulador de eventos da comunidade",
+        "nl": "Community-standaard event handler patroon gebruikt",
+        "fr": "Utilisation du modèle de gestionnaire d'événements standard de la communauté",
+        "it": "Utilizzato il pattern standard della comunità per i gestori di eventi",
+        "es": "Utilizado el patrón estándar de la comunidad para manejadores de eventos",
+        "pl": "Zastosowano standardowy wzorzec obsługi zdarzeń społeczności",
+        "uk": "Використано стандартний шаблон обробника подій спільноти",
+        "zh-cn": "使用社区标准事件处理程序模式"
+      },
       "0.2.3": {
         "en": "Improved debug logging for state creation, polling and command routing — no user-facing changes",
         "de": "Verbessertes Debug-Logging für State-Erstellung, Polling und Kommando-Routing — keine Änderungen für Benutzer",
@@ -80,19 +93,6 @@
         "pl": "Błąd uwierzytelniania utrzymuje adapter aktywnym ze statusem żółtym — przycisk testu połączenia pozostaje dostępny. Układ admina ulepszony",
         "uk": "Помилка автентифікації залишає адаптер активним із жовтим статусом — кнопка перевірки з'єднання залишається доступною. Покращено макет адмінки",
         "zh-cn": "认证失败时适配器保持活动状态（黄色）— 连接测试按钮仍可使用。改进管理界面布局（字段整齐分组）"
-      },
-      "0.1.1": {
-        "en": "Fixed upgrade path from previous version, auth failure stops adapter, connection test verifies credentials, per-UPS online indicator, human-readable state names, admin layout improvements",
-        "de": "Upgrade-Pfad von Vorgängerversion repariert, Auth-Fehler stoppt Adapter, Verbindungstest prüft Zugangsdaten, Online-Indikator pro USV, lesbare State-Namen, Admin-Layout verbessert",
-        "ru": "Исправлен путь обновления, ошибка авторизации останавливает адаптер, тест проверяет учётные данные, онлайн-индикатор для ИБП, понятные имена состояний, улучшен макет админки",
-        "pt": "Corrigido upgrade da versão anterior, falha de autenticação para adaptador, teste verifica credenciais, indicador online por UPS, nomes legíveis, layout admin melhorado",
-        "nl": "Upgradepad van vorige versie gerepareerd, authenticatiefout stopt adapter, verbindingstest verifieert inloggegevens, online-indicator per UPS, leesbare statusnamen, admin-layout verbeterd",
-        "fr": "Correction du chemin de mise à jour, échec d'authentification arrête l'adaptateur, test vérifie les identifiants, indicateur en ligne par onduleur, noms lisibles, admin amélioré",
-        "it": "Corretto percorso di aggiornamento, errore autenticazione ferma l'adattatore, test verifica credenziali, indicatore online per UPS, nomi leggibili, layout admin migliorato",
-        "es": "Corregida ruta de actualización, fallo de autenticación detiene adaptador, test verifica credenciales, indicador online por SAI, nombres legibles, admin mejorado",
-        "pl": "Naprawiona ścieżka aktualizacji, błąd uwierzytelniania zatrzymuje adapter, test weryfikuje dane, wskaźnik online per UPS, czytelne nazwy stanów, ulepszony układ admina",
-        "uk": "Виправлено шлях оновлення, помилка автентифікації зупиняє адаптер, тест перевіряє облікові дані, онлайн-індикатор для ДБЖ, зрозумілі назви станів, покращено макет адмінки",
-        "zh-cn": "修复了从旧版本升级的路径，认证失败停止适配器，连接测试验证凭据，每个UPS的在线指示器，可读的状态名称，改进管理界面布局"
       }
     },
     "titleLang": {

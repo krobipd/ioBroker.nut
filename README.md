@@ -171,6 +171,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- Use community-standard event handler pattern
+
 ### 0.2.3 (2026-05-19)
 
 - Improved debug logging for state creation, polling and command routing — no user-facing changes
