@@ -166,8 +166,7 @@ nut.0.
 ---
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 0.2.5 (2026-05-22)
 
 - User-modified state names are no longer overwritten on adapter restart
 
@@ -188,19 +187,6 @@ nut.0.
 - Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
 - Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
 - Added translations for 4 additional driver variables (port, synchronous mode, USB library, ignore low battery flag)
-
-### 0.2.0 (2026-05-18)
-
-- Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
-- Fixed `input.voltage.extended` incorrectly tagged with unit "V" — now correctly detected as string
-- Fixed missing unit "%" for humidity and percent-suffix variables
-- Added human-readable status display (e.g. "Online, Charging" instead of "OL CHRG")
-- Added HE (High Efficiency / ECO mode) status flag recognition
-- Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
-- Added dropdown values for known enum variables (battery charger status, beeper status, outlet switches)
-- Device name now shows manufacturer + model when NUT server description is unavailable
-- Status flags and variables now display with correct icons and categories in admin and vis
-- State names, status flags, and command buttons translated to 11 languages
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

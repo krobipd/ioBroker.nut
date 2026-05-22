@@ -11,6 +11,19 @@
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+## 0.2.0 (2026-05-18)
+
+- Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
+- Fixed `input.voltage.extended` incorrectly tagged with unit "V" — now correctly detected as string
+- Fixed missing unit "%" for humidity and percent-suffix variables
+- Added human-readable status display (e.g. "Online, Charging" instead of "OL CHRG")
+- Added HE (High Efficiency / ECO mode) status flag recognition
+- Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
+- Added dropdown values for known enum variables (battery charger status, beeper status, outlet switches)
+- Device name now shows manufacturer + model when NUT server description is unavailable
+- Status flags and variables now display with correct icons and categories in admin and vis
+- State names, status flags, and command buttons translated to 11 languages
+
 ## 0.1.3 (2026-05-18)
 
 - Fixed connection test now verifies LOGIN per UPS (not just USERNAME/PASSWORD) — catches ACCESS-DENIED before the adapter starts
