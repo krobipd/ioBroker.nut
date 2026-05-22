@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.4",
     "news": {
+      "NEXT": {
+        "en": "User-modified state names are no longer overwritten on adapter restart",
+        "de": "Vom Benutzer geänderte Datenpunktnamen werden beim Adapter-Neustart nicht mehr überschrieben",
+        "ru": "Пользовательские имена состояний больше не перезаписываются при перезапуске адаптера",
+        "pt": "Nomes de estados modificados pelo utilizador já não são substituídos ao reiniciar o adaptador",
+        "nl": "Door de gebruiker gewijzigde statusnamen worden niet meer overschreven bij het herstarten van de adapter",
+        "fr": "Les noms d'états modifiés par l'utilisateur ne sont plus écrasés lors du redémarrage de l'adaptateur",
+        "it": "I nomi degli stati modificati dall'utente non vengono più sovrascritti al riavvio dell'adattatore",
+        "es": "Los nombres de estados modificados por el usuario ya no se sobrescriben al reiniciar el adaptador",
+        "pl": "Nazwy stanów zmienione przez użytkownika nie są już nadpisywane przy ponownym uruchomieniu adaptera",
+        "uk": "Змінені користувачем назви станів більше не перезаписуються при перезапуску адаптера",
+        "zh-cn": "用户修改的状态名称在适配器重启时不再被覆盖"
+      },
       "0.2.4": {
         "en": "Use community-standard event handler pattern",
         "de": "Community-Standard Event-Handler-Pattern verwendet",
@@ -80,19 +93,6 @@
         "pl": "Test połączenia weryfikuje LOGIN per UPS (wykrywa ACCESS-DENIED). Błąd autoryzacji całkowicie rozłącza (bez ponownego łączenia)",
         "uk": "Тест підключення перевіряє LOGIN для кожного ДБЖ (виявляє ACCESS-DENIED). Помилка авторизації повністю від'єднує (без повторних спроб)",
         "zh-cn": "连接测试现在验证每个UPS的LOGIN（捕获ACCESS-DENIED）。认证失败完全断开连接（无重连垃圾日志）"
-      },
-      "0.1.2": {
-        "en": "Auth failure keeps adapter alive with yellow status — connection test button stays usable. Admin layout improved (fields grouped cleanly)",
-        "de": "Authentifizierungsfehler hält Adapter am Leben mit gelbem Status — Verbindungstest-Button bleibt nutzbar. Admin-Layout verbessert (Felder sauber gruppiert)",
-        "ru": "Ошибка аутентификации сохраняет адаптер активным с жёлтым статусом — кнопка проверки соединения остаётся доступной. Улучшен макет админки",
-        "pt": "Falha de autenticação mantém adaptador ativo com status amarelo — botão de teste de conexão continua utilizável. Layout admin melhorado",
-        "nl": "Authenticatiefout houdt adapter actief met gele status — verbindingstest-knop blijft bruikbaar. Admin-layout verbeterd (velden netjes gegroepeerd)",
-        "fr": "Échec d'authentification garde l'adaptateur actif avec statut jaune — bouton de test de connexion reste utilisable. Disposition admin améliorée",
-        "it": "Errore autenticazione mantiene l'adattatore attivo con stato giallo — pulsante test connessione resta utilizzabile. Layout admin migliorato",
-        "es": "Fallo de autenticación mantiene adaptador activo con estado amarillo — botón de prueba de conexión sigue utilizable. Diseño admin mejorado",
-        "pl": "Błąd uwierzytelniania utrzymuje adapter aktywnym ze statusem żółtym — przycisk testu połączenia pozostaje dostępny. Układ admina ulepszony",
-        "uk": "Помилка автентифікації залишає адаптер активним із жовтим статусом — кнопка перевірки з'єднання залишається доступною. Покращено макет адмінки",
-        "zh-cn": "认证失败时适配器保持活动状态（黄色）— 连接测试按钮仍可使用。改进管理界面布局（字段整齐分组）"
       }
     },
     "titleLang": {

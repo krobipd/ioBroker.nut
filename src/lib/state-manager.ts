@@ -63,16 +63,20 @@ export class StateManager {
    */
   async ensureUpsDevice(upsName: string, description: string): Promise<void> {
     this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
-    await this.adapter.extendObjectAsync(upsName, {
-      type: "device",
-      common: {
-        name: description,
-        statusStates: {
-          onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
+    await this.adapter.extendObjectAsync(
+      upsName,
+      {
+        type: "device",
+        common: {
+          name: description,
+          statusStates: {
+            onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
+          },
         },
+        native: {},
       },
-      native: {},
-    });
+      { preserve: { common: ["name"] } },
+    );
     this.createdIds.add(upsName);
 
     await this.ensureChannel(upsName, "info");
@@ -112,7 +116,7 @@ export class StateManager {
         this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
         this.createdIds.add(cacheKey);
       }
-      await this.adapter.extendObjectAsync(upsName, { common: { name } });
+      await this.adapter.extendObjectAsync(upsName, { common: { name } }, { preserve: { common: ["name"] } });
     }
   }
 
@@ -392,11 +396,15 @@ export class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.extendObjectAsync(id, {
-      type: "state",
-      common,
-      native: {},
-    });
+    await this.adapter.extendObjectAsync(
+      id,
+      {
+        type: "state",
+        common,
+        native: {},
+      },
+      { preserve: { common: ["name"] } },
+    );
     this.createdIds.add(id);
   }
 
@@ -426,7 +434,7 @@ export class StateManager {
       common.max = patch.max;
     }
     if (Object.keys(common).length > 0) {
-      await this.adapter.extendObjectAsync(id, { common });
+      await this.adapter.extendObjectAsync(id, { common }, { preserve: { common: ["name"] } });
     }
   }
 }

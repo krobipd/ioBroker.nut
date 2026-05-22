@@ -797,4 +797,40 @@ describe("StateManager", () => {
       expect(extendCalled).toBe(false);
     });
   });
+
+  describe("preserve option", () => {
+    it("ensureUpsDevice passes preserve for common.name", async () => {
+      const { adapter } = createMockAdapter();
+      const calls: any[][] = [];
+      const origExtend = adapter.extendObjectAsync;
+      adapter.extendObjectAsync = async (...args: any[]) => {
+        calls.push(args);
+        return origExtend(...args);
+      };
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Test UPS");
+
+      const deviceCall = calls.find(c => c[0] === "ups0");
+      expect(deviceCall).toBeDefined();
+      expect(deviceCall![2]).toEqual({ preserve: { common: ["name"] } });
+    });
+
+    it("ensureState passes preserve for common.name", async () => {
+      const { adapter } = createMockAdapter();
+      const calls: any[][] = [];
+      const origExtend = adapter.extendObjectAsync;
+      adapter.extendObjectAsync = async (...args: any[]) => {
+        calls.push(args);
+        return origExtend(...args);
+      };
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
+
+      const stateCall = calls.find(c => c[0] === "ups0.battery.charge");
+      expect(stateCall).toBeDefined();
+      expect(stateCall![2]).toEqual({ preserve: { common: ["name"] } });
+    });
+  });
 });
