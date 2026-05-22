@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.2.4 (Community-standard handler pattern. npm publish blockiert bis Apollon77-Transfer)
+- **Version:** 0.2.5 (Preserve user-modified names. npm publish blockiert bis Apollon77-Transfer)
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -59,13 +59,13 @@ src/lib/
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (295 unit + 57 package = 352)
+## Tests (297 unit + 57 package = 354)
 
 ```
 src/lib/nut-client.test.ts      → TCP Client (45 tests)
 src/lib/type-detector.test.ts   → Variable-Type-Detection (82 tests)
 src/lib/status-parser.test.ts   → Status-Flag-Parsing (59 tests)
-src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy + cleanupDeprecated + enrichStateMetadata (51 tests)
+src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy + cleanupDeprecated + enrichStateMetadata + preserve (53 tests)
 src/lib/coerce.test.ts          → Boundary-Validators (38 tests)
 src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (20 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
@@ -75,6 +75,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.2.5   | Preserve user-modified state names on restart (mcm1957 feedback). 297 unit + 57 package = 354 tests.                                                                                                                                                                                                                                                                                                                             |
 | 0.2.4   | Community-standard event handler pattern (.bind + try/catch).                                                                                                                                                                                                                                                                                                                                                                    |
 | 0.2.3   | **Debug Coverage Wave** — 11 patches across state-manager.ts + main.ts. All 9 bug classes at 9/10 (from 7.2). README/changelog user-wording fixes.                                                                                                                                                                                                                                                                              |
 | 0.2.2   | SVG icon with transparent background (dark-mode compatible). extIcon via jsdelivr CDN.                                                                                                                                                                                                                                                                                                                                           |
