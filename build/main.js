@@ -6,27 +6,21 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
+  if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (
-  (target = mod != null ? __create(__getProtoOf(mod)) : {}),
-  __copyProps(
-    // If the importer is in node compatibility mode or this is not an ESM
-    // file that has been converted to a CommonJS file using a Babel-
-    // compatible transform (i.e. "__esModule" has not been set), then set
-    // "default" to the CommonJS "module.exports" for node compatibility.
-    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-    mod,
-  )
-);
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_adapter_core = require("@iobroker/adapter-core");
 var import_node_path = require("node:path");
@@ -53,12 +47,12 @@ class NutAdapter extends utils.Adapter {
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
     this.on("message", this.onMessage.bind(this));
-    this.unhandledRejectionHandler = reason => {
+    this.unhandledRejectionHandler = (reason) => {
       var _a;
       this.log.error(`Unhandled rejection: ${(0, import_coerce.errText)(reason)}`);
       (_a = this.terminate) == null ? void 0 : _a.call(this, 11);
     };
-    this.uncaughtExceptionHandler = err => {
+    this.uncaughtExceptionHandler = (err) => {
       var _a;
       this.log.error(`Uncaught exception: ${(0, import_coerce.errText)(err)}`);
       (_a = this.terminate) == null ? void 0 : _a.call(this, 11);
@@ -71,7 +65,7 @@ class NutAdapter extends utils.Adapter {
       await import_adapter_core.I18n.init((0, import_node_path.join)(this.adapterDir, "admin"), this);
       const config = this.config;
       this.log.debug(
-        `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`,
+        `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
       );
       await this.setStateAsync("info.connection", { val: false, ack: true });
       const host = (0, import_coerce.coerceHost)(config.host);
@@ -82,23 +76,20 @@ class NutAdapter extends utils.Adapter {
       const port = (0, import_coerce.coercePort)(config.port);
       const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
       this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
-      const localAddress =
-        typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0
-          ? config.networkInterface.trim()
-          : void 0;
+      const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
       this.client = new import_nut_client.NutClient(host, port, {
         localAddress,
         commandTimeout: commandTimeoutMs,
         logger: {
-          debug: m => this.log.debug(m),
-          warn: m => this.log.warn(m),
-          info: m => this.log.info(m),
-        },
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m),
+          info: (m) => this.log.info(m)
+        }
       });
       this.stateManager = new import_state_manager.StateManager(this);
       this.client.setOnReconnect(() => {
-        void this.rediscover().catch(err =>
-          this.log.error(`Rediscovery after reconnect failed: ${(0, import_coerce.errText)(err)}`),
+        void this.rediscover().catch(
+          (err) => this.log.error(`Rediscovery after reconnect failed: ${(0, import_coerce.errText)(err)}`)
         );
       });
       try {
@@ -117,11 +108,9 @@ class NutAdapter extends utils.Adapter {
           }
           this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
         } catch (err) {
-          this.log.error(
-            `Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`,
-          );
+          this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
           this.log.info(
-            `NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`,
+            `NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`
           );
           this.client.destroy();
           return;
@@ -149,7 +138,7 @@ class NutAdapter extends utils.Adapter {
       }
       const authStatus = this.authenticated ? "authenticated" : "no credentials";
       this.log.info(
-        `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`,
+        `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`
       );
     } catch (err) {
       this.log.error(`onReady failed: ${(0, import_coerce.errText)(err)}`);
@@ -160,7 +149,7 @@ class NutAdapter extends utils.Adapter {
       return;
     }
     const upsList = await this.client.listUps();
-    this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map(u => u.name).join(", ")}`);
+    this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map((u) => u.name).join(", ")}`);
     this.discoveredUps.clear();
     for (const ups of upsList) {
       this.discoveredUps.set(ups.name, ups);
@@ -196,14 +185,7 @@ class NutAdapter extends utils.Adapter {
       return "UNKNOWN";
     }
     const code = err.code;
-    if (
-      code === "ENOTFOUND" ||
-      code === "ECONNREFUSED" ||
-      code === "ECONNRESET" ||
-      code === "ENETUNREACH" ||
-      code === "EHOSTUNREACH" ||
-      code === "EAI_AGAIN"
-    ) {
+    if (code === "ENOTFOUND" || code === "ECONNREFUSED" || code === "ECONNRESET" || code === "ENETUNREACH" || code === "EHOSTUNREACH" || code === "EAI_AGAIN") {
       return "NETWORK";
     }
     if (code === "ETIMEDOUT" || err.message.includes("timed out")) {
@@ -227,20 +209,16 @@ class NutAdapter extends utils.Adapter {
         try {
           const [variables, rwVars] = await Promise.all([
             this.client.listVar(upsName),
-            this.client.listRw(upsName).catch(err => {
+            this.client.listRw(upsName).catch((err) => {
               this.log.debug(`LIST RW ${upsName} failed (non-critical): ${(0, import_coerce.errText)(err)}`);
               return [];
-            }),
+            })
           ]);
-          const rwNames = new Set(rwVars.map(v => v.name));
+          const rwNames = new Set(rwVars.map((v) => v.name));
           await this.stateManager.updateVariables(upsName, variables, rwNames);
           const upsDesc = this.discoveredUps.get(upsName);
-          await this.stateManager.updateDeviceName(
-            upsName,
-            (_a = upsDesc == null ? void 0 : upsDesc.description) != null ? _a : "",
-            variables,
-          );
-          const statusVar = variables.find(v => v.name === "ups.status");
+          await this.stateManager.updateDeviceName(upsName, (_a = upsDesc == null ? void 0 : upsDesc.description) != null ? _a : "", variables);
+          const statusVar = variables.find((v) => v.name === "ups.status");
           if (statusVar) {
             await this.stateManager.updateStatusFlags(upsName, statusVar.value);
           }
@@ -382,21 +360,21 @@ class NutAdapter extends utils.Adapter {
     try {
       await (0, import_message_router.dispatchMessage)(obj, {
         log: {
-          debug: m => this.log.debug(m),
-          warn: m => this.log.warn(m),
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m)
         },
         sendTo: this.sendTo.bind(this),
         createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, {
-          debug: m => this.log.debug(m),
-          warn: m => this.log.warn(m),
-          info: m => this.log.info(m),
+          debug: (m) => this.log.debug(m),
+          warn: (m) => this.log.warn(m),
+          info: (m) => this.log.info(m)
         }),
-        onTestClientCreated: client => {
+        onTestClientCreated: (client) => {
           this.testClients.add(client);
         },
-        onTestClientDone: client => {
+        onTestClientDone: (client) => {
           this.testClients.delete(client);
-        },
+        }
       });
     } catch (err) {
       this.log.error(`onMessage failed: ${(0, import_coerce.errText)(err)}`);
@@ -423,7 +401,8 @@ class NutAdapter extends utils.Adapter {
         process.off("uncaughtException", this.uncaughtExceptionHandler);
         this.uncaughtExceptionHandler = null;
       }
-      void this.setState("info.connection", { val: false, ack: true }).catch(() => {});
+      void this.setState("info.connection", { val: false, ack: true }).catch(() => {
+      });
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${(0, import_coerce.errText)(err)}`);
     }
@@ -431,7 +410,7 @@ class NutAdapter extends utils.Adapter {
   }
 }
 if (require.main !== module) {
-  module.exports = options => new NutAdapter(options);
+  module.exports = (options) => new NutAdapter(options);
 } else {
   (() => new NutAdapter())();
 }

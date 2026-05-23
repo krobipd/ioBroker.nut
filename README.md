@@ -166,8 +166,7 @@ nut.0.
 ---
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 0.2.6 (2026-05-23)
 
 - State name translations use standard ioBroker i18n framework
 
@@ -186,12 +185,6 @@ nut.0.
 ### 0.2.2 (2026-05-19)
 
 - Replaced PNG icon with SVG for transparent background and dark-mode compatibility
-
-### 0.2.1 (2026-05-19)
-
-- Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
-- Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
-- Added translations for 4 additional driver variables (port, synchronous mode, USB library, ignore low battery flag)
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "news": {
-      "NEXT": {
+      "0.2.6": {
         "en": "State name translations use standard ioBroker i18n framework",
         "de": "Datenpunktnamen-Übersetzungen nutzen das Standard-ioBroker-i18n-Framework",
         "ru": "Переводы имён состояний используют стандартный фреймворк i18n ioBroker",
@@ -121,7 +121,10 @@
       "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
-    "authors": ["Apollon77 <ingo@fischer-ka.de>", "krobi <krobi@power-dreams.com>"],
+    "authors": [
+      "Apollon77 <ingo@fischer-ka.de>",
+      "krobi <krobi@power-dreams.com>"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -155,10 +158,24 @@
         "admin": ">=7.8.23"
       }
     ],
-    "keywords": ["ups", "nut", "network ups tools", "uninterruptible power supply", "usv", "battery", "power"]
+    "keywords": [
+      "ups",
+      "nut",
+      "network ups tools",
+      "uninterruptible power supply",
+      "usv",
+      "battery",
+      "power"
+    ]
   },
-  "encryptedNative": ["username", "password"],
-  "protectedNative": ["username", "password"],
+  "encryptedNative": [
+    "username",
+    "password"
+  ],
+  "protectedNative": [
+    "username",
+    "password"
+  ],
   "native": {
     "host": "",
     "port": 3493,

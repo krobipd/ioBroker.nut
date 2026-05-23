@@ -11,6 +11,11 @@
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+## 0.2.1 (2026-05-19)
+
+- Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
+- Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
+- Added translations for 4 additional driver variables (port, synchronous mode, USB library, ignore low battery flag)
 
 ## 0.2.0 (2026-05-18)
 
