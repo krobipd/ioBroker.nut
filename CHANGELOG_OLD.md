@@ -1,13 +1,13 @@
 # Older changes
 
-### 0.1.0 (2026-05-18)
+## 0.1.0 (2026-05-18)
 
 - Initial release — complete rewrite of the NUT adapter
 - Multi-UPS support: automatic discovery of all UPS devices on a NUT server
-- Persistent TCP connection with reconnect and exponential backoff
+- Persistent connection with automatic reconnect
 - Dynamic state creation with proper data types and units
-- Parsed ups.status flags as individual boolean states with severity level
-- Instant commands (INSTCMD) and writable variables (SET VAR) with safety gates
+- ups.status parsed into individual status flags with severity level
+- Instant commands (INSTCMD) and writable variables (SET VAR) with safety checks
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
@@ -17,18 +17,18 @@
 
 ## 0.2.1 (2026-05-19)
 
-- Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)
-- Removed redundant info.description and legacy info.name states — device name via manufacturer + model is sufficient
+- Fixed existing states not being updated on adapter upgrade
+- Removed redundant info states. Device name shows manufacturer and model.
 - Added translations for 4 additional driver variables (port, synchronous mode, USB library, ignore low battery flag)
 
 ## 0.2.0 (2026-05-18)
 
-- Fixed `ups.vendorid` and `ups.productid` parsed as numbers — leading zeros are now preserved
-- Fixed `input.voltage.extended` incorrectly tagged with unit "V" — now correctly detected as string
+- Fixed vendor and product IDs: leading zeros are now preserved
+- Fixed incorrect unit on extended voltage measurement
 - Fixed missing unit "%" for humidity and percent-suffix variables
 - Added human-readable status display (e.g. "Online, Charging" instead of "OL CHRG")
 - Added HE (High Efficiency / ECO mode) status flag recognition
-- Added ENUM/RANGE metadata for writable variables (dropdowns and min/max in admin)
+- Writable variables now show dropdown menus and value ranges in admin
 - Added dropdown values for known enum variables (battery charger status, beeper status, outlet switches)
 - Device name now shows manufacturer + model when NUT server description is unavailable
 - Status flags and variables now display with correct icons and categories in admin and vis
@@ -46,8 +46,8 @@
 
 ## 0.1.1 (2026-05-18)
 
-- Fixed upgrade path from previous adapter version (orphaned root-level objects are now cleaned up automatically)
-- Fixed NUT variable dots converted to dashes in state IDs (matching previous adapter behavior)
+- Fixed upgrade from previous adapter version — leftover states are cleaned up automatically
+- Fixed state IDs to match previous adapter behavior
 - Fixed authentication failure now stops the adapter instead of continuing without permissions
 - Fixed connection test now also verifies authentication credentials
 - Added per-UPS online indicator (info.online) with device status integration

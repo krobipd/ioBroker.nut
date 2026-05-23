@@ -166,14 +166,18 @@ nut.0.
 ---
 
 ## Changelog
+
+<!--
+    Placeholder for the next version (at the beginning of the line):
+    ### **WORK IN PROGRESS**
+-->
 ### 0.2.7 (2026-05-23)
 
-- CI check-and-lint updated to Node.js 24
-- LICENSE copyright formatting fixed for repochecker compliance
+- Internal cleanup. No user-facing changes.
 
 ### 0.2.6 (2026-05-23)
 
-- State name translations use standard ioBroker i18n framework
+- Internal cleanup. No user-facing changes.
 
 ### 0.2.5 (2026-05-22)
 
@@ -181,11 +185,11 @@ nut.0.
 
 ### 0.2.4 (2026-05-21)
 
-- Use community-standard event handler pattern
+- Improved error handling and stability.
 
 ### 0.2.3 (2026-05-19)
 
-- Improved debug logging for state creation, polling and command routing — no user-facing changes
+- Improved debug logging for easier diagnosis of connection and command issues.
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
