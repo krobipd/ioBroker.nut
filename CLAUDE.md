@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.2.8 (released 2026-05-23, changelog user-centric rewrite). Vorgänger **0.2.7** CI Node 24 + LICENSE fix. **0.2.6** i18n migration to adapter-core. **0.2.5** Preserve user-modified state names. npm publish blockiert bis Apollon77-Transfer
+- **Version:** 0.2.9 (released 2026-05-24, memory/perf audit: process.on compact-mode guard, setState→setStateChangedAsync in state-manager updateVariables+updateStatusFlags). Vorgänger **0.2.8** changelog user-centric rewrite. **0.2.7** CI Node 24 + LICENSE fix. **0.2.6** i18n migration to adapter-core. **0.2.5** Preserve user-modified state names. npm publish blockiert bis Apollon77-Transfer
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -77,6 +77,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.2.9   | Memory/Perf-Audit: process.on compact-mode guard (module-level), `setState`→`setStateChangedAsync` in state-manager (5 Stellen). |
 | 0.2.8   | Changelog user-centric rewrite (README + CHANGELOG_OLD + io-package.json news audited against Hard-Negativ-Liste). |
 | 0.2.7   | CI check-and-lint updated to Node.js 24 (repochecker S3021). LICENSE copyright formatting fix (W7003). |
 | 0.2.6   | **i18n-Migration auf adapter-core.** Private `i18n-states.ts` (1495 LOC) durch `I18n.getTranslatedObject()` ersetzt, admin/i18n von Unterordner-Pattern auf flat `<lang>.json` migriert (133 Keys = 25 UI + 53 STATE_NAMES + 55 VARIABLE_I18N). Tests 297→301. |
