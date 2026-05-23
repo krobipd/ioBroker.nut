@@ -171,6 +171,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- Changelog rewritten in user-centric style across all versions.
+
 ### 0.2.7 (2026-05-23)
 
 - Internal cleanup. No user-facing changes.
