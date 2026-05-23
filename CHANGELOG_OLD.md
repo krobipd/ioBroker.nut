@@ -1,4 +1,7 @@
 # Older changes
+## 0.2.3 (2026-05-19)
+
+- Improved debug logging for easier diagnosis of connection and command issues.
 
 ## 0.1.0 (2026-05-18)
 
@@ -11,6 +14,7 @@
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+
 ## 0.2.2 (2026-05-19)
 
 - Replaced PNG icon with SVG for transparent background and dark-mode compatibility

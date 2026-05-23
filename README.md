@@ -171,7 +171,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.2.8 (2026-05-23)
 
 - Changelog rewritten in user-centric style across all versions.
 
@@ -190,10 +190,6 @@ nut.0.
 ### 0.2.4 (2026-05-21)
 
 - Improved error handling and stability.
-
-### 0.2.3 (2026-05-19)
-
-- Improved debug logging for easier diagnosis of connection and command issues.
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

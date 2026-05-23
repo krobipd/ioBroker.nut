@@ -1,237 +1,237 @@
 {
-    "common": {
-        "name": "nut",
-        "version": "0.2.7",
-        "news": {
-            "NEXT": {
-                "en": "Changelog rewritten in user-centric style across all versions.",
-                "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
-                "ru": "Журнал изменений переписан в пользовательском стиле для всех версий.",
-                "pt": "Registo de alterações reescrito em estilo centrado no utilizador em todas as versões.",
-                "nl": "Changelog herschreven in gebruikersgerichte stijl voor alle versies.",
-                "fr": "Journal des modifications réécrit dans un style centré sur l'utilisateur pour toutes les versions.",
-                "it": "Registro delle modifiche riscritto in stile orientato all'utente per tutte le versioni.",
-                "es": "Registro de cambios reescrito en estilo centrado en el usuario en todas las versiones.",
-                "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
-                "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
-                "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
-            },
-            "0.2.7": {
-                "en": "Internal cleanup. No user-facing changes.",
-                "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
-                "ru": "Внутренняя очистка. Нет изменений для пользователей.",
-                "pt": "Limpeza interna. Sem alterações para o utilizador.",
-                "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
-                "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
-                "it": "Pulizia interna. Nessuna modifica per l'utente.",
-                "es": "Limpieza interna. Sin cambios para el usuario.",
-                "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
-                "uk": "Внутрішнє очищення. Без змін для користувачів.",
-                "zh-cn": "内部清理。无用户可见的更改。"
-            },
-            "0.2.6": {
-                "en": "Internal cleanup. No user-facing changes.",
-                "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
-                "ru": "Внутренняя очистка. Нет изменений для пользователей.",
-                "pt": "Limpeza interna. Sem alterações para o utilizador.",
-                "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
-                "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
-                "it": "Pulizia interna. Nessuna modifica per l'utente.",
-                "es": "Limpieza interna. Sin cambios para el usuario.",
-                "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
-                "uk": "Внутрішнє очищення. Без змін для користувачів.",
-                "zh-cn": "内部清理。无用户可见的更改。"
-            },
-            "0.2.5": {
-                "en": "User-modified state names are no longer overwritten on adapter restart",
-                "de": "Vom Benutzer geänderte Datenpunktnamen werden beim Adapter-Neustart nicht mehr überschrieben",
-                "ru": "Пользовательские имена состояний больше не перезаписываются при перезапуске адаптера",
-                "pt": "Nomes de estados modificados pelo utilizador já não são substituídos ao reiniciar o adaptador",
-                "nl": "Door de gebruiker gewijzigde statusnamen worden niet meer overschreven bij het herstarten van de adapter",
-                "fr": "Les noms d'états modifiés par l'utilisateur ne sont plus écrasés lors du redémarrage de l'adaptateur",
-                "it": "I nomi degli stati modificati dall'utente non vengono più sovrascritti al riavvio dell'adattatore",
-                "es": "Los nombres de estados modificados por el usuario ya no se sobrescriben al reiniciar el adaptador",
-                "pl": "Nazwy stanów zmienione przez użytkownika nie są już nadpisywane przy ponownym uruchomieniu adaptera",
-                "uk": "Змінені користувачем назви станів більше не перезаписуються при перезапуску адаптера",
-                "zh-cn": "用户修改的状态名称在适配器重启时不再被覆盖"
-            },
-            "0.2.4": {
-                "en": "Improved error handling and stability.",
-                "de": "Verbesserte Fehlerbehandlung und Stabilität.",
-                "ru": "Улучшена обработка ошибок и стабильность.",
-                "pt": "Melhor tratamento de erros e estabilidade.",
-                "nl": "Verbeterde foutafhandeling en stabiliteit.",
-                "fr": "Amélioration de la gestion des erreurs et de la stabilité.",
-                "it": "Migliorata la gestione degli errori e la stabilità.",
-                "es": "Mejora del manejo de errores y la estabilidad.",
-                "pl": "Poprawiona obsługa błędów i stabilność.",
-                "uk": "Покращено обробку помилок та стабільність.",
-                "zh-cn": "改进了错误处理和稳定性。"
-            },
-            "0.2.3": {
-                "en": "Improved debug logging for easier diagnosis of connection and command issues.",
-                "de": "Verbessertes Debug-Logging zur einfacheren Diagnose von Verbindungs- und Befehlsproblemen.",
-                "ru": "Улучшено журналирование для упрощения диагностики проблем с подключением и командами.",
-                "pt": "Registo de depuração melhorado para diagnóstico mais fácil de problemas de ligação e comandos.",
-                "nl": "Verbeterde debug-logging voor eenvoudiger diagnose van verbindings- en opdracht problemen.",
-                "fr": "Journalisation de débogage améliorée pour un diagnostic plus facile des problèmes de connexion et de commande.",
-                "it": "Logging di debug migliorato per una diagnosi più semplice dei problemi di connessione e comandi.",
-                "es": "Registro de depuración mejorado para un diagnóstico más fácil de problemas de conexión y comandos.",
-                "pl": "Ulepszone logowanie debugowania dla łatwiejszej diagnostyki problemów z połączeniem i komendami.",
-                "uk": "Покращене журналювання для спрощення діагностики проблем підключення та команд.",
-                "zh-cn": "改进了调试日志，便于诊断连接和命令问题。"
-            },
-            "0.2.2": {
-                "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
-                "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
-                "ru": "PNG-иконка заменена на SVG для прозрачного фона и совместимости с тёмной темой",
-                "pt": "Ícone PNG substituído por SVG com fundo transparente e compatibilidade com modo escuro",
-                "nl": "PNG-pictogram vervangen door SVG voor transparante achtergrond en dark-mode compatibiliteit",
-                "fr": "Icône PNG remplacée par SVG pour fond transparent et compatibilité mode sombre",
-                "it": "Icona PNG sostituita con SVG per sfondo trasparente e compatibilità modalità scura",
-                "es": "Icono PNG reemplazado por SVG con fondo transparente y compatibilidad con modo oscuro",
-                "pl": "Ikona PNG zastąpiona przez SVG z przezroczystym tłem i kompatybilnością z trybem ciemnym",
-                "uk": "PNG-іконку замінено на SVG для прозорого фону та сумісності з темною темою",
-                "zh-cn": "PNG图标替换为SVG，支持透明背景和暗色模式"
-            }
-        },
-        "titleLang": {
-            "en": "Network UPS Tools",
-            "de": "Network UPS Tools",
-            "ru": "Network UPS Tools",
-            "pt": "Network UPS Tools",
-            "nl": "Network UPS Tools",
-            "fr": "Network UPS Tools",
-            "it": "Network UPS Tools",
-            "es": "Network UPS Tools",
-            "pl": "Network UPS Tools",
-            "uk": "Network UPS Tools",
-            "zh-cn": "Network UPS Tools"
-        },
-        "desc": {
-            "en": "Monitor uninterruptible power supplies via NUT (Network UPS Tools)",
-            "de": "Überwachung unterbrechungsfreier Stromversorgungen über NUT (Network UPS Tools)",
-            "ru": "Мониторинг источников бесперебойного питания через NUT (Network UPS Tools)",
-            "pt": "Monitorar fontes de alimentação ininterrupta via NUT (Network UPS Tools)",
-            "nl": "Monitor ononderbroken stroomvoorzieningen via NUT (Network UPS Tools)",
-            "fr": "Surveiller les alimentations sans interruption via NUT (Network UPS Tools)",
-            "it": "Monitorare gruppi di continuità tramite NUT (Network UPS Tools)",
-            "es": "Monitorear sistemas de alimentación ininterrumpida vía NUT (Network UPS Tools)",
-            "pl": "Monitorowanie zasilaczy awaryjnych przez NUT (Network UPS Tools)",
-            "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
-            "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
-        },
-        "authors": [
-            "Apollon77 <ingo@fischer-ka.de>",
-            "krobi <krobi@power-dreams.com>"
-        ],
-        "licenseInformation": {
-            "license": "MIT",
-            "type": "free"
-        },
-        "platform": "Javascript/Node.js",
-        "icon": "nut.svg",
-        "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
-        "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
-        "enabled": true,
-        "tier": 3,
-        "loglevel": "info",
-        "mode": "daemon",
-        "type": "hardware",
-        "compact": true,
-        "connectionType": "local",
-        "dataSource": "poll",
-        "messagebox": true,
-        "adminUI": {
-            "config": "json"
-        },
-        "supportedMessages": {
-            "stopInstance": true
-        },
-        "dependencies": [
-            {
-                "js-controller": ">=7.0.7"
-            }
-        ],
-        "globalDependencies": [
-            {
-                "admin": ">=7.8.23"
-            }
-        ],
-        "keywords": [
-            "ups",
-            "nut",
-            "network ups tools",
-            "uninterruptible power supply",
-            "usv",
-            "battery",
-            "power"
-        ]
+  "common": {
+    "name": "nut",
+    "version": "0.2.8",
+    "news": {
+      "0.2.8": {
+        "en": "Changelog rewritten in user-centric style across all versions.",
+        "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
+        "ru": "Журнал изменений переписан в пользовательском стиле для всех версий.",
+        "pt": "Registo de alterações reescrito em estilo centrado no utilizador em todas as versões.",
+        "nl": "Changelog herschreven in gebruikersgerichte stijl voor alle versies.",
+        "fr": "Journal des modifications réécrit dans un style centré sur l'utilisateur pour toutes les versions.",
+        "it": "Registro delle modifiche riscritto in stile orientato all'utente per tutte le versioni.",
+        "es": "Registro de cambios reescrito en estilo centrado en el usuario en todas las versiones.",
+        "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
+        "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
+        "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
+      },
+      "0.2.7": {
+        "en": "Internal cleanup. No user-facing changes.",
+        "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
+        "ru": "Внутренняя очистка. Нет изменений для пользователей.",
+        "pt": "Limpeza interna. Sem alterações para o utilizador.",
+        "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
+        "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
+        "it": "Pulizia interna. Nessuna modifica per l'utente.",
+        "es": "Limpieza interna. Sin cambios para el usuario.",
+        "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
+        "uk": "Внутрішнє очищення. Без змін для користувачів.",
+        "zh-cn": "内部清理。无用户可见的更改。"
+      },
+      "0.2.6": {
+        "en": "Internal cleanup. No user-facing changes.",
+        "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
+        "ru": "Внутренняя очистка. Нет изменений для пользователей.",
+        "pt": "Limpeza interna. Sem alterações para o utilizador.",
+        "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
+        "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
+        "it": "Pulizia interna. Nessuna modifica per l'utente.",
+        "es": "Limpieza interna. Sin cambios para el usuario.",
+        "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
+        "uk": "Внутрішнє очищення. Без змін для користувачів.",
+        "zh-cn": "内部清理。无用户可见的更改。"
+      },
+      "0.2.5": {
+        "en": "User-modified state names are no longer overwritten on adapter restart",
+        "de": "Vom Benutzer geänderte Datenpunktnamen werden beim Adapter-Neustart nicht mehr überschrieben",
+        "ru": "Пользовательские имена состояний больше не перезаписываются при перезапуске адаптера",
+        "pt": "Nomes de estados modificados pelo utilizador já não são substituídos ao reiniciar o adaptador",
+        "nl": "Door de gebruiker gewijzigde statusnamen worden niet meer overschreven bij het herstarten van de adapter",
+        "fr": "Les noms d'états modifiés par l'utilisateur ne sont plus écrasés lors du redémarrage de l'adaptateur",
+        "it": "I nomi degli stati modificati dall'utente non vengono più sovrascritti al riavvio dell'adattatore",
+        "es": "Los nombres de estados modificados por el usuario ya no se sobrescriben al reiniciar el adaptador",
+        "pl": "Nazwy stanów zmienione przez użytkownika nie są już nadpisywane przy ponownym uruchomieniu adaptera",
+        "uk": "Змінені користувачем назви станів більше не перезаписуються при перезапуску адаптера",
+        "zh-cn": "用户修改的状态名称在适配器重启时不再被覆盖"
+      },
+      "0.2.4": {
+        "en": "Improved error handling and stability.",
+        "de": "Verbesserte Fehlerbehandlung und Stabilität.",
+        "ru": "Улучшена обработка ошибок и стабильность.",
+        "pt": "Melhor tratamento de erros e estabilidade.",
+        "nl": "Verbeterde foutafhandeling en stabiliteit.",
+        "fr": "Amélioration de la gestion des erreurs et de la stabilité.",
+        "it": "Migliorata la gestione degli errori e la stabilità.",
+        "es": "Mejora del manejo de errores y la estabilidad.",
+        "pl": "Poprawiona obsługa błędów i stabilność.",
+        "uk": "Покращено обробку помилок та стабільність.",
+        "zh-cn": "改进了错误处理和稳定性。"
+      },
+      "0.2.3": {
+        "en": "Improved debug logging for easier diagnosis of connection and command issues.",
+        "de": "Verbessertes Debug-Logging zur einfacheren Diagnose von Verbindungs- und Befehlsproblemen.",
+        "ru": "Улучшено журналирование для упрощения диагностики проблем с подключением и командами.",
+        "pt": "Registo de depuração melhorado para diagnóstico mais fácil de problemas de ligação e comandos.",
+        "nl": "Verbeterde debug-logging voor eenvoudiger diagnose van verbindings- en opdracht problemen.",
+        "fr": "Journalisation de débogage améliorée pour un diagnostic plus facile des problèmes de connexion et de commande.",
+        "it": "Logging di debug migliorato per una diagnosi più semplice dei problemi di connessione e comandi.",
+        "es": "Registro de depuración mejorado para un diagnóstico más fácil de problemas de conexión y comandos.",
+        "pl": "Ulepszone logowanie debugowania dla łatwiejszej diagnostyki problemów z połączeniem i komendami.",
+        "uk": "Покращене журналювання для спрощення діагностики проблем підключення та команд.",
+        "zh-cn": "改进了调试日志，便于诊断连接和命令问题。"
+      },
+      "0.2.2": {
+        "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
+        "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
+        "ru": "PNG-иконка заменена на SVG для прозрачного фона и совместимости с тёмной темой",
+        "pt": "Ícone PNG substituído por SVG com fundo transparente e compatibilidade com modo escuro",
+        "nl": "PNG-pictogram vervangen door SVG voor transparante achtergrond en dark-mode compatibiliteit",
+        "fr": "Icône PNG remplacée par SVG pour fond transparent et compatibilité mode sombre",
+        "it": "Icona PNG sostituita con SVG per sfondo trasparente e compatibilità modalità scura",
+        "es": "Icono PNG reemplazado por SVG con fondo transparente y compatibilidad con modo oscuro",
+        "pl": "Ikona PNG zastąpiona przez SVG z przezroczystym tłem i kompatybilnością z trybem ciemnym",
+        "uk": "PNG-іконку замінено на SVG для прозорого фону та сумісності з темною темою",
+        "zh-cn": "PNG图标替换为SVG，支持透明背景和暗色模式"
+      }
     },
-    "encryptedNative": [
-        "username",
-        "password"
-    ],
-    "protectedNative": [
-        "username",
-        "password"
-    ],
-    "native": {
-        "host": "",
-        "port": 3493,
-        "networkInterface": "",
-        "pollInterval": 15,
-        "username": "",
-        "password": "",
-        "commandTimeout": 5,
-        "enableCommands": false,
-        "enableSetVar": false
+    "titleLang": {
+      "en": "Network UPS Tools",
+      "de": "Network UPS Tools",
+      "ru": "Network UPS Tools",
+      "pt": "Network UPS Tools",
+      "nl": "Network UPS Tools",
+      "fr": "Network UPS Tools",
+      "it": "Network UPS Tools",
+      "es": "Network UPS Tools",
+      "pl": "Network UPS Tools",
+      "uk": "Network UPS Tools",
+      "zh-cn": "Network UPS Tools"
     },
-    "instanceObjects": [
-        {
-            "_id": "info",
-            "type": "channel",
-            "common": {
-                "name": {
-                    "en": "Adapter information",
-                    "de": "Adapter-Informationen",
-                    "ru": "Информация об адаптере",
-                    "pt": "Informações do adaptador",
-                    "nl": "Adapterinformatie",
-                    "fr": "Informations sur l'adaptateur",
-                    "it": "Informazioni sull'adattatore",
-                    "es": "Información del adaptador",
-                    "pl": "Informacje o adapterze",
-                    "uk": "Інформація про адаптер",
-                    "zh-cn": "适配器信息"
-                }
-            },
-            "native": {}
-        },
-        {
-            "_id": "info.connection",
-            "type": "state",
-            "common": {
-                "name": {
-                    "en": "Connection status",
-                    "de": "Verbindungsstatus",
-                    "ru": "Состояние соединения",
-                    "pt": "Estado da conexão",
-                    "nl": "Verbindingsstatus",
-                    "fr": "État de la connexion",
-                    "it": "Stato della connessione",
-                    "es": "Estado de conexión",
-                    "pl": "Stan połączenia",
-                    "uk": "Стан з'єднання",
-                    "zh-cn": "连接状态"
-                },
-                "type": "boolean",
-                "role": "indicator.connected",
-                "read": true,
-                "write": false,
-                "def": false
-            },
-            "native": {}
-        }
+    "desc": {
+      "en": "Monitor uninterruptible power supplies via NUT (Network UPS Tools)",
+      "de": "Überwachung unterbrechungsfreier Stromversorgungen über NUT (Network UPS Tools)",
+      "ru": "Мониторинг источников бесперебойного питания через NUT (Network UPS Tools)",
+      "pt": "Monitorar fontes de alimentação ininterrupta via NUT (Network UPS Tools)",
+      "nl": "Monitor ononderbroken stroomvoorzieningen via NUT (Network UPS Tools)",
+      "fr": "Surveiller les alimentations sans interruption via NUT (Network UPS Tools)",
+      "it": "Monitorare gruppi di continuità tramite NUT (Network UPS Tools)",
+      "es": "Monitorear sistemas de alimentación ininterrumpida vía NUT (Network UPS Tools)",
+      "pl": "Monitorowanie zasilaczy awaryjnych przez NUT (Network UPS Tools)",
+      "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
+      "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
+    },
+    "authors": [
+      "Apollon77 <ingo@fischer-ka.de>",
+      "krobi <krobi@power-dreams.com>"
+    ],
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "nut.svg",
+    "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
+    "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
+    "enabled": true,
+    "tier": 3,
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "hardware",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "poll",
+    "messagebox": true,
+    "adminUI": {
+      "config": "json"
+    },
+    "supportedMessages": {
+      "stopInstance": true
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=7.0.7"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.8.23"
+      }
+    ],
+    "keywords": [
+      "ups",
+      "nut",
+      "network ups tools",
+      "uninterruptible power supply",
+      "usv",
+      "battery",
+      "power"
     ]
+  },
+  "encryptedNative": [
+    "username",
+    "password"
+  ],
+  "protectedNative": [
+    "username",
+    "password"
+  ],
+  "native": {
+    "host": "",
+    "port": 3493,
+    "networkInterface": "",
+    "pollInterval": 15,
+    "username": "",
+    "password": "",
+    "commandTimeout": 5,
+    "enableCommands": false,
+    "enableSetVar": false
+  },
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Adapter information",
+          "de": "Adapter-Informationen",
+          "ru": "Информация об адаптере",
+          "pt": "Informações do adaptador",
+          "nl": "Adapterinformatie",
+          "fr": "Informations sur l'adaptateur",
+          "it": "Informazioni sull'adattatore",
+          "es": "Información del adaptador",
+          "pl": "Informacje o adapterze",
+          "uk": "Інформація про адаптер",
+          "zh-cn": "适配器信息"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Connection status",
+          "de": "Verbindungsstatus",
+          "ru": "Состояние соединения",
+          "pt": "Estado da conexão",
+          "nl": "Verbindingsstatus",
+          "fr": "État de la connexion",
+          "it": "Stato della connessione",
+          "es": "Estado de conexión",
+          "pl": "Stan połączenia",
+          "uk": "Стан з'єднання",
+          "zh-cn": "连接状态"
+        },
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }
