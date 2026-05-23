@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.2.5 (Preserve user-modified names. npm publish blockiert bis Apollon77-Transfer)
+- **Version:** 0.2.6 (State names use adapter-core I18n framework — replaces private `i18n-states.ts` with `I18n.getTranslatedObject()`, admin/i18n migrated from subdirectories to flat `<lang>.json` files). Vorgänger **0.2.5** — Preserve user-modified state names. npm publish blockiert bis Apollon77-Transfer
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -31,9 +31,10 @@ src/lib/
 ├── coerce.test.ts
 ├── message-router.ts           → onMessage-Dispatcher (checkConnection + auth test, default-Branch-Contract)
 ├── message-router.test.ts
-├── i18n-states.ts              → 11-Sprachen State-Name-Translations + CHANNEL_I18N Map
+├── i18n.ts                     → tName(key) Wrapper über I18n.getTranslatedObject() (adapter-core I18n-Framework)
 └── types.ts                    → TypeScript Interfaces + NUT-Konstanten
-../scripts/sync-iopackage-from-i18n.py → instanceObjects.common.name Sync aus i18n-states.ts (zentral)
+admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Translations (133 Keys × 11 Sprachen)
+../scripts/sync-iopackage-from-i18n.py → regeneriert io-package.json:instanceObjects.common.name aus admin/i18n/ (zentral, source: admin-i18n)
 ```
 
 ## Design-Entscheidungen
@@ -59,7 +60,7 @@ src/lib/
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (297 unit + 57 package = 354)
+## Tests (301 unit + 57 package = 358)
 
 ```
 src/lib/nut-client.test.ts      → TCP Client (45 tests)
@@ -68,6 +69,7 @@ src/lib/status-parser.test.ts   → Status-Flag-Parsing (59 tests)
 src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy + cleanupDeprecated + enrichStateMetadata + preserve (53 tests)
 src/lib/coerce.test.ts          → Boundary-Validators (38 tests)
 src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (20 tests)
+src/lib/i18n.test.ts            → tName delegation + i18n completeness (11 languages, identical keysets) (4 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
 
@@ -75,6 +77,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.2.6   | **i18n-Migration auf adapter-core.** Private `i18n-states.ts` (1495 LOC) durch `I18n.getTranslatedObject()` ersetzt, admin/i18n von Unterordner-Pattern auf flat `<lang>.json` migriert (133 Keys = 25 UI + 53 STATE_NAMES + 55 VARIABLE_I18N). Tests 297→301. |
 | 0.2.5   | Preserve user-modified state names on restart (mcm1957 feedback). 297 unit + 57 package = 354 tests.                                                                                                                                                                                                                                                                                                                             |
 | 0.2.4   | Community-standard event handler pattern (.bind + try/catch).                                                                                                                                                                                                                                                                                                                                                                    |
 | 0.2.3   | **Debug Coverage Wave** — 11 patches across state-manager.ts + main.ts. All 9 bug classes at 9/10 (from 7.2). README/changelog user-wording fixes.                                                                                                                                                                                                                                                                               |
