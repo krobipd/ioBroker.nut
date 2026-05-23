@@ -166,7 +166,7 @@ nut.0.
 ---
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.2.7 (2026-05-23)
 
 - CI check-and-lint updated to Node.js 24
 - LICENSE copyright formatting fixed for repochecker compliance
@@ -186,10 +186,6 @@ nut.0.
 ### 0.2.3 (2026-05-19)
 
 - Improved debug logging for state creation, polling and command routing — no user-facing changes
-
-### 0.2.2 (2026-05-19)
-
-- Replaced PNG icon with SVG for transparent background and dark-mode compatibility
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

@@ -11,6 +11,10 @@
 - Network interface selector for multi-homed servers
 - Connection test button in admin UI
 - 11-language admin UI and state names
+## 0.2.2 (2026-05-19)
+
+- Replaced PNG icon with SVG for transparent background and dark-mode compatibility
+
 ## 0.2.1 (2026-05-19)
 
 - Fixed existing states not being updated on adapter upgrade (e.g. vendorid type change from number to string)

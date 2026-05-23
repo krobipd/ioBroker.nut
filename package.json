@@ -1,6 +1,6 @@
 {
   "name": "iobroker.nut",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "ioBroker adapter for Network UPS Tools (NUT) monitoring",
   "author": {
     "name": "krobi",
