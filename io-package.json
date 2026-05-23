@@ -3,6 +3,19 @@
     "name": "nut",
     "version": "0.2.5",
     "news": {
+      "NEXT": {
+        "en": "State name translations use standard ioBroker i18n framework",
+        "de": "Datenpunktnamen-Übersetzungen nutzen das Standard-ioBroker-i18n-Framework",
+        "ru": "Переводы имён состояний используют стандартный фреймворк i18n ioBroker",
+        "pt": "Traduções dos nomes de estados utilizam o framework i18n padrão do ioBroker",
+        "nl": "Vertalingen van statusnamen gebruiken het standaard ioBroker i18n-framework",
+        "fr": "Les traductions des noms d'états utilisent le framework i18n standard d'ioBroker",
+        "it": "Le traduzioni dei nomi degli stati utilizzano il framework i18n standard di ioBroker",
+        "es": "Las traducciones de nombres de estados utilizan el framework i18n estándar de ioBroker",
+        "pl": "Tłumaczenia nazw stanów wykorzystują standardowy framework i18n ioBroker",
+        "uk": "Переклади назв станів використовують стандартний фреймворк i18n ioBroker",
+        "zh-cn": "状态名称翻译使用标准ioBroker i18n框架"
+      },
       "0.2.5": {
         "en": "User-modified state names are no longer overwritten on adapter restart",
         "de": "Vom Benutzer geänderte Datenpunktnamen werden beim Adapter-Neustart nicht mehr überschrieben",
@@ -80,19 +93,6 @@
         "pl": "Poprawiono wiodące zera vendorid/productid i jednostkę voltage.extended. Czytelny status. Flaga HE. ENUM/RANGE dla zmiennych zapisywalnych. Nazwa urządzenia producent+model. Poprawne ikony i kategorie w adminie. Tłumaczenia na 11 języków",
         "uk": "Виправлено початкові нулі vendorid/productid і одиницю voltage.extended. Зрозумілий статус. Прапор HE. ENUM/RANGE для записуваних змінних. Назва пристрою виробник+модель. Коректні іконки та категорії в адмінці. Переклади на 11 мов",
         "zh-cn": "修复vendorid/productid前导零和voltage.extended单位。可读状态显示。HE标志。可写变量ENUM/RANGE元数据。设备名称从制造商+型号。管理界面中正确的图标和分类。11种语言翻译"
-      },
-      "0.1.3": {
-        "en": "Connection test now verifies LOGIN per UPS (catches ACCESS-DENIED). Auth failure fully disconnects (no reconnect spam)",
-        "de": "Verbindungstest prüft jetzt LOGIN pro USV (erkennt ACCESS-DENIED). Auth-Fehler trennt vollständig (kein Reconnect-Spam)",
-        "ru": "Тест подключения проверяет LOGIN на каждый ИБП (обнаруживает ACCESS-DENIED). Ошибка авторизации полностью отключает (без повторного подключения)",
-        "pt": "Teste de conexão verifica LOGIN por UPS (detecta ACCESS-DENIED). Falha de autenticação desconecta completamente (sem reconexão)",
-        "nl": "Verbindingstest verifieert LOGIN per UPS (detecteert ACCESS-DENIED). Authenticatiefout verbreekt volledig (geen reconnect-spam)",
-        "fr": "Test de connexion vérifie LOGIN par onduleur (détecte ACCESS-DENIED). Échec d'auth déconnecte complètement (pas de reconnexion)",
-        "it": "Test connessione verifica LOGIN per UPS (rileva ACCESS-DENIED). Errore autenticazione disconnette completamente (nessun tentativo di riconnessione)",
-        "es": "Test de conexión verifica LOGIN por SAI (detecta ACCESS-DENIED). Fallo de autenticación desconecta completamente (sin reconexión)",
-        "pl": "Test połączenia weryfikuje LOGIN per UPS (wykrywa ACCESS-DENIED). Błąd autoryzacji całkowicie rozłącza (bez ponownego łączenia)",
-        "uk": "Тест підключення перевіряє LOGIN для кожного ДБЖ (виявляє ACCESS-DENIED). Помилка авторизації повністю від'єднує (без повторних спроб)",
-        "zh-cn": "连接测试现在验证每个UPS的LOGIN（捕获ACCESS-DENIED）。认证失败完全断开连接（无重连垃圾日志）"
       }
     },
     "titleLang": {
@@ -121,10 +121,7 @@
       "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
-    "authors": [
-      "Apollon77 <ingo@fischer-ka.de>",
-      "krobi <krobi@power-dreams.com>"
-    ],
+    "authors": ["Apollon77 <ingo@fischer-ka.de>", "krobi <krobi@power-dreams.com>"],
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
@@ -158,24 +155,10 @@
         "admin": ">=7.8.23"
       }
     ],
-    "keywords": [
-      "ups",
-      "nut",
-      "network ups tools",
-      "uninterruptible power supply",
-      "usv",
-      "battery",
-      "power"
-    ]
+    "keywords": ["ups", "nut", "network ups tools", "uninterruptible power supply", "usv", "battery", "power"]
   },
-  "encryptedNative": [
-    "username",
-    "password"
-  ],
-  "protectedNative": [
-    "username",
-    "password"
-  ],
+  "encryptedNative": ["username", "password"],
+  "protectedNative": ["username", "password"],
   "native": {
     "host": "",
     "port": 3493,

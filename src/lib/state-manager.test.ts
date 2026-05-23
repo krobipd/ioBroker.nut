@@ -1,3 +1,11 @@
+import { vi } from "vitest";
+
+vi.mock("@iobroker/adapter-core", () => ({
+  I18n: {
+    getTranslatedObject: vi.fn((key: string) => ({ en: key, de: `${key}_de` })),
+  },
+}));
+
 import { StateManager, nutVarToStateId, nutVarToReadableName } from "./state-manager";
 
 // ---------------------------------------------------------------------------
@@ -227,7 +235,8 @@ describe("StateManager", () => {
       expect(objects.get("ups0.battery")?.type).toBe("channel");
       const name = objects.get("ups0.battery")?.common.name;
       expect(typeof name).toBe("object");
-      expect((name as any).en).toBe("Battery");
+      expect(name).toHaveProperty("en");
+      expect(name).toHaveProperty("de");
     });
 
     it("should use plain name for unknown channels", async () => {
@@ -338,7 +347,8 @@ describe("StateManager", () => {
       await sm.updateVariables("ups0", [{ name: "battery.charge.low", value: "15" }], new Set());
 
       const common = objects.get("ups0.battery.charge-low")?.common;
-      expect((common?.name as any).en).toBe("Low charge threshold");
+      expect(common?.name).toHaveProperty("en");
+      expect(common?.name).toHaveProperty("de");
     });
   });
 
@@ -409,7 +419,8 @@ describe("StateManager", () => {
       expect(common?.role).toBe("button");
       expect(common?.write).toBe(true);
       expect(common?.read).toBe(false);
-      expect((common?.name as any).en).toBe("Enable beeper");
+      expect(common?.name).toHaveProperty("en");
+      expect(common?.name).toHaveProperty("de");
     });
   });
 

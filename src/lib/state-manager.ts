@@ -1,10 +1,133 @@
 import type * as utils from "@iobroker/adapter-core";
-import { CHANNEL_I18N, COMMAND_I18N, FLAG_I18N, tName, VARIABLE_I18N } from "./i18n-states";
+import { tName, type I18nKey } from "./i18n";
 import { ALL_FLAG_KEYS, getDisplayString, parseStatus } from "./status-parser";
 import { detectStates, detectType } from "./type-detector";
 import type { NutCommand, NutVariable } from "./types";
 
 type LocalizedName = ioBroker.StringOrTranslated;
+
+const CHANNEL_I18N: Record<string, I18nKey> = {
+  battery: "channelBattery",
+  device: "channelDevice",
+  driver: "channelDriver",
+  input: "channelInput",
+  output: "channelOutput",
+  ups: "channelUps",
+  outlet: "channelOutlet",
+  ambient: "channelAmbient",
+  status: "channelStatus",
+  commands: "channelCommands",
+  info: "channelUpsInfo",
+};
+
+const FLAG_I18N: Record<string, I18nKey> = {
+  online: "flagOnline",
+  onBattery: "flagOnBattery",
+  lowBattery: "flagLowBattery",
+  highBattery: "flagHighBattery",
+  replaceBattery: "flagReplaceBattery",
+  charging: "flagCharging",
+  discharging: "flagDischarging",
+  bypass: "flagBypass",
+  calibrating: "flagCalibrating",
+  off: "flagOff",
+  overloaded: "flagOverloaded",
+  trimming: "flagTrimming",
+  boosting: "flagBoosting",
+  forcedShutdown: "flagForcedShutdown",
+  alarm: "flagAlarm",
+  commEstablished: "flagCommEstablished",
+  commLost: "flagCommLost",
+  testing: "flagTesting",
+  highEfficiency: "flagHighEfficiency",
+};
+
+const COMMAND_I18N: Record<string, I18nKey> = {
+  "beeper.disable": "cmdBeeperDisable",
+  "beeper.enable": "cmdBeeperEnable",
+  "beeper.mute": "cmdBeeperMute",
+  "load.off": "cmdLoadOff",
+  "load.on": "cmdLoadOn",
+  "load.off.delay": "cmdLoadOffDelay",
+  "load.on.delay": "cmdLoadOnDelay",
+  "shutdown.return": "cmdShutdownReturn",
+  "shutdown.stayoff": "cmdShutdownStayoff",
+  "shutdown.stop": "cmdShutdownStop",
+  "shutdown.reboot": "cmdShutdownReboot",
+  "test.battery.start": "cmdTestBatteryStart",
+  "test.battery.stop": "cmdTestBatteryStop",
+  "calibrate.start": "cmdCalibrateStart",
+  "calibrate.stop": "cmdCalibrateStop",
+};
+
+const TRANSLATED_VARIABLES = new Set<I18nKey>([
+  "battery.charge",
+  "battery.charge.low",
+  "battery.runtime",
+  "battery.type",
+  "battery.voltage",
+  "battery.temperature",
+  "battery.capacity",
+  "battery.charger.status",
+  "device.mfr",
+  "device.model",
+  "device.serial",
+  "device.type",
+  "driver.name",
+  "driver.version",
+  "driver.version.data",
+  "driver.version.internal",
+  "driver.parameter.pollfreq",
+  "driver.parameter.pollinterval",
+  "driver.parameter.port",
+  "driver.parameter.synchronous",
+  "driver.flag.ignorelb",
+  "driver.version.usb",
+  "input.voltage",
+  "input.frequency",
+  "input.transfer.high",
+  "input.transfer.low",
+  "input.voltage.extended",
+  "output.voltage",
+  "output.frequency",
+  "output.voltage.nominal",
+  "output.frequency.nominal",
+  "output.current",
+  "ups.status",
+  "ups.load",
+  "ups.power",
+  "ups.realpower",
+  "ups.power.nominal",
+  "ups.temperature",
+  "ups.delay.shutdown",
+  "ups.delay.start",
+  "ups.timer.shutdown",
+  "ups.timer.start",
+  "ups.firmware",
+  "ups.beeper.status",
+  "ups.mfr",
+  "ups.model",
+  "ups.serial",
+  "ups.vendorid",
+  "ups.productid",
+  "outlet.desc",
+  "outlet.id",
+  "outlet.switchable",
+  "outlet.status",
+  "ambient.temperature",
+  "ambient.humidity",
+] as I18nKey[]);
+
+function varTranslation(nutVarName: string): LocalizedName | undefined {
+  if (TRANSLATED_VARIABLES.has(nutVarName as I18nKey)) {
+    return tName(nutVarName as I18nKey);
+  }
+  const generic = nutVarName.replace(/\.\d+\./, ".");
+  if (generic !== nutVarName && TRANSLATED_VARIABLES.has(generic as I18nKey)) {
+    return tName(generic as I18nKey);
+  }
+  return undefined;
+}
 
 const STATUS_FLAG_ROLES: Record<string, string> = {
   lowBattery: "indicator.lowbat",
@@ -164,15 +287,13 @@ export class StateManager {
 
       const stateId = nutVarToStateId(upsName, v.name);
       const states = detectStates(v.name);
-      const genericName = v.name.replace(/\.\d+\./, ".");
-      const i18nName = VARIABLE_I18N[v.name] ?? VARIABLE_I18N[genericName];
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: i18nName ?? nutVarToReadableName(v.name),
+        name: varTranslation(v.name) ?? nutVarToReadableName(v.name),
         states,
       });
 

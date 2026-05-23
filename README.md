@@ -166,6 +166,11 @@ nut.0.
 ---
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+- State name translations use standard ioBroker i18n framework
+
 ### 0.2.5 (2026-05-22)
 
 - User-modified state names are no longer overwritten on adapter restart
@@ -239,4 +244,4 @@ SOFTWARE.
 
 ---
 
-*Developed with assistance from Claude.ai*
+_Developed with assistance from Claude.ai_

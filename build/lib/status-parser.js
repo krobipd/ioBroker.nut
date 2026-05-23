@@ -4,24 +4,26 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
+  if ((from && typeof from === "object") || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        });
   }
   return to;
 };
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var status_parser_exports = {};
 __export(status_parser_exports, {
   ALL_FLAG_KEYS: () => ALL_FLAG_KEYS,
   STATUS_FLAGS: () => STATUS_FLAGS,
   getDisplayString: () => getDisplayString,
-  parseStatus: () => parseStatus
+  parseStatus: () => parseStatus,
 });
 module.exports = __toCommonJS(status_parser_exports);
 const STATUS_FLAGS = {
@@ -43,11 +45,14 @@ const STATUS_FLAGS = {
   COMM: "commEstablished",
   NOCOMM: "commLost",
   TEST: "testing",
-  HE: "highEfficiency"
+  HE: "highEfficiency",
 };
 const ALL_FLAG_KEYS = Object.values(STATUS_FLAGS);
 function parseStatus(rawStatus) {
-  const tokens = rawStatus.trim().split(/\s+/).filter((t) => t.length > 0);
+  const tokens = rawStatus
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length > 0);
   const flags = {};
   for (const key of ALL_FLAG_KEYS) {
     flags[key] = false;
@@ -82,13 +87,18 @@ const DISPLAY_LABELS = {
   COMM: "Communication OK",
   NOCOMM: "Communication Lost",
   TEST: "Testing",
-  HE: "High Efficiency"
+  HE: "High Efficiency",
 };
 function getDisplayString(rawStatus) {
-  return rawStatus.trim().split(/\s+/).filter((t) => t.length > 0).map((t) => {
-    var _a;
-    return (_a = DISPLAY_LABELS[t]) != null ? _a : t;
-  }).join(", ");
+  return rawStatus
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length > 0)
+    .map(t => {
+      var _a;
+      return (_a = DISPLAY_LABELS[t]) != null ? _a : t;
+    })
+    .join(", ");
 }
 function computeSeverity(tokens) {
   if (tokens.has("FSD")) {
@@ -106,10 +116,11 @@ function computeSeverity(tokens) {
   return 0;
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  ALL_FLAG_KEYS,
-  STATUS_FLAGS,
-  getDisplayString,
-  parseStatus
-});
+0 &&
+  (module.exports = {
+    ALL_FLAG_KEYS,
+    STATUS_FLAGS,
+    getDisplayString,
+    parseStatus,
+  });
 //# sourceMappingURL=status-parser.js.map

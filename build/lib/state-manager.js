@@ -4,28 +4,148 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+  for (var name in all) __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
+  if ((from && typeof from === "object") || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        });
   }
   return to;
 };
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var state_manager_exports = {};
 __export(state_manager_exports, {
   StateManager: () => StateManager,
   nutVarToReadableName: () => nutVarToReadableName,
-  nutVarToStateId: () => nutVarToStateId
+  nutVarToStateId: () => nutVarToStateId,
 });
 module.exports = __toCommonJS(state_manager_exports);
-var import_i18n_states = require("./i18n-states");
+var import_i18n = require("./i18n");
 var import_status_parser = require("./status-parser");
 var import_type_detector = require("./type-detector");
+const CHANNEL_I18N = {
+  battery: "channelBattery",
+  device: "channelDevice",
+  driver: "channelDriver",
+  input: "channelInput",
+  output: "channelOutput",
+  ups: "channelUps",
+  outlet: "channelOutlet",
+  ambient: "channelAmbient",
+  status: "channelStatus",
+  commands: "channelCommands",
+  info: "channelUpsInfo",
+};
+const FLAG_I18N = {
+  online: "flagOnline",
+  onBattery: "flagOnBattery",
+  lowBattery: "flagLowBattery",
+  highBattery: "flagHighBattery",
+  replaceBattery: "flagReplaceBattery",
+  charging: "flagCharging",
+  discharging: "flagDischarging",
+  bypass: "flagBypass",
+  calibrating: "flagCalibrating",
+  off: "flagOff",
+  overloaded: "flagOverloaded",
+  trimming: "flagTrimming",
+  boosting: "flagBoosting",
+  forcedShutdown: "flagForcedShutdown",
+  alarm: "flagAlarm",
+  commEstablished: "flagCommEstablished",
+  commLost: "flagCommLost",
+  testing: "flagTesting",
+  highEfficiency: "flagHighEfficiency",
+};
+const COMMAND_I18N = {
+  "beeper.disable": "cmdBeeperDisable",
+  "beeper.enable": "cmdBeeperEnable",
+  "beeper.mute": "cmdBeeperMute",
+  "load.off": "cmdLoadOff",
+  "load.on": "cmdLoadOn",
+  "load.off.delay": "cmdLoadOffDelay",
+  "load.on.delay": "cmdLoadOnDelay",
+  "shutdown.return": "cmdShutdownReturn",
+  "shutdown.stayoff": "cmdShutdownStayoff",
+  "shutdown.stop": "cmdShutdownStop",
+  "shutdown.reboot": "cmdShutdownReboot",
+  "test.battery.start": "cmdTestBatteryStart",
+  "test.battery.stop": "cmdTestBatteryStop",
+  "calibrate.start": "cmdCalibrateStart",
+  "calibrate.stop": "cmdCalibrateStop",
+};
+const TRANSLATED_VARIABLES = /* @__PURE__ */ new Set([
+  "battery.charge",
+  "battery.charge.low",
+  "battery.runtime",
+  "battery.type",
+  "battery.voltage",
+  "battery.temperature",
+  "battery.capacity",
+  "battery.charger.status",
+  "device.mfr",
+  "device.model",
+  "device.serial",
+  "device.type",
+  "driver.name",
+  "driver.version",
+  "driver.version.data",
+  "driver.version.internal",
+  "driver.parameter.pollfreq",
+  "driver.parameter.pollinterval",
+  "driver.parameter.port",
+  "driver.parameter.synchronous",
+  "driver.flag.ignorelb",
+  "driver.version.usb",
+  "input.voltage",
+  "input.frequency",
+  "input.transfer.high",
+  "input.transfer.low",
+  "input.voltage.extended",
+  "output.voltage",
+  "output.frequency",
+  "output.voltage.nominal",
+  "output.frequency.nominal",
+  "output.current",
+  "ups.status",
+  "ups.load",
+  "ups.power",
+  "ups.realpower",
+  "ups.power.nominal",
+  "ups.temperature",
+  "ups.delay.shutdown",
+  "ups.delay.start",
+  "ups.timer.shutdown",
+  "ups.timer.start",
+  "ups.firmware",
+  "ups.beeper.status",
+  "ups.mfr",
+  "ups.model",
+  "ups.serial",
+  "ups.vendorid",
+  "ups.productid",
+  "outlet.desc",
+  "outlet.id",
+  "outlet.switchable",
+  "outlet.status",
+  "ambient.temperature",
+  "ambient.humidity",
+]);
+function varTranslation(nutVarName) {
+  if (TRANSLATED_VARIABLES.has(nutVarName)) {
+    return (0, import_i18n.tName)(nutVarName);
+  }
+  const generic = nutVarName.replace(/\.\d+\./, ".");
+  if (generic !== nutVarName && TRANSLATED_VARIABLES.has(generic)) {
+    return (0, import_i18n.tName)(generic);
+  }
+  return void 0;
+}
 const STATUS_FLAG_ROLES = {
   lowBattery: "indicator.lowbat",
   overloaded: "indicator.alarm",
@@ -33,7 +153,7 @@ const STATUS_FLAG_ROLES = {
   onBattery: "indicator.alarm",
   forcedShutdown: "indicator.alarm",
   alarm: "indicator.alarm",
-  commLost: "indicator.alarm"
+  commLost: "indicator.alarm",
 };
 function nutVarToStateId(upsName, nutVarName) {
   const firstDot = nutVarName.indexOf(".");
@@ -47,7 +167,7 @@ function nutVarToStateId(upsName, nutVarName) {
 function nutVarToReadableName(nutVarName) {
   const firstDot = nutVarName.indexOf(".");
   const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
-  return leaf.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase());
+  return leaf.replace(/\./g, " ").replace(/^./, c => c.toUpperCase());
 }
 class StateManager {
   adapter;
@@ -73,12 +193,12 @@ class StateManager {
         common: {
           name: description,
           statusStates: {
-            onlineId: `${this.adapter.namespace}.${upsName}.info.online`
-          }
+            onlineId: `${this.adapter.namespace}.${upsName}.info.online`,
+          },
         },
-        native: {}
+        native: {},
       },
-      { preserve: { common: ["name"] } }
+      { preserve: { common: ["name"] } },
     );
     this.createdIds.add(upsName);
     await this.ensureChannel(upsName, "info");
@@ -87,7 +207,7 @@ class StateManager {
       role: "indicator.reachable",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("upsOnline")
+      name: (0, import_i18n.tName)("upsOnline"),
     });
     await this.cleanupDeprecatedInfoStates(upsName);
   }
@@ -103,8 +223,14 @@ class StateManager {
     if (description && description !== "Description unavailable") {
       return;
     }
-    const mfr = (_b = (_a = variables.find((v) => v.name === "device.mfr")) == null ? void 0 : _a.value) == null ? void 0 : _b.trim();
-    const model = (_d = (_c = variables.find((v) => v.name === "device.model")) == null ? void 0 : _c.value) == null ? void 0 : _d.trim();
+    const mfr =
+      (_b = (_a = variables.find(v => v.name === "device.mfr")) == null ? void 0 : _a.value) == null
+        ? void 0
+        : _b.trim();
+    const model =
+      (_d = (_c = variables.find(v => v.name === "device.model")) == null ? void 0 : _c.value) == null
+        ? void 0
+        : _d.trim();
     if (mfr || model) {
       const name = [mfr, model].filter(Boolean).join(" ");
       const cacheKey = `${upsName}.__deviceNameFallback`;
@@ -123,12 +249,12 @@ class StateManager {
    */
   async ensureChannel(upsName, channelName) {
     const id = `${upsName}.${channelName}`;
-    const i18nKey = import_i18n_states.CHANNEL_I18N[channelName];
-    const name = i18nKey ? (0, import_i18n_states.tName)(i18nKey) : channelName;
+    const i18nKey = CHANNEL_I18N[channelName];
+    const name = i18nKey ? (0, import_i18n.tName)(i18nKey) : channelName;
     await this.ensureObject(id, {
       type: "channel",
       common: { name },
-      native: {}
+      native: {},
     });
   }
   /**
@@ -155,16 +281,14 @@ class StateManager {
       const detected = (0, import_type_detector.detectType)(v.name, v.value, isWritable);
       const stateId = nutVarToStateId(upsName, v.name);
       const states = (0, import_type_detector.detectStates)(v.name);
-      const genericName = v.name.replace(/\.\d+\./, ".");
-      const i18nName = (_a = import_i18n_states.VARIABLE_I18N[v.name]) != null ? _a : import_i18n_states.VARIABLE_I18N[genericName];
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: i18nName != null ? i18nName : nutVarToReadableName(v.name),
-        states
+        name: (_a = varTranslation(v.name)) != null ? _a : nutVarToReadableName(v.name),
+        states,
       });
       await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
     }
@@ -179,16 +303,16 @@ class StateManager {
     var _a;
     await this.ensureChannel(upsName, "status");
     const result = (0, import_status_parser.parseStatus)(rawStatus);
-    const activeFlags = import_status_parser.ALL_FLAG_KEYS.filter((k) => result.flags[k]).join(", ") || "none";
+    const activeFlags = import_status_parser.ALL_FLAG_KEYS.filter(k => result.flags[k]).join(", ") || "none";
     this.adapter.log.debug(
-      `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`
+      `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`,
     );
     await this.ensureState(`${upsName}.status.raw`, {
       type: "string",
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusRaw")
+      name: (0, import_i18n.tName)("statusRaw"),
     });
     await this.adapter.setState(`${upsName}.status.raw`, { val: result.raw, ack: true });
     await this.ensureState(`${upsName}.status.severity`, {
@@ -196,7 +320,7 @@ class StateManager {
       role: "value",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusSeverity")
+      name: (0, import_i18n.tName)("statusSeverity"),
     });
     await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
     await this.ensureState(`${upsName}.status.display`, {
@@ -204,21 +328,21 @@ class StateManager {
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n_states.tName)("statusDisplay")
+      name: (0, import_i18n.tName)("statusDisplay"),
     });
     await this.adapter.setState(`${upsName}.status.display`, {
       val: (0, import_status_parser.getDisplayString)(rawStatus),
-      ack: true
+      ack: true,
     });
     for (const flagKey of import_status_parser.ALL_FLAG_KEYS) {
       const stateId = `${upsName}.status.${flagKey}`;
-      const flagI18nKey = import_i18n_states.FLAG_I18N[flagKey];
+      const flagI18nKey = FLAG_I18N[flagKey];
       await this.ensureState(stateId, {
         type: "boolean",
         role: (_a = STATUS_FLAG_ROLES[flagKey]) != null ? _a : "indicator",
         read: true,
         write: false,
-        name: flagI18nKey ? (0, import_i18n_states.tName)(flagI18nKey) : flagKey
+        name: flagI18nKey ? (0, import_i18n.tName)(flagI18nKey) : flagKey,
       });
       await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
     }
@@ -233,14 +357,16 @@ class StateManager {
     await this.ensureChannel(upsName, "commands");
     for (const cmd of commands) {
       const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
-      const cmdI18nKey = import_i18n_states.COMMAND_I18N[cmd.name];
+      const cmdI18nKey = COMMAND_I18N[cmd.name];
       await this.ensureState(stateId, {
         type: "boolean",
         role: "button",
         read: false,
         write: true,
-        name: cmdI18nKey ? (0, import_i18n_states.tName)(cmdI18nKey) : cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase()),
-        def: false
+        name: cmdI18nKey
+          ? (0, import_i18n.tName)(cmdI18nKey)
+          : cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
+        def: false,
       });
     }
   }
@@ -312,8 +438,7 @@ class StateManager {
       try {
         await this.adapter.delObjectAsync(id);
         this.adapter.log.debug(`Removed deprecated state: ${id}`);
-      } catch {
-      }
+      } catch {}
     }
   }
   /**
@@ -335,7 +460,7 @@ class StateManager {
     await this.adapter.setObjectNotExistsAsync(id, {
       type: obj.type,
       common: obj.common,
-      native: obj.native
+      native: obj.native,
     });
     this.createdIds.add(id);
   }
@@ -348,9 +473,9 @@ class StateManager {
       {
         type: "state",
         common,
-        native: {}
+        native: {},
       },
-      { preserve: { common: ["name"] } }
+      { preserve: { common: ["name"] } },
     );
     this.createdIds.add(id);
   }
@@ -382,9 +507,10 @@ class StateManager {
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  StateManager,
-  nutVarToReadableName,
-  nutVarToStateId
-});
+0 &&
+  (module.exports = {
+    StateManager,
+    nutVarToReadableName,
+    nutVarToStateId,
+  });
 //# sourceMappingURL=state-manager.js.map

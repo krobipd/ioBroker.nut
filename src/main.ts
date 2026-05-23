@@ -1,4 +1,6 @@
 import * as utils from "@iobroker/adapter-core";
+import { I18n } from "@iobroker/adapter-core";
+import { join } from "node:path";
 import { coerceCommandTimeoutMs, coerceHost, coercePollIntervalSec, coercePort, errText } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
@@ -40,6 +42,7 @@ class NutAdapter extends utils.Adapter {
 
   private async onReady(): Promise<void> {
     try {
+      await I18n.init(join(this.adapterDir, "admin"), this);
       const config = this.config as unknown as AdapterConfig;
       this.log.debug(
         `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`,
