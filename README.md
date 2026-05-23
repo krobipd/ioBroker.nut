@@ -166,6 +166,11 @@ nut.0.
 ---
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- CI check-and-lint updated to Node.js 24
+- LICENSE copyright formatting fixed for repochecker compliance
+
 ### 0.2.6 (2026-05-23)
 
 - State name translations use standard ioBroker i18n framework
