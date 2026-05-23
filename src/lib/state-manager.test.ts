@@ -59,6 +59,9 @@ function createMockAdapter(): {
     setState: async (id: string, state: MockState) => {
       states.set(id, state);
     },
+    setStateChangedAsync: async (id: string, state: MockState) => {
+      states.set(id, state);
+    },
     getAdapterObjectsAsync: async () => {
       const result: Record<string, MockObj> = {};
       for (const [id, obj] of objects) {

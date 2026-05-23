@@ -282,7 +282,7 @@ class StateManager {
         name: (_a = varTranslation(v.name)) != null ? _a : nutVarToReadableName(v.name),
         states
       });
-      await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
+      await this.adapter.setStateChangedAsync(stateId, { val: detected.parsedValue, ack: true });
     }
   }
   /**
@@ -306,7 +306,7 @@ class StateManager {
       write: false,
       name: (0, import_i18n.tName)("statusRaw")
     });
-    await this.adapter.setState(`${upsName}.status.raw`, { val: result.raw, ack: true });
+    await this.adapter.setStateChangedAsync(`${upsName}.status.raw`, { val: result.raw, ack: true });
     await this.ensureState(`${upsName}.status.severity`, {
       type: "number",
       role: "value",
@@ -314,7 +314,7 @@ class StateManager {
       write: false,
       name: (0, import_i18n.tName)("statusSeverity")
     });
-    await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
+    await this.adapter.setStateChangedAsync(`${upsName}.status.severity`, { val: result.severity, ack: true });
     await this.ensureState(`${upsName}.status.display`, {
       type: "string",
       role: "text",
@@ -322,7 +322,7 @@ class StateManager {
       write: false,
       name: (0, import_i18n.tName)("statusDisplay")
     });
-    await this.adapter.setState(`${upsName}.status.display`, {
+    await this.adapter.setStateChangedAsync(`${upsName}.status.display`, {
       val: (0, import_status_parser.getDisplayString)(rawStatus),
       ack: true
     });
@@ -336,7 +336,7 @@ class StateManager {
         write: false,
         name: flagI18nKey ? (0, import_i18n.tName)(flagI18nKey) : flagKey
       });
-      await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
+      await this.adapter.setStateChangedAsync(stateId, { val: result.flags[flagKey], ack: true });
     }
   }
   /**

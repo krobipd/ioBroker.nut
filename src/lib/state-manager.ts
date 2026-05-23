@@ -297,7 +297,7 @@ export class StateManager {
         states,
       });
 
-      await this.adapter.setState(stateId, { val: detected.parsedValue, ack: true });
+      await this.adapter.setStateChangedAsync(stateId, { val: detected.parsedValue, ack: true });
     }
   }
 
@@ -323,7 +323,7 @@ export class StateManager {
       write: false,
       name: tName("statusRaw"),
     });
-    await this.adapter.setState(`${upsName}.status.raw`, { val: result.raw, ack: true });
+    await this.adapter.setStateChangedAsync(`${upsName}.status.raw`, { val: result.raw, ack: true });
 
     await this.ensureState(`${upsName}.status.severity`, {
       type: "number",
@@ -332,7 +332,7 @@ export class StateManager {
       write: false,
       name: tName("statusSeverity"),
     });
-    await this.adapter.setState(`${upsName}.status.severity`, { val: result.severity, ack: true });
+    await this.adapter.setStateChangedAsync(`${upsName}.status.severity`, { val: result.severity, ack: true });
 
     await this.ensureState(`${upsName}.status.display`, {
       type: "string",
@@ -341,7 +341,7 @@ export class StateManager {
       write: false,
       name: tName("statusDisplay"),
     });
-    await this.adapter.setState(`${upsName}.status.display`, {
+    await this.adapter.setStateChangedAsync(`${upsName}.status.display`, {
       val: getDisplayString(rawStatus),
       ack: true,
     });
@@ -356,7 +356,7 @@ export class StateManager {
         write: false,
         name: flagI18nKey ? tName(flagI18nKey) : flagKey,
       });
-      await this.adapter.setState(stateId, { val: result.flags[flagKey], ack: true });
+      await this.adapter.setStateChangedAsync(stateId, { val: result.flags[flagKey], ack: true });
     }
   }
 

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "news": {
+      "0.2.9": {
+        "en": "Reduced unnecessary state-change events. Fixed duplicate error messages in compact mode.",
+        "de": "Unnötige State-Change-Events reduziert. Doppelte Fehlermeldungen im Compact-Modus behoben.",
+        "ru": "Сокращены ненужные события изменения состояний. Исправлены дублирующиеся сообщения об ошибках в компактном режиме.",
+        "pt": "Eventos de mudança de estado desnecessários reduzidos. Corrigidas mensagens de erro duplicadas no modo compacto.",
+        "nl": "Onnodige state-change-events verminderd. Dubbele foutmeldingen in compacte modus verholpen.",
+        "fr": "Réduction des événements de changement d'état inutiles. Correction des messages d'erreur en double en mode compact.",
+        "it": "Ridotti gli eventi di cambio stato non necessari. Corretti i messaggi di errore duplicati in modalità compatta.",
+        "es": "Reducidos los eventos de cambio de estado innecesarios. Corregidos los mensajes de error duplicados en modo compacto.",
+        "pl": "Zmniejszono niepotrzebne zdarzenia zmiany stanu. Naprawiono zduplikowane komunikaty o błędach w trybie kompaktowym.",
+        "uk": "Зменшено непотрібні події зміни стану. Виправлено дублювання повідомлень про помилки у компактному режимі.",
+        "zh-cn": "减少了不必要的状态变更事件。修复了紧凑模式下重复的错误消息。"
+      },
       "0.2.8": {
         "en": "Changelog rewritten in user-centric style across all versions.",
         "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
@@ -80,19 +93,6 @@
         "pl": "Ulepszone logowanie debugowania dla łatwiejszej diagnostyki problemów z połączeniem i komendami.",
         "uk": "Покращене журналювання для спрощення діагностики проблем підключення та команд.",
         "zh-cn": "改进了调试日志，便于诊断连接和命令问题。"
-      },
-      "0.2.2": {
-        "en": "Replaced PNG icon with SVG for transparent background and dark-mode compatibility",
-        "de": "PNG-Icon durch SVG ersetzt für transparenten Hintergrund und Dark-Mode-Kompatibilität",
-        "ru": "PNG-иконка заменена на SVG для прозрачного фона и совместимости с тёмной темой",
-        "pt": "Ícone PNG substituído por SVG com fundo transparente e compatibilidade com modo escuro",
-        "nl": "PNG-pictogram vervangen door SVG voor transparante achtergrond en dark-mode compatibiliteit",
-        "fr": "Icône PNG remplacée par SVG pour fond transparent et compatibilité mode sombre",
-        "it": "Icona PNG sostituita con SVG per sfondo trasparente e compatibilità modalità scura",
-        "es": "Icono PNG reemplazado por SVG con fondo transparente y compatibilidad con modo oscuro",
-        "pl": "Ikona PNG zastąpiona przez SVG z przezroczystym tłem i kompatybilnością z trybem ciemnym",
-        "uk": "PNG-іконку замінено на SVG для прозорого фону та сумісності з темною темою",
-        "zh-cn": "PNG图标替换为SVG，支持透明背景和暗色模式"
       }
     },
     "titleLang": {

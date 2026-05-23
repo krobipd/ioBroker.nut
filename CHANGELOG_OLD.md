@@ -1,4 +1,8 @@
 # Older changes
+## 0.2.4 (2026-05-21)
+
+- Improved error handling and stability.
+
 ## 0.2.3 (2026-05-19)
 
 - Improved debug logging for easier diagnosis of connection and command issues.

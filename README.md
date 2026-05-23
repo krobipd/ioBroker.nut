@@ -171,6 +171,11 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.2.9 (2026-05-23)
+
+- Reduced unnecessary state-change events by skipping writes when the value has not changed.
+- Fixed duplicate error messages that could appear when running in compact mode.
+
 ### 0.2.8 (2026-05-23)
 
 - Changelog rewritten in user-centric style across all versions.
@@ -186,10 +191,6 @@ nut.0.
 ### 0.2.5 (2026-05-22)
 
 - User-modified state names are no longer overwritten on adapter restart
-
-### 0.2.4 (2026-05-21)
-
-- Improved error handling and stability.
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

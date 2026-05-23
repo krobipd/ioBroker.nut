@@ -7,6 +7,8 @@ import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
 import type { AdapterConfig, UpsInfo } from "./lib/types";
 
+let processHandlersInstalled = false;
+
 class NutAdapter extends utils.Adapter {
   private client: NutClient | null = null;
   private stateManager: StateManager | null = null;
@@ -18,8 +20,6 @@ class NutAdapter extends utils.Adapter {
   private authenticated = false;
   private enrichedUps = new Set<string>();
   private testClients = new Set<NutClient>();
-  private unhandledRejectionHandler: ((reason: unknown) => void) | null = null;
-  private uncaughtExceptionHandler: ((err: Error) => void) | null = null;
 
   constructor(options: Partial<utils.AdapterOptions> = {}) {
     super({ ...options, name: "nut" });
@@ -28,16 +28,15 @@ class NutAdapter extends utils.Adapter {
     this.on("unload", this.onUnload.bind(this));
     this.on("message", this.onMessage.bind(this));
 
-    this.unhandledRejectionHandler = (reason: unknown) => {
-      this.log.error(`Unhandled rejection: ${errText(reason)}`);
-      this.terminate?.(11);
-    };
-    this.uncaughtExceptionHandler = (err: Error) => {
-      this.log.error(`Uncaught exception: ${errText(err)}`);
-      this.terminate?.(11);
-    };
-    process.on("unhandledRejection", this.unhandledRejectionHandler);
-    process.on("uncaughtException", this.uncaughtExceptionHandler);
+    if (!processHandlersInstalled) {
+      process.on("unhandledRejection", (reason: unknown) => {
+        console.error(`[nut] Unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}`);
+      });
+      process.on("uncaughtException", (err: Error) => {
+        console.error(`[nut] Uncaught exception: ${err.message}`);
+      });
+      processHandlersInstalled = true;
+    }
   }
 
   private async onReady(): Promise<void> {
@@ -424,14 +423,6 @@ class NutAdapter extends utils.Adapter {
         tc.destroy();
       }
       this.testClients.clear();
-      if (this.unhandledRejectionHandler) {
-        process.off("unhandledRejection", this.unhandledRejectionHandler);
-        this.unhandledRejectionHandler = null;
-      }
-      if (this.uncaughtExceptionHandler) {
-        process.off("uncaughtException", this.uncaughtExceptionHandler);
-        this.uncaughtExceptionHandler = null;
-      }
       void this.setState("info.connection", { val: false, ack: true }).catch(() => {});
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${errText(err)}`);
