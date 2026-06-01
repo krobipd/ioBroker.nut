@@ -50,8 +50,12 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 | **Poll Interval (s)** | How often to query the NUT server (5–300)                              | `15`    |
 | **Username**          | NUT username (optional — required for commands and writable variables) | —       |
 | **Password**          | NUT password                                                           | —       |
+| **Use TLS (STARTTLS)** | Encrypt the connection via STARTTLS                                   | off     |
+| **Require valid certificate** | Reject self-signed/invalid certificates (only shown when TLS is on) | off     |
 
 Use the **Test Connection** button to verify the server is reachable and see discovered UPS devices.
+
+**About TLS:** enabling STARTTLS encrypts the connection so your NUT username and password are no longer sent in clear text over the network. With the default settings it protects against passive eavesdropping, but **not** against an active man-in-the-middle, because most NUT servers use a self-signed certificate that cannot be verified. For full protection, configure a certificate the client can validate on the NUT server and enable **Require valid certificate**. The NUT server must be built with TLS support (`upsd` with `CERTFILE`/`CERTPATH`); otherwise the connection test reports a TLS error.
 
 ### Advanced
 
@@ -171,6 +175,13 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.3.0 (2026-06-01)
+
+- Added optional TLS encryption via STARTTLS, so your username and password are no longer sent in clear text over the network.
+- Charging and discharging are now also detected from the battery charger status, so they work on UPS models that don't report them directly.
+- Added status flags for waiting, ECO mode, self-test and overheating, plus clearer labels for more instant commands.
+- The adapter now keeps trying to reach the NUT server when it is unavailable and comes back on its own once it returns, instead of staying idle.
+
 ### 0.2.9 (2026-05-23)
 
 - Reduced unnecessary state-change events by skipping writes when the value has not changed.
@@ -187,10 +198,6 @@ nut.0.
 ### 0.2.6 (2026-05-23)
 
 - Internal cleanup. No user-facing changes.
-
-### 0.2.5 (2026-05-22)
-
-- User-modified state names are no longer overwritten on adapter restart
 
 Older entries are in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 

@@ -47,13 +47,11 @@ const KNOWN_STRING_PREFIXES = [
   "input.voltage.extended"
 ];
 function detectType(varName, rawValue, isWritable) {
-  const isString = isKnownString(varName);
-  const unit = detectUnit(varName);
-  if (isString) {
+  if (isKnownString(varName)) {
     return {
       type: "string",
       role: detectRole(varName, "string", isWritable),
-      unit,
+      unit: void 0,
       read: true,
       write: isWritable,
       parsedValue: rawValue
@@ -64,7 +62,7 @@ function detectType(varName, rawValue, isWritable) {
     return {
       type: "number",
       role: detectRole(varName, "number", isWritable),
-      unit,
+      unit: detectUnit(varName),
       read: true,
       write: isWritable,
       parsedValue: num
@@ -73,7 +71,7 @@ function detectType(varName, rawValue, isWritable) {
   return {
     type: "string",
     role: detectRole(varName, "string", isWritable),
-    unit,
+    unit: void 0,
     read: true,
     write: isWritable,
     parsedValue: rawValue
@@ -98,7 +96,7 @@ function isKnownString(varName) {
   return false;
 }
 function detectUnit(varName) {
-  if (varName.includes("voltage") && !varName.endsWith(".extended")) {
+  if (varName.includes("voltage")) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -134,6 +132,12 @@ function detectUnit(varName) {
   return void 0;
 }
 function detectRole(varName, type, isWritable) {
+  if (varName === "ups.status") {
+    return "text";
+  }
+  if (type === "string") {
+    return "text";
+  }
   if (varName === "battery.charge") {
     return "value.battery";
   }
@@ -143,22 +147,16 @@ function detectRole(varName, type, isWritable) {
   if (varName.includes("temperature")) {
     return "value.temperature";
   }
-  if (varName === "ups.status") {
-    return "text";
-  }
   if (varName.includes("current")) {
     return "value.current";
   }
-  if (varName.includes("power")) {
+  if (varName.includes("power") && !varName.includes("powerfactor")) {
     return isWritable ? "level" : "value.power";
   }
   if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
     return isWritable ? "level" : "value.interval";
   }
-  if (isWritable) {
-    return type === "number" ? "level" : "text";
-  }
-  return type === "number" ? "value" : "text";
+  return isWritable ? "level" : "value";
 }
 const KNOWN_ENUM_STATES = {
   "battery.charger.status": {
@@ -174,12 +172,22 @@ const KNOWN_ENUM_STATES = {
   }
 };
 const OUTLET_ON_OFF = { on: "on", off: "off" };
+const VOLTAGE_FREQUENCY_STATUS = {
+  good: "good",
+  "warning-low": "warning-low",
+  "warning-high": "warning-high",
+  "critical-low": "critical-low",
+  "critical-high": "critical-high"
+};
 function detectStates(varName) {
   if (KNOWN_ENUM_STATES[varName]) {
     return KNOWN_ENUM_STATES[varName];
   }
   if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
     return OUTLET_ON_OFF;
+  }
+  if (/\.(voltage|frequency)\.status$/.test(varName)) {
+    return VOLTAGE_FREQUENCY_STATUS;
   }
   return void 0;
 }

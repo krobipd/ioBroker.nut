@@ -431,4 +431,62 @@ describe("type-detector", () => {
       expect(detectStates("ups.status")).toBeUndefined();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // J/K/L/M — type/role/unit edge fixes (v0.3.0)
+  // -----------------------------------------------------------------------
+  describe("string states: no unit (J) + no value.* role (K)", () => {
+    it("battery.charger.status → string, no unit (not %), text role", () => {
+      const r = detectType("battery.charger.status", "floating", false);
+      expect(r.type).toBe("string");
+      expect(r.unit).toBeUndefined();
+      expect(r.role).toBe("text");
+    });
+
+    it("input.voltage.status → string, no unit (not V), text role (not value.voltage)", () => {
+      const r = detectType("input.voltage.status", "good", false);
+      expect(r.type).toBe("string");
+      expect(r.unit).toBeUndefined();
+      expect(r.role).toBe("text");
+    });
+
+    it("ups.beeper.status string has no unit", () => {
+      expect(detectType("ups.beeper.status", "enabled", false).unit).toBeUndefined();
+    });
+  });
+
+  describe("powerfactor is not value.power (L)", () => {
+    it("output.powerfactor → value role, no VA unit", () => {
+      const r = detectType("output.powerfactor", "0.98", false);
+      expect(r.type).toBe("number");
+      expect(r.role).toBe("value");
+      expect(r.unit).toBeUndefined();
+    });
+
+    it("ups.realpower still value.power / W", () => {
+      const r = detectType("ups.realpower", "147", false);
+      expect(r.role).toBe("value.power");
+      expect(r.unit).toBe("W");
+    });
+  });
+
+  describe("voltage/frequency status enums (M)", () => {
+    it("input.voltage.status → good/warning/critical enum", () => {
+      expect(detectStates("input.voltage.status")).toEqual({
+        good: "good",
+        "warning-low": "warning-low",
+        "warning-high": "warning-high",
+        "critical-low": "critical-low",
+        "critical-high": "critical-high",
+      });
+    });
+
+    it("three-phase input.L1.voltage.status → same enum", () => {
+      expect(detectStates("input.L1.voltage.status")?.good).toBe("good");
+    });
+
+    it("output.frequency.status → same enum", () => {
+      expect(detectStates("output.frequency.status")?.["critical-low"]).toBe("critical-low");
+    });
+  });
 });

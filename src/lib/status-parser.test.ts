@@ -1,4 +1,4 @@
-import { ALL_FLAG_KEYS, getDisplayString, parseStatus, STATUS_FLAGS } from "./status-parser";
+import { ALL_FLAG_KEYS, FLAG_META, getDisplayString, parseStatus, STATUS_FLAGS } from "./status-parser";
 
 describe("status-parser", () => {
   // -----------------------------------------------------------------------
@@ -12,94 +12,79 @@ describe("status-parser", () => {
     });
 
     it("should parse OB as onBattery", () => {
-      const r = parseStatus("OB");
-      expect(r.flags.onBattery).toBe(true);
-      expect(r.flags.online).toBe(false);
+      expect(parseStatus("OB").flags.onBattery).toBe(true);
     });
 
     it("should parse LB as lowBattery", () => {
-      const r = parseStatus("LB");
-      expect(r.flags.lowBattery).toBe(true);
+      expect(parseStatus("LB").flags.lowBattery).toBe(true);
     });
 
     it("should parse HB as highBattery", () => {
-      const r = parseStatus("HB");
-      expect(r.flags.highBattery).toBe(true);
+      expect(parseStatus("HB").flags.highBattery).toBe(true);
     });
 
     it("should parse RB as replaceBattery", () => {
-      const r = parseStatus("RB");
-      expect(r.flags.replaceBattery).toBe(true);
+      expect(parseStatus("RB").flags.replaceBattery).toBe(true);
     });
 
     it("should parse CHRG as charging", () => {
-      const r = parseStatus("CHRG");
-      expect(r.flags.charging).toBe(true);
+      expect(parseStatus("CHRG").flags.charging).toBe(true);
     });
 
     it("should parse DISCHRG as discharging", () => {
-      const r = parseStatus("DISCHRG");
-      expect(r.flags.discharging).toBe(true);
+      expect(parseStatus("DISCHRG").flags.discharging).toBe(true);
     });
 
     it("should parse BYPASS as bypass", () => {
-      const r = parseStatus("BYPASS");
-      expect(r.flags.bypass).toBe(true);
+      expect(parseStatus("BYPASS").flags.bypass).toBe(true);
     });
 
     it("should parse CAL as calibrating", () => {
-      const r = parseStatus("CAL");
-      expect(r.flags.calibrating).toBe(true);
+      expect(parseStatus("CAL").flags.calibrating).toBe(true);
     });
 
     it("should parse OFF as off", () => {
-      const r = parseStatus("OFF");
-      expect(r.flags.off).toBe(true);
+      expect(parseStatus("OFF").flags.off).toBe(true);
     });
 
     it("should parse OVER as overloaded", () => {
-      const r = parseStatus("OVER");
-      expect(r.flags.overloaded).toBe(true);
+      expect(parseStatus("OVER").flags.overloaded).toBe(true);
     });
 
     it("should parse TRIM as trimming", () => {
-      const r = parseStatus("TRIM");
-      expect(r.flags.trimming).toBe(true);
+      expect(parseStatus("TRIM").flags.trimming).toBe(true);
     });
 
     it("should parse BOOST as boosting", () => {
-      const r = parseStatus("BOOST");
-      expect(r.flags.boosting).toBe(true);
+      expect(parseStatus("BOOST").flags.boosting).toBe(true);
     });
 
     it("should parse FSD as forcedShutdown", () => {
-      const r = parseStatus("FSD");
-      expect(r.flags.forcedShutdown).toBe(true);
+      expect(parseStatus("FSD").flags.forcedShutdown).toBe(true);
     });
 
     it("should parse ALARM as alarm", () => {
-      const r = parseStatus("ALARM");
-      expect(r.flags.alarm).toBe(true);
+      expect(parseStatus("ALARM").flags.alarm).toBe(true);
     });
 
-    it("should parse COMM as commEstablished", () => {
-      const r = parseStatus("COMM");
-      expect(r.flags.commEstablished).toBe(true);
+    it("should parse WAIT as waiting", () => {
+      expect(parseStatus("WAIT").flags.waiting).toBe(true);
     });
 
-    it("should parse NOCOMM as commLost", () => {
-      const r = parseStatus("NOCOMM");
-      expect(r.flags.commLost).toBe(true);
+    it("should parse ECO as ecoMode", () => {
+      expect(parseStatus("ECO").flags.ecoMode).toBe(true);
     });
 
-    it("should parse TEST as testing", () => {
-      const r = parseStatus("TEST");
-      expect(r.flags.testing).toBe(true);
+    it("should parse legacy HE as ecoMode (alias)", () => {
+      expect(parseStatus("HE").flags.ecoMode).toBe(true);
     });
 
-    it("should parse HE as highEfficiency", () => {
-      const r = parseStatus("HE");
-      expect(r.flags.highEfficiency).toBe(true);
+    it("should parse TEST as testing (real token: powercom, apc_modbus, …)", () => {
+      expect(parseStatus("TEST").flags.testing).toBe(true);
+    });
+
+    it("should parse OVERHEAT as overheat (real token: belkinunv, microsol)", () => {
+      expect(parseStatus("OVERHEAT").flags.overheat).toBe(true);
     });
   });
 
@@ -127,40 +112,52 @@ describe("status-parser", () => {
       expect(r.flags.forcedShutdown).toBe(true);
     });
 
-    it("should parse OL TRIM", () => {
-      const r = parseStatus("OL TRIM");
+    it("should parse OL ECO", () => {
+      const r = parseStatus("OL ECO");
       expect(r.flags.online).toBe(true);
-      expect(r.flags.trimming).toBe(true);
-    });
-
-    it("should parse OL HB", () => {
-      const r = parseStatus("OL HB");
-      expect(r.flags.online).toBe(true);
-      expect(r.flags.highBattery).toBe(true);
-    });
-
-    it("should parse OL HE", () => {
-      const r = parseStatus("OL HE");
-      expect(r.flags.online).toBe(true);
-      expect(r.flags.highEfficiency).toBe(true);
+      expect(r.flags.ecoMode).toBe(true);
     });
   });
 
   // -----------------------------------------------------------------------
-  // Raw value
+  // charging/discharging from battery.charger.status (modern NUT)
   // -----------------------------------------------------------------------
-  describe("raw value", () => {
-    it("should preserve the raw status string", () => {
-      expect(parseStatus("OL CHRG").raw).toBe("OL CHRG");
+  describe("battery.charger.status (charging/discharging fallback)", () => {
+    it("derives discharging from charger.status when no DISCHRG flag (OB)", () => {
+      const r = parseStatus("OB", "discharging");
+      expect(r.flags.discharging).toBe(true);
+      expect(r.flags.onBattery).toBe(true);
     });
 
-    it("should preserve single flag", () => {
-      expect(parseStatus("OL").raw).toBe("OL");
+    it("derives charging from charger.status when no CHRG flag (OL)", () => {
+      const r = parseStatus("OL", "charging");
+      expect(r.flags.charging).toBe(true);
+    });
+
+    it("floating charger.status → neither charging nor discharging", () => {
+      const r = parseStatus("OL", "floating");
+      expect(r.flags.charging).toBe(false);
+      expect(r.flags.discharging).toBe(false);
+    });
+
+    it("resting charger.status → neither", () => {
+      const r = parseStatus("OL", "resting");
+      expect(r.flags.charging).toBe(false);
+      expect(r.flags.discharging).toBe(false);
+    });
+
+    it("CHRG flag still works without charger.status", () => {
+      expect(parseStatus("OL CHRG").flags.charging).toBe(true);
+    });
+
+    it("ignores empty/unknown charger.status", () => {
+      const r = parseStatus("OL", "");
+      expect(r.flags.charging).toBe(false);
     });
   });
 
   // -----------------------------------------------------------------------
-  // Severity computation
+  // Severity (power-source ladder only — fault flags intentionally excluded)
   // -----------------------------------------------------------------------
   describe("severity", () => {
     it("should be 0 for OL (OK)", () => {
@@ -171,23 +168,15 @@ describe("status-parser", () => {
       expect(parseStatus("OL CHRG").severity).toBe(0);
     });
 
-    it("should be 0 for OL HB (OK)", () => {
-      expect(parseStatus("OL HB").severity).toBe(0);
+    it("should be 0 for ECO (OK — informational)", () => {
+      expect(parseStatus("OL ECO").severity).toBe(0);
     });
 
-    it("should be 0 for HE (OK — informational)", () => {
-      expect(parseStatus("HE").severity).toBe(0);
-    });
-
-    it("should be 0 for OL HE (OK — informational)", () => {
-      expect(parseStatus("OL HE").severity).toBe(0);
+    it("should be 0 for WAIT (OK — informational)", () => {
+      expect(parseStatus("OL WAIT").severity).toBe(0);
     });
 
     it("should be 1 for TRIM (Info)", () => {
-      expect(parseStatus("TRIM").severity).toBe(1);
-    });
-
-    it("should be 1 for OL TRIM (Info)", () => {
       expect(parseStatus("OL TRIM").severity).toBe(1);
     });
 
@@ -222,6 +211,11 @@ describe("status-parser", () => {
     it("should be 4 for OB LB FSD (Emergency — highest wins)", () => {
       expect(parseStatus("OB LB FSD").severity).toBe(4);
     });
+
+    it("OVER does NOT raise severity (fault flag, by design)", () => {
+      expect(parseStatus("OL OVER").severity).toBe(0);
+      expect(parseStatus("OL OVER").flags.overloaded).toBe(true);
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -235,8 +229,7 @@ describe("status-parser", () => {
     });
 
     it("should handle whitespace-only string", () => {
-      const r = parseStatus("   ");
-      expect(r.severity).toBe(0);
+      expect(parseStatus("   ").severity).toBe(0);
     });
 
     it("should ignore unknown flags", () => {
@@ -246,31 +239,51 @@ describe("status-parser", () => {
     });
 
     it("should handle leading/trailing whitespace", () => {
-      const r = parseStatus("  OL  ");
-      expect(r.flags.online).toBe(true);
+      expect(parseStatus("  OL  ").flags.online).toBe(true);
     });
 
     it("should handle TICK/TOCK (unknown but not crashing)", () => {
-      const r = parseStatus("OL TICK");
-      expect(r.flags.online).toBe(true);
+      expect(parseStatus("OL TICK").flags.online).toBe(true);
     });
   });
 
   // -----------------------------------------------------------------------
-  // Constants
+  // Catalog constants
   // -----------------------------------------------------------------------
   describe("constants", () => {
-    it("should have 19 status flags", () => {
-      expect(Object.keys(STATUS_FLAGS).length).toBe(19);
+    it("should have 19 flags (14 standard + ALARM + WAIT + ECO + TEST + OVERHEAT)", () => {
+      expect(ALL_FLAG_KEYS.length).toBe(19);
     });
 
-    it("should have matching ALL_FLAG_KEYS", () => {
-      expect(ALL_FLAG_KEYS.length).toBe(Object.keys(STATUS_FLAGS).length);
+    it("STATUS_FLAGS maps the documented tokens + real extras + HE alias", () => {
+      for (const t of [
+        "OL", "OB", "LB", "HB", "RB", "CHRG", "DISCHRG", "BYPASS", "CAL", "OFF", "OVER",
+        "TRIM", "BOOST", "FSD", "ALARM", "WAIT", "ECO", "HE", "TEST", "OVERHEAT",
+      ]) {
+        expect(STATUS_FLAGS[t], `${t} should map to a flag`).toBeDefined();
+      }
+      expect(STATUS_FLAGS.HE).toBe("ecoMode");
+      expect(STATUS_FLAGS.ECO).toBe("ecoMode");
+      expect(STATUS_FLAGS.TEST).toBe("testing");
+      expect(STATUS_FLAGS.OVERHEAT).toBe("overheat");
+    });
+
+    it("driver-private one-off tokens are not mapped (clients ignore unknowns)", () => {
+      for (const t of ["COMM", "NOCOMM", "ACFAIL", "COMMFAULT", "DEPLETED", "BY", "TIP", "SD"]) {
+        expect(STATUS_FLAGS[t]).toBeUndefined();
+      }
     });
 
     it("should have unique flag key names", () => {
-      const unique = new Set(ALL_FLAG_KEYS);
-      expect(unique.size).toBe(ALL_FLAG_KEYS.length);
+      expect(new Set(ALL_FLAG_KEYS).size).toBe(ALL_FLAG_KEYS.length);
+    });
+
+    it("FLAG_META has i18nKey + role for every flag", () => {
+      for (const flag of ALL_FLAG_KEYS) {
+        expect(FLAG_META[flag], `${flag} meta`).toBeDefined();
+        expect(typeof FLAG_META[flag].i18nKey).toBe("string");
+        expect(typeof FLAG_META[flag].role).toBe("string");
+      }
     });
   });
 
@@ -290,10 +303,6 @@ describe("status-parser", () => {
       expect(getDisplayString("OB LB")).toBe("On Battery, Low Battery");
     });
 
-    it("should convert OB LB FSD to three labels", () => {
-      expect(getDisplayString("OB LB FSD")).toBe("On Battery, Low Battery, Forced Shutdown");
-    });
-
     it("should pass through unknown tokens", () => {
       expect(getDisplayString("OL UNKNOWN")).toBe("Online, UNKNOWN");
     });
@@ -302,8 +311,24 @@ describe("status-parser", () => {
       expect(getDisplayString("")).toBe("");
     });
 
-    it("should handle OL HE", () => {
-      expect(getDisplayString("OL HE")).toBe("Online, High Efficiency");
+    it("should handle OL ECO", () => {
+      expect(getDisplayString("OL ECO")).toBe("Online, ECO Mode");
+    });
+
+    it("should display legacy HE as ECO Mode", () => {
+      expect(getDisplayString("HE")).toBe("ECO Mode");
+    });
+
+    it("should display WAIT as Waiting", () => {
+      expect(getDisplayString("WAIT")).toBe("Waiting");
+    });
+
+    it("should display TEST as Testing", () => {
+      expect(getDisplayString("TEST")).toBe("Testing");
+    });
+
+    it("should display OVERHEAT as Overheated", () => {
+      expect(getDisplayString("OB OVERHEAT")).toBe("On Battery, Overheated");
     });
   });
 

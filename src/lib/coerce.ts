@@ -1,3 +1,5 @@
+import { NUT_DEFAULT_PORT } from "./types";
+
 /**
  * Extract a log-friendly message from a thrown / rejected value.
  *
@@ -41,14 +43,14 @@ export function coerceHost(raw: unknown): string | null {
 }
 
 /**
- * Coerce NUT port to a valid integer in [1, 65535], default 3493.
+ * Coerce NUT port to a valid integer in [1, 65535], default NUT_DEFAULT_PORT.
  *
  * @param raw Raw port value from admin config
  */
 export function coercePort(raw: unknown): number {
   const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
   if (!Number.isFinite(n)) {
-    return 3493;
+    return NUT_DEFAULT_PORT;
   }
   return Math.max(1, Math.min(65535, Math.floor(n)));
 }
@@ -79,4 +81,16 @@ export function coerceCommandTimeoutMs(raw: unknown): number {
     return 5000;
   }
   return Math.max(1, Math.min(30, Math.floor(n))) * 1000;
+}
+
+/**
+ * Exponential reconnect backoff: attempt 1 → baseMs, doubling each attempt, capped at maxMs.
+ *
+ * @param attempt 1-based attempt counter (values < 1 are treated as 1)
+ * @param baseMs Delay for the first attempt
+ * @param maxMs Upper bound for the delay
+ */
+export function computeReconnectDelay(attempt: number, baseMs: number, maxMs: number): number {
+  const a = Math.max(1, Math.floor(attempt));
+  return Math.min(baseMs * 2 ** (a - 1), maxMs);
 }

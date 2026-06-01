@@ -50,14 +50,11 @@ export interface TypeDetectResult {
  * @param isWritable Whether the variable appears in LIST RW
  */
 export function detectType(varName: string, rawValue: string, isWritable: boolean): TypeDetectResult {
-  const isString = isKnownString(varName);
-  const unit = detectUnit(varName);
-
-  if (isString) {
+  if (isKnownString(varName)) {
     return {
       type: "string",
       role: detectRole(varName, "string", isWritable),
-      unit,
+      unit: undefined,
       read: true,
       write: isWritable,
       parsedValue: rawValue,
@@ -69,17 +66,18 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
     return {
       type: "number",
       role: detectRole(varName, "number", isWritable),
-      unit,
+      unit: detectUnit(varName),
       read: true,
       write: isWritable,
       parsedValue: num,
     };
   }
 
+  // Not a known string and not parseable as a number → opaque string, no unit.
   return {
     type: "string",
     role: detectRole(varName, "string", isWritable),
-    unit,
+    unit: undefined,
     read: true,
     write: isWritable,
     parsedValue: rawValue,
@@ -108,8 +106,9 @@ function isKnownString(varName: string): boolean {
   return false;
 }
 
+// Only called for numeric variables (string vars never carry a unit).
 function detectUnit(varName: string): string | undefined {
-  if (varName.includes("voltage") && !varName.endsWith(".extended")) {
+  if (varName.includes("voltage")) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -146,6 +145,16 @@ function detectUnit(varName: string): string | undefined {
 }
 
 function detectRole(varName: string, type: "number" | "string", isWritable: boolean): string {
+  // ups.status is the one string that always gets a text role.
+  if (varName === "ups.status") {
+    return "text";
+  }
+  // String states never get a value.* role — they are text (or a writable text field).
+  if (type === "string") {
+    return "text";
+  }
+
+  // Numeric roles.
   if (varName === "battery.charge") {
     return "value.battery";
   }
@@ -155,23 +164,18 @@ function detectRole(varName: string, type: "number" | "string", isWritable: bool
   if (varName.includes("temperature")) {
     return "value.temperature";
   }
-  if (varName === "ups.status") {
-    return "text";
-  }
   if (varName.includes("current")) {
     return "value.current";
   }
-  if (varName.includes("power")) {
+  // "powerfactor" contains "power" but is a 0..1 factor, not a power value.
+  if (varName.includes("power") && !varName.includes("powerfactor")) {
     return isWritable ? "level" : "value.power";
   }
   if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
     return isWritable ? "level" : "value.interval";
   }
 
-  if (isWritable) {
-    return type === "number" ? "level" : "text";
-  }
-  return type === "number" ? "value" : "text";
+  return isWritable ? "level" : "value";
 }
 
 const KNOWN_ENUM_STATES: Record<string, Record<string, string>> = {
@@ -190,6 +194,16 @@ const KNOWN_ENUM_STATES: Record<string, Record<string, string>> = {
 
 const OUTLET_ON_OFF: Record<string, string> = { on: "on", off: "off" };
 
+// good / warning-low / warning-high / critical-low / critical-high — for *.voltage.status,
+// *.frequency.status (incl. three-phase variants like input.L1.voltage.status).
+const VOLTAGE_FREQUENCY_STATUS: Record<string, string> = {
+  good: "good",
+  "warning-low": "warning-low",
+  "warning-high": "warning-high",
+  "critical-low": "critical-low",
+  "critical-high": "critical-high",
+};
+
 /**
  * Detect common.states for known enum variables.
  *
@@ -201,6 +215,9 @@ export function detectStates(varName: string): Record<string, string> | undefine
   }
   if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
     return OUTLET_ON_OFF;
+  }
+  if (/\.(voltage|frequency)\.status$/.test(varName)) {
+    return VOLTAGE_FREQUENCY_STATUS;
   }
   return undefined;
 }

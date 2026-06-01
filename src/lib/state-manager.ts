@@ -1,6 +1,6 @@
 import type * as utils from "@iobroker/adapter-core";
 import { tName, type I18nKey } from "./i18n";
-import { ALL_FLAG_KEYS, getDisplayString, parseStatus } from "./status-parser";
+import { ALL_FLAG_KEYS, FLAG_META, getDisplayString, parseStatus } from "./status-parser";
 import { detectStates, detectType } from "./type-detector";
 import type { NutCommand, NutVariable } from "./types";
 
@@ -20,44 +20,37 @@ const CHANNEL_I18N: Record<string, I18nKey> = {
   info: "channelUpsInfo",
 };
 
-const FLAG_I18N: Record<string, I18nKey> = {
-  online: "flagOnline",
-  onBattery: "flagOnBattery",
-  lowBattery: "flagLowBattery",
-  highBattery: "flagHighBattery",
-  replaceBattery: "flagReplaceBattery",
-  charging: "flagCharging",
-  discharging: "flagDischarging",
-  bypass: "flagBypass",
-  calibrating: "flagCalibrating",
-  off: "flagOff",
-  overloaded: "flagOverloaded",
-  trimming: "flagTrimming",
-  boosting: "flagBoosting",
-  forcedShutdown: "flagForcedShutdown",
-  alarm: "flagAlarm",
-  commEstablished: "flagCommEstablished",
-  commLost: "flagCommLost",
-  testing: "flagTesting",
-  highEfficiency: "flagHighEfficiency",
-};
-
 const COMMAND_I18N: Record<string, I18nKey> = {
   "beeper.disable": "cmdBeeperDisable",
   "beeper.enable": "cmdBeeperEnable",
   "beeper.mute": "cmdBeeperMute",
+  "beeper.toggle": "cmdBeeperToggle",
   "load.off": "cmdLoadOff",
   "load.on": "cmdLoadOn",
   "load.off.delay": "cmdLoadOffDelay",
   "load.on.delay": "cmdLoadOnDelay",
+  "shutdown.default": "cmdShutdownDefault",
   "shutdown.return": "cmdShutdownReturn",
   "shutdown.stayoff": "cmdShutdownStayoff",
   "shutdown.stop": "cmdShutdownStop",
   "shutdown.reboot": "cmdShutdownReboot",
+  "shutdown.reboot.graceful": "cmdShutdownRebootGraceful",
   "test.battery.start": "cmdTestBatteryStart",
+  "test.battery.start.quick": "cmdTestBatteryStartQuick",
+  "test.battery.start.low": "cmdTestBatteryStartLow",
+  "test.battery.start.deep": "cmdTestBatteryStartDeep",
   "test.battery.stop": "cmdTestBatteryStop",
+  "test.panel.start": "cmdTestPanelStart",
+  "test.panel.stop": "cmdTestPanelStop",
+  "test.failure.start": "cmdTestFailureStart",
+  "test.failure.stop": "cmdTestFailureStop",
+  "test.system.start": "cmdTestSystemStart",
   "calibrate.start": "cmdCalibrateStart",
   "calibrate.stop": "cmdCalibrateStop",
+  "bypass.start": "cmdBypassStart",
+  "bypass.stop": "cmdBypassStop",
+  "reset.input.minmax": "cmdResetInputMinmax",
+  "reset.watchdog": "cmdResetWatchdog",
 };
 
 const TRANSLATED_VARIABLES = new Set<I18nKey>([
@@ -128,16 +121,6 @@ function varTranslation(nutVarName: string): LocalizedName | undefined {
   }
   return undefined;
 }
-
-const STATUS_FLAG_ROLES: Record<string, string> = {
-  lowBattery: "indicator.lowbat",
-  overloaded: "indicator.alarm",
-  replaceBattery: "indicator.maintenance",
-  onBattery: "indicator.alarm",
-  forcedShutdown: "indicator.alarm",
-  alarm: "indicator.alarm",
-  commLost: "indicator.alarm",
-};
 
 /**
  * Convert NUT variable name to ioBroker state ID (dots after channel → dashes).
@@ -306,11 +289,12 @@ export class StateManager {
    *
    * @param upsName UPS identifier
    * @param rawStatus Raw ups.status value
+   * @param chargerStatus Optional battery.charger.status (modern source for charging/discharging)
    */
-  async updateStatusFlags(upsName: string, rawStatus: string): Promise<void> {
+  async updateStatusFlags(upsName: string, rawStatus: string, chargerStatus?: string): Promise<void> {
     await this.ensureChannel(upsName, "status");
 
-    const result = parseStatus(rawStatus);
+    const result = parseStatus(rawStatus, chargerStatus);
     const activeFlags = ALL_FLAG_KEYS.filter(k => result.flags[k]).join(", ") || "none";
     this.adapter.log.debug(
       `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`,
@@ -348,13 +332,13 @@ export class StateManager {
 
     for (const flagKey of ALL_FLAG_KEYS) {
       const stateId = `${upsName}.status.${flagKey}`;
-      const flagI18nKey = FLAG_I18N[flagKey];
+      const meta = FLAG_META[flagKey];
       await this.ensureState(stateId, {
         type: "boolean",
-        role: STATUS_FLAG_ROLES[flagKey] ?? "indicator",
+        role: meta?.role ?? "indicator",
         read: true,
         write: false,
-        name: flagI18nKey ? tName(flagI18nKey) : flagKey,
+        name: meta ? tName(meta.i18nKey) : flagKey,
       });
       await this.adapter.setStateChangedAsync(stateId, { val: result.flags[flagKey], ack: true });
     }
@@ -456,7 +440,16 @@ export class StateManager {
   }
 
   private async cleanupDeprecatedInfoStates(upsName: string): Promise<void> {
-    const deprecated = [`${upsName}.info.name`, `${upsName}.info.description`];
+    const deprecated = [
+      `${upsName}.info.name`,
+      `${upsName}.info.description`,
+      // Dropped non-standard status flags — not real NUT status_set tokens (COMM/NOCOMM),
+      // or renamed (highEfficiency → ecoMode). NB: `testing` is NOT here — TEST is a real
+      // token (apc_modbus, powercom, …) and is a current flag again.
+      `${upsName}.status.commEstablished`,
+      `${upsName}.status.commLost`,
+      `${upsName}.status.highEfficiency`,
+    ];
     for (const id of deprecated) {
       try {
         await this.adapter.delObjectAsync(id);

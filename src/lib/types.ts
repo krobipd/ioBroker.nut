@@ -12,6 +12,10 @@ export interface AdapterConfig {
   username: string;
   /** NUT password (optional) */
   password: string;
+  /** Use STARTTLS to encrypt the connection */
+  useTls: boolean;
+  /** Reject invalid/self-signed TLS certificates (default false) */
+  tlsRejectUnauthorized: boolean;
   /** Per-command timeout in seconds */
   commandTimeout: number;
   /** Enable instant commands (INSTCMD) */
@@ -68,6 +72,14 @@ export interface NutClientOptions {
   commandTimeout?: number;
   /** Optional logger */
   logger?: NutLogger;
+  /** Use STARTTLS to encrypt the connection (credentials otherwise travel in clear text). */
+  useTls?: boolean;
+  /** Reject self-signed/invalid TLS certs (default false — NUT servers are typically self-signed). */
+  tlsRejectUnauthorized?: boolean;
+  /** Injected managed timer (adapter.setTimeout) — auto-cleared on unload. Defaults to the global timer. */
+  setTimer?: (callback: () => void, ms: number) => unknown;
+  /** Injected managed clear (adapter.clearTimeout). Defaults to the global clear. */
+  clearTimer?: (handle: unknown) => void;
 }
 
 /** Default NUT TCP port. */
@@ -75,7 +87,9 @@ export const NUT_DEFAULT_PORT = 3493;
 /** Default per-command timeout in milliseconds. */
 export const NUT_DEFAULT_COMMAND_TIMEOUT = 5000;
 
-/** All known NUT error codes. */
+// Documented reference catalog of the 23 NUT protocol error codes (net-protocol.txt).
+// NutError.code is typed `string` (not NutErrorCode) because a server may send codes
+// outside this set; this list documents the meanings, it does not constrain the type.
 export const NUT_ERRORS = [
   "ACCESS-DENIED",
   "UNKNOWN-UPS",

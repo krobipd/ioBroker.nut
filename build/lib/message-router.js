@@ -24,7 +24,7 @@ __export(message_router_exports, {
 module.exports = __toCommonJS(message_router_exports);
 var import_coerce = require("./coerce");
 function makeTestClientFactory(NutClientClass, logger) {
-  return (host, port) => new NutClientClass(host, port, { logger });
+  return (host, port, options) => new NutClientClass(host, port, { ...options, logger });
 }
 async function dispatchMessage(obj, deps) {
   var _a, _b;
@@ -37,16 +37,23 @@ async function dispatchMessage(obj, deps) {
       case "checkConnection": {
         const raw = obj.message;
         const config = typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
-        const host = typeof config.host === "string" ? config.host.trim() : "";
-        const port = typeof config.port === "number" ? config.port : 3493;
+        const host = (0, import_coerce.coerceHost)(config.host);
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
           deps.sendTo(obj.from, obj.command, { success: false, message: "Host is required" }, obj.callback);
           return;
         }
+        const port = (0, import_coerce.coercePort)(config.port);
         const username = typeof config.username === "string" ? config.username : "";
         const password = typeof config.password === "string" ? config.password : "";
-        const testClient = deps.createTestClient(host, port);
+        const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
+        const options = {
+          localAddress,
+          commandTimeout: (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout),
+          useTls: !!config.useTls,
+          tlsRejectUnauthorized: !!config.tlsRejectUnauthorized
+        };
+        const testClient = deps.createTestClient(host, port, options);
         (_a = deps.onTestClientCreated) == null ? void 0 : _a.call(deps, testClient);
         try {
           await testClient.connect();

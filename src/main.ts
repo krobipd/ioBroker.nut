@@ -7,8 +7,6 @@ import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
 import type { AdapterConfig, UpsInfo } from "./lib/types";
 
-let processHandlersInstalled = false;
-
 class NutAdapter extends utils.Adapter {
   private client: NutClient | null = null;
   private stateManager: StateManager | null = null;
@@ -20,6 +18,9 @@ class NutAdapter extends utils.Adapter {
   private authenticated = false;
   private enrichedUps = new Set<string>();
   private testClients = new Set<NutClient>();
+  private subscribed = false;
+  private unloaded = false;
+  private everConnected = false;
 
   constructor(options: Partial<utils.AdapterOptions> = {}) {
     super({ ...options, name: "nut" });
@@ -27,16 +28,6 @@ class NutAdapter extends utils.Adapter {
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
     this.on("message", this.onMessage.bind(this));
-
-    if (!processHandlersInstalled) {
-      process.on("unhandledRejection", (reason: unknown) => {
-        console.error(`[nut] Unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}`);
-      });
-      process.on("uncaughtException", (err: Error) => {
-        console.error(`[nut] Uncaught exception: ${err.message}`);
-      });
-      processHandlersInstalled = true;
-    }
   }
 
   private async onReady(): Promise<void> {
@@ -47,7 +38,7 @@ class NutAdapter extends utils.Adapter {
         `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`,
       );
 
-      await this.setStateAsync("info.connection", { val: false, ack: true });
+      await this.setStateChangedAsync("info.connection", { val: false, ack: true });
 
       const host = coerceHost(config.host);
       if (!host) {
@@ -67,6 +58,16 @@ class NutAdapter extends utils.Adapter {
       this.client = new NutClient(host, port, {
         localAddress,
         commandTimeout: commandTimeoutMs,
+        useTls: !!config.useTls,
+        tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+        // Inject the adapter-managed timers so the client's command/reconnect timeouts are
+        // tracked and auto-cleared on unload (no native setTimeout leaks).
+        setTimer: (cb, ms) => this.setTimeout(cb, ms),
+        clearTimer: h => {
+          if (h != null) {
+            this.clearTimeout(h as ioBroker.Timeout);
+          }
+        },
         logger: {
           debug: (m: string) => this.log.debug(m),
           warn: (m: string) => this.log.warn(m),
@@ -75,21 +76,37 @@ class NutAdapter extends utils.Adapter {
       });
       this.stateManager = new StateManager(this);
 
-      this.client.setOnReconnect(() => {
-        void this.rediscover().catch((err: unknown) =>
-          this.log.error(`Rediscovery after reconnect failed: ${errText(err)}`),
-        );
+      // Unified retry loop lives in the client (start): it retries the initial connect,
+      // reconnects on drops, and runs the idempotent post-connect setup on every (re)connect.
+      this.client.setOnConnect(() => {
+        void this.onConnected().catch((err: unknown) => this.log.error(`onConnected failed: ${errText(err)}`));
       });
+      this.client.setOnFatal((err: unknown) => this.onConnectFatal(err));
+      this.client.start();
+    } catch (err: unknown) {
+      this.log.error(`onReady failed: ${errText(err)}`);
+    }
+  }
 
-      try {
-        await this.client.connect();
-      } catch (err) {
-        this.log.error(`Cannot connect to NUT server ${host}:${port} — ${errText(err)}`);
-        return;
-      }
+  /**
+   * Idempotent post-connect setup, run on the initial connect AND every reconnect (the client's
+   * single retry loop drives both): discover UPSes, (re-)authenticate, refresh command buttons,
+   * poll, and arm the poll timer + subscription once. Auth failure goes yellow and stops the
+   * loop via destroy(). Making "initial == reconnect" one path keeps the two from drifting.
+   */
+  private async onConnected(): Promise<void> {
+    if (this.unloaded || !this.client || !this.stateManager) {
+      return;
+    }
+    const config = this.config as unknown as AdapterConfig;
+    const host = coerceHost(config.host) ?? "";
+    const port = coercePort(config.port);
 
+    try {
+      this.enrichedUps.clear(); // fresh connection → re-enrich enum/range metadata
       await this.discover();
 
+      this.authenticated = false;
       if (config.username && config.password) {
         try {
           await this.client.authenticate(config.username, config.password);
@@ -103,7 +120,8 @@ class NutAdapter extends utils.Adapter {
           this.log.info(
             `NUT adapter running without authentication — fix credentials and use connection test in admin`,
           );
-          this.client.destroy();
+          this.client.destroy(); // stop the retry loop; stay alive + yellow
+          await this.setStateChangedAsync("info.connection", { val: false, ack: true });
           return;
         }
       }
@@ -123,22 +141,47 @@ class NutAdapter extends utils.Adapter {
       await this.poll();
 
       const pollSec = coercePollIntervalSec(config.pollInterval);
-      this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
-      this.pollTimer = this.setInterval(() => {
-        void this.poll();
-      }, pollSec * 1000);
-
-      if (config.enableCommands || config.enableSetVar) {
-        await this.subscribeStatesAsync("*");
+      if (this.pollTimer === undefined) {
+        this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
+        this.pollTimer = this.setInterval(() => {
+          void this.poll();
+        }, pollSec * 1000);
       }
 
-      const authStatus = this.authenticated ? "authenticated" : "no credentials";
-      this.log.info(
-        `NUT adapter started — ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`,
-      );
-    } catch (err: unknown) {
-      this.log.error(`onReady failed: ${errText(err)}`);
+      if (!this.subscribed && (config.enableCommands || config.enableSetVar)) {
+        await this.subscribeStatesAsync("*");
+        this.subscribed = true;
+      }
+
+      if (this.everConnected) {
+        this.log.info(`Reconnected to NUT server ${host}:${port} — ${this.discoveredUps.size} UPS(es)`);
+      } else {
+        this.everConnected = true;
+        const authStatus = this.authenticated ? "authenticated" : "no credentials";
+        this.log.info(
+          `NUT adapter started — ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`,
+        );
+      }
+    } catch (err) {
+      this.log.error(`Post-connect setup failed: ${errText(err)}`);
     }
+  }
+
+  /**
+   * The persistent connection failed fatally (TLS misconfiguration). The client already stopped
+   * retrying; stay alive + yellow so the admin connection-test button remains usable.
+   *
+   * @param err The fatal connect/STARTTLS error
+   */
+  private onConnectFatal(err: unknown): void {
+    const config = this.config as unknown as AdapterConfig;
+    const host = coerceHost(config.host) ?? "";
+    const port = coercePort(config.port);
+    this.log.error(
+      `TLS connection to NUT server ${host}:${port} failed: ${errText(err)} — verify the server offers STARTTLS and check the certificate setting`,
+    );
+    this.client?.destroy();
+    void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {});
   }
 
   private async discover(): Promise<void> {
@@ -157,25 +200,6 @@ class NutAdapter extends utils.Adapter {
     const knownNames = new Set(this.discoveredUps.keys());
     await this.stateManager.cleanupRemovedUps(knownNames);
     await this.stateManager.cleanupLegacyObjects(knownNames);
-  }
-
-  private async rediscover(): Promise<void> {
-    if (!this.client) {
-      return;
-    }
-    const config = this.config as unknown as AdapterConfig;
-    if (this.authenticated && config.username && config.password) {
-      try {
-        await this.client.authenticate(config.username, config.password);
-        for (const ups of this.discoveredUps.keys()) {
-          await this.client.login(ups);
-        }
-      } catch (err) {
-        this.log.warn(`Re-authentication after reconnect failed: ${errText(err)}`);
-      }
-    }
-    this.enrichedUps.clear();
-    await this.discover();
   }
 
   private classifyError(err: unknown): string {
@@ -233,7 +257,10 @@ class NutAdapter extends utils.Adapter {
 
           const statusVar = variables.find(v => v.name === "ups.status");
           if (statusVar) {
-            await this.stateManager.updateStatusFlags(upsName, statusVar.value);
+            // Pass battery.charger.status so charging/discharging fill in even on UPSes that
+            // report it instead of the CHRG/DISCHRG status flags (e.g. Eaton Ellipse ECO).
+            const chargerStatus = variables.find(v => v.name === "battery.charger.status")?.value;
+            await this.stateManager.updateStatusFlags(upsName, statusVar.value, chargerStatus);
           }
 
           if (!this.enrichedUps.has(upsName) && rwVars.length > 0) {
@@ -272,14 +299,14 @@ class NutAdapter extends utils.Adapter {
             this.enrichedUps.add(upsName);
           }
 
-          await this.setStateAsync(`${upsName}.info.online`, { val: true, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.online`, { val: true, ack: true });
 
           if (this.failedUps.has(upsName)) {
             this.log.info(`UPS '${upsName}' recovered`);
             this.failedUps.delete(upsName);
           }
         } catch (err) {
-          await this.setStateAsync(`${upsName}.info.online`, { val: false, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.online`, { val: false, ack: true });
 
           const msg = `Failed to poll UPS '${upsName}': ${errText(err)}`;
           if (this.failedUps.has(upsName)) {
@@ -296,7 +323,7 @@ class NutAdapter extends utils.Adapter {
         }
       }
 
-      await this.setStateAsync("info.connection", { val: true, ack: true });
+      await this.setStateChangedAsync("info.connection", { val: true, ack: true });
 
       if (this.lastErrorCode) {
         this.log.info("Connection restored");
@@ -316,7 +343,7 @@ class NutAdapter extends utils.Adapter {
         this.log.error(`Poll failed: ${errMsg}`);
       }
 
-      await this.setStateAsync("info.connection", { val: false, ack: true });
+      await this.setStateChangedAsync("info.connection", { val: false, ack: true });
     } finally {
       this.isPolling = false;
     }
@@ -413,12 +440,19 @@ class NutAdapter extends utils.Adapter {
 
   private onUnload(callback: () => void): void {
     try {
+      this.unloaded = true;
       if (this.pollTimer) {
         this.clearInterval(this.pollTimer);
         this.pollTimer = undefined;
       }
-      this.client?.cancelAll();
-      this.client?.destroy();
+      // The client owns its reconnect timer (managed via this.setTimeout) — destroy()/shutdown()
+      // below clears it.
+      // Best-effort graceful LOGOUT when logged in; a hard close otherwise.
+      if (this.authenticated) {
+        this.client?.shutdown();
+      } else {
+        this.client?.destroy();
+      }
       for (const tc of this.testClients) {
         tc.destroy();
       }

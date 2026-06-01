@@ -1,5 +1,5 @@
 import type { NutClient } from "./nut-client";
-import { errText } from "./coerce";
+import { coerceCommandTimeoutMs, coerceHost, coercePort, errText } from "./coerce";
 import type { AdapterConfig, NutClientOptions, NutLogger } from "./types";
 
 /**
@@ -19,8 +19,8 @@ export interface MessageRouterDeps {
     response: unknown,
     callback: ioBroker.MessageCallbackInfo | undefined,
   ) => void;
-  /** Factory for throwaway NutClient used by checkConnection. */
-  createTestClient: (host: string, port: number) => NutClient;
+  /** Factory for throwaway NutClient used by checkConnection (options carry localAddress/timeout/TLS). */
+  createTestClient: (host: string, port: number, options?: NutClientOptions) => NutClient;
   /** Called right after createTestClient returns. */
   onTestClientCreated?: (client: NutClient) => void;
   /** Called after checkConnection settles (success or fail). */
@@ -40,7 +40,7 @@ export function makeTestClientFactory(
   NutClientClass: NutClientConstructor,
   logger: NutLogger,
 ): MessageRouterDeps["createTestClient"] {
-  return (host, port) => new NutClientClass(host, port, { logger });
+  return (host, port, options) => new NutClientClass(host, port, { ...options, logger });
 }
 
 /**
@@ -64,8 +64,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           typeof raw === "object" && raw !== null && !Array.isArray(raw)
             ? (raw as Partial<AdapterConfig>)
             : ({} as Partial<AdapterConfig>);
-        const host = typeof config.host === "string" ? config.host.trim() : "";
-        const port = typeof config.port === "number" ? config.port : 3493;
+        const host = coerceHost(config.host);
 
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
@@ -73,10 +72,23 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           return;
         }
 
+        const port = coercePort(config.port);
         const username = typeof config.username === "string" ? config.username : "";
         const password = typeof config.password === "string" ? config.password : "";
 
-        const testClient = deps.createTestClient(host, port);
+        // Mirror the production client so the test exercises the real path (multi-homed bind, TLS).
+        const localAddress =
+          typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0
+            ? config.networkInterface.trim()
+            : undefined;
+        const options: NutClientOptions = {
+          localAddress,
+          commandTimeout: coerceCommandTimeoutMs(config.commandTimeout),
+          useTls: !!config.useTls,
+          tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+        };
+
+        const testClient = deps.createTestClient(host, port, options);
         deps.onTestClientCreated?.(testClient);
         try {
           await testClient.connect();

@@ -1,5 +1,6 @@
 import type { NutClient } from "./nut-client";
 import { dispatchMessage, type MessageRouterDeps } from "./message-router";
+import type { NutClientOptions } from "./types";
 
 interface SentMessage {
   from: string;
@@ -12,6 +13,7 @@ interface TestHarness {
   sends: SentMessage[];
   logs: { level: "debug" | "warn"; msg: string }[];
   createdClients: { host: string; port: number }[];
+  createdOptions: (NutClientOptions | undefined)[];
   registered: NutClient[];
   completed: NutClient[];
   deps: MessageRouterDeps;
@@ -26,6 +28,7 @@ function makeHarness(
   const sends: SentMessage[] = [];
   const logs: { level: "debug" | "warn"; msg: string }[] = [];
   const createdClients: { host: string; port: number }[] = [];
+  const createdOptions: (NutClientOptions | undefined)[] = [];
   const registered: NutClient[] = [];
   const completed: NutClient[] = [];
 
@@ -37,8 +40,9 @@ function makeHarness(
     sendTo: (from, command, response, callback) => {
       sends.push({ from, command, response, callback });
     },
-    createTestClient: (host, port) => {
+    createTestClient: (host, port, options) => {
       createdClients.push({ host, port });
+      createdOptions.push(options);
       return {
         connect: async () => {
           if (connectError) {
@@ -63,7 +67,7 @@ function makeHarness(
     onTestClientDone: client => completed.push(client),
   };
 
-  return { sends, logs, createdClients, registered, completed, deps };
+  return { sends, logs, createdClients, createdOptions, registered, completed, deps };
 }
 
 function buildMessage(overrides: Partial<ioBroker.Message>): ioBroker.Message {
@@ -164,6 +168,43 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "myhost" } }), h.deps);
 
       expect(h.createdClients).toEqual([{ host: "myhost", port: 3493 }]);
+    });
+
+    it("forwards networkInterface, commandTimeout and TLS options to the test client", async () => {
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: {
+            host: "192.168.1.100",
+            port: 3493,
+            networkInterface: "10.0.0.5",
+            commandTimeout: 8,
+            useTls: true,
+            tlsRejectUnauthorized: true,
+          },
+        }),
+        h.deps,
+      );
+
+      expect(h.createdOptions).toHaveLength(1);
+      expect(h.createdOptions[0]).toMatchObject({
+        localAddress: "10.0.0.5",
+        commandTimeout: 8000, // seconds → ms
+        useTls: true,
+        tlsRejectUnauthorized: true,
+      });
+    });
+
+    it("omits localAddress and defaults TLS off when not configured", async () => {
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
+      await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }), h.deps);
+
+      expect(h.createdOptions[0]).toMatchObject({
+        localAddress: undefined,
+        useTls: false,
+        tlsRejectUnauthorized: false,
+      });
     });
 
     it("should forward connection errors as failure response", async () => {

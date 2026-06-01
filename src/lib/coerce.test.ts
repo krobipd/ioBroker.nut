@@ -1,4 +1,11 @@
-import { coerceCommandTimeoutMs, coerceHost, coercePollIntervalSec, coercePort, errText } from "./coerce";
+import {
+  coerceCommandTimeoutMs,
+  coerceHost,
+  coercePollIntervalSec,
+  coercePort,
+  computeReconnectDelay,
+  errText,
+} from "./coerce";
 
 describe("coerce", () => {
   // -----------------------------------------------------------------------
@@ -201,6 +208,28 @@ describe("coerce", () => {
 
     it("should return default for Infinity", () => {
       expect(coerceCommandTimeoutMs(Infinity)).toBe(5000);
+    });
+  });
+
+  describe("computeReconnectDelay", () => {
+    it("returns the base delay on the first attempt", () => {
+      expect(computeReconnectDelay(1, 1000, 60000)).toBe(1000);
+    });
+
+    it("doubles each attempt", () => {
+      expect(computeReconnectDelay(2, 1000, 60000)).toBe(2000);
+      expect(computeReconnectDelay(3, 1000, 60000)).toBe(4000);
+      expect(computeReconnectDelay(4, 1000, 60000)).toBe(8000);
+    });
+
+    it("caps at maxMs", () => {
+      expect(computeReconnectDelay(20, 1000, 60000)).toBe(60000);
+      expect(computeReconnectDelay(100, 1000, 60000)).toBe(60000);
+    });
+
+    it("treats attempts < 1 as the first attempt", () => {
+      expect(computeReconnectDelay(0, 1000, 60000)).toBe(1000);
+      expect(computeReconnectDelay(-5, 1000, 60000)).toBe(1000);
     });
   });
 });

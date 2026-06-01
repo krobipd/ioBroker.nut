@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.2.9",
+    "version": "0.3.0",
     "news": {
+      "0.3.0": {
+        "en": "Optional TLS encryption via STARTTLS so credentials are not sent in clear text. New status flags. The adapter now comes back on its own when the NUT server is temporarily unavailable.",
+        "de": "Optionale TLS-Verschlüsselung über STARTTLS, damit Zugangsdaten nicht im Klartext gesendet werden. Neue Status-Flags. Der Adapter kommt jetzt von selbst zurück, wenn der NUT-Server kurz fehlt.",
+        "ru": "Опциональное шифрование TLS через STARTTLS, чтобы учётные данные не передавались открытым текстом. Новые флаги состояния. Адаптер сам восстанавливается, когда сервер NUT временно недоступен.",
+        "pt": "Criptografia TLS opcional via STARTTLS para que as credenciais não sejam enviadas em texto puro. Novos sinalizadores de status. O adaptador volta sozinho quando o servidor NUT fica indisponível.",
+        "nl": "Optionele TLS-versleuteling via STARTTLS, zodat inloggegevens niet in leesbare tekst worden verzonden. Nieuwe statusvlaggen. De adapter komt nu vanzelf terug als de NUT-server tijdelijk weg is.",
+        "fr": "Chiffrement TLS optionnel via STARTTLS pour que les identifiants ne soient plus envoyés en clair. Nouveaux indicateurs d'état. L'adaptateur revient seul quand le serveur NUT est indisponible.",
+        "it": "Crittografia TLS opzionale tramite STARTTLS, così le credenziali non vengono inviate in chiaro. Nuovi flag di stato. L'adattatore torna da solo quando il server NUT non è disponibile.",
+        "es": "Cifrado TLS opcional mediante STARTTLS para que las credenciales no se envíen en texto plano. Nuevos indicadores de estado. El adaptador vuelve solo cuando el servidor NUT no está disponible.",
+        "pl": "Opcjonalne szyfrowanie TLS przez STARTTLS, aby dane logowania nie były wysyłane jawnym tekstem. Nowe flagi stanu. Adapter sam wraca, gdy serwer NUT jest chwilowo niedostępny.",
+        "uk": "Опціональне шифрування TLS через STARTTLS, щоб облікові дані не надсилалися відкритим текстом. Нові прапорці стану. Адаптер сам повертається, коли сервер NUT тимчасово недоступний.",
+        "zh-cn": "可选的 TLS（STARTTLS）加密，凭据不再以明文发送。新增状态标志。当 NUT 服务器暂时不可用时，适配器现在会自行恢复。"
+      },
       "0.2.9": {
         "en": "Reduced unnecessary state-change events. Fixed duplicate error messages in compact mode.",
         "de": "Unnötige State-Change-Events reduziert. Doppelte Fehlermeldungen im Compact-Modus behoben.",
@@ -80,19 +93,6 @@
         "pl": "Poprawiona obsługa błędów i stabilność.",
         "uk": "Покращено обробку помилок та стабільність.",
         "zh-cn": "改进了错误处理和稳定性。"
-      },
-      "0.2.3": {
-        "en": "Improved debug logging for easier diagnosis of connection and command issues.",
-        "de": "Verbessertes Debug-Logging zur einfacheren Diagnose von Verbindungs- und Befehlsproblemen.",
-        "ru": "Улучшено журналирование для упрощения диагностики проблем с подключением и командами.",
-        "pt": "Registo de depuração melhorado para diagnóstico mais fácil de problemas de ligação e comandos.",
-        "nl": "Verbeterde debug-logging voor eenvoudiger diagnose van verbindings- en opdracht problemen.",
-        "fr": "Journalisation de débogage améliorée pour un diagnostic plus facile des problèmes de connexion et de commande.",
-        "it": "Logging di debug migliorato per una diagnosi più semplice dei problemi di connessione e comandi.",
-        "es": "Registro de depuración mejorado para un diagnóstico más fácil de problemas de conexión y comandos.",
-        "pl": "Ulepszone logowanie debugowania dla łatwiejszej diagnostyki problemów z połączeniem i komendami.",
-        "uk": "Покращене журналювання для спрощення діагностики проблем підключення та команд.",
-        "zh-cn": "改进了调试日志，便于诊断连接和命令问题。"
       }
     },
     "titleLang": {

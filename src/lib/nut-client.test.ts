@@ -1,5 +1,57 @@
 import * as net from "node:net";
-import { NutClient, NutError, NutTimeoutError } from "./nut-client";
+import * as tls from "node:tls";
+import { isTlsConfigError, NutClient, NutError, NutTimeoutError } from "./nut-client";
+
+// Throwaway self-signed cert+key (CN=localhost, 10y) for the STARTTLS handshake test only.
+// The client connects with tlsRejectUnauthorized:false, so a self-signed cert is accepted.
+const TEST_TLS_CERT = `-----BEGIN CERTIFICATE-----
+MIIDCTCCAfGgAwIBAgIUHImzJF8XL41TIaeDxN27q+o+mgMwDQYJKoZIhvcNAQEL
+BQAwFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDUzMTIxMzc1MVoXDTM2MDUy
+ODIxMzc1MVowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAq4As7vWgFqRuj86ZFrSUXLVrst2HJn1hRgFzlKH1Z7YC
+XzvUHeuykDFj0PbhIGKdoPg9xfMQxGMjCtnYFrZwjLyBfP4nfqxewNiUAGPtWwE/
+Y5QPTfxwtZNfqiwktLu8OkimxQKBCw+n/wzD1knbSuEPyP7aXQcMRD0a9Hoif/JL
+Ed4PIE4KVqSpMYP7L+Fw3Sqj4n6vNXLvtmG0FJAj2rbn0PMzM/3Qhz7IfQx9DZAb
+b1aAtXilZOHC/BVlbW91/Vdw7X3srZqFKhMjEWD6lSwQ2FRXHFFkvJNykvbthr29
+jYL894rI7qp7YtSEMsLyqam22AeZ4Oa4U1F4SwR4gQIDAQABo1MwUTAdBgNVHQ4E
+FgQU1+raIiaMpli0/urIg3QONDTdDLUwHwYDVR0jBBgwFoAU1+raIiaMpli0/urI
+g3QONDTdDLUwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEANFnS
+tgPFc0SAp7rdGWi5kffxFIWbyrI2CfnsWFcHVUexgdNCHSh4QrrZRIVHIUUzj04Y
+79Vh8aORPYup8/3B6N6/QJGTVWs6JdJWE1cJBLyLOLnnXgkTEh+WLJi16aamEyXW
+vXzb8yw+RWJML89E6Ikh61f1bByuFcgJJh3yFXTxIFaC4T+Fv0aW3N2lCLBT7QXW
+WMYXCdZb2Guhq8OmnuDGgB4TIbBYhWUlyB3YsY0Up71YylY8cZJErAm2Qh1VvNZR
+YelM6JJpkeP8g739vT3X+UiwXOW6rX8SKMESGtsw2fU7OttQM/GA785RgNkHUmD5
+5KFDgEWZVJU1/aPb6w==
+-----END CERTIFICATE-----`;
+
+const TEST_TLS_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCrgCzu9aAWpG6P
+zpkWtJRctWuy3YcmfWFGAXOUofVntgJfO9Qd67KQMWPQ9uEgYp2g+D3F8xDEYyMK
+2dgWtnCMvIF8/id+rF7A2JQAY+1bAT9jlA9N/HC1k1+qLCS0u7w6SKbFAoELD6f/
+DMPWSdtK4Q/I/tpdBwxEPRr0eiJ/8ksR3g8gTgpWpKkxg/sv4XDdKqPifq81cu+2
+YbQUkCPatufQ8zMz/dCHPsh9DH0NkBtvVoC1eKVk4cL8FWVtb3X9V3DtfeytmoUq
+EyMRYPqVLBDYVFccUWS8k3KS9u2Gvb2Ngvz3isjuqnti1IQywvKpqbbYB5ng5rhT
+UXhLBHiBAgMBAAECggEAGkogeTQNaZMkwKYwqP6fBJQp8YYMbu3G4Mqdq2HlYtPP
+isY61qhYG8r6bGC/820ykSeknojLX/N7fnEU8yxd1fEan2y9ZKlrMAAzNdkbnDj1
+fOAINZH2PBtejZFNQihKKxwSdn5TBj1M6SfNiHaTZ2fXOd45XovTSU2dqW7khXzA
+WYpkxecb5cGug+eWzuLrqvuaUQaI/cTwU4NTZEZutz0afPtsDKFP+huwb0yjlHF8
+EWfSjMi3ejCfJatoNCUVJ08drTjR+b2vxljGTpG70dPtv5HgcCqSzUi0j4Pg4wtw
+loHiE7FwVrtM6UevUOk0wwjpKGbuEA/AMZ4RgsxdjQKBgQDXmIkwcQkN+t4Gwwvk
+ZvKEXgoTi1fjQN4pWTDmgkqo6ip/kBveCndYMV2U+q7S+KGW/Vw9tgR1BPg0lb8M
+z267GSMnxSIEmnz0lPwKV2BW9yy8vzyN5RXtSWx5xs9v1J0E/Q+QBNFFsE5R+i0z
+BHPjckCBY+595fGlVAPhDi6QtQKBgQDLpB9hl3P63WbNTZNKycf3czN2xa8jdA0N
+9RRXhdPumUbXcUQQbd2T+rAGpFAFksRrqqi2ryCZ0nid/mgv2C17WRwFUMlY6hdq
+s8uBmjGBBGkAQwVF5HWpieHS2vYANF8ZDcKTzNNwn+IMNEdpoOoJlcrdPTUSCuAs
+HqIRMtZEHQKBgQC/wJJcPFzySysIVpgQKCQQ6NcLdQbRP9OYcRSWIFIpFESCOnke
+rq5hCV8Tbzbou2x1L5jH5kjmj2n20y0eRqxUylHDQIk2EPWMT6ovxHESSDtJEMnZ
+5mPvLTvGv7Wl4DNbyXv6+t3qnpm6PcnPs2kjZW3L50aqQUcAZc4hcAyodQKBgQCm
+1ResgULQRDBjg+lmvPbpH+UKqhu4xOupAp6esZIWCFbETBQCDbAY+qjZWCYC2uG2
+f0LnH4Rq4MZWUcWTZNymEDPnmu7JvEZg8VmJHQTveOh5AW9BelB3C/IJJ7+gHUfH
+o8FECusyepnbe70BqYXzQlfHdsySsnxDSPlnc6mcdQKBgBuD3hyhtSYeFZYFIp15
+5QyOYYHA4SylTa/FTWPArsi4Jni3CCUf4ObZ3HUvc5m1ig1WrfsaXG3QuiM2q9Ng
+LueAgxoAfWdMelYH3sDF7+1lZoTM9iW5mUKYR32S/lFzN/s0DfeyRigKgRrHUHRk
+BkE/t6kWa7tRIMX2uf2qvl8M
+-----END PRIVATE KEY-----`;
 
 // ---------------------------------------------------------------------------
 // Mock NUT TCP Server
@@ -142,9 +194,102 @@ function createMockNutServer(handler?: MockHandler): {
   };
 }
 
+// A mock server that answers STARTTLS with "OK STARTTLS" and then completes a REAL TLS
+// handshake on its side — so the client's plaintext→TLS upgrade is exercised end to end
+// (a mock that only checks the STARTTLS line was sent would never trip the upgrade trap).
+function createStartTlsMockServer(handler: MockHandler): {
+  start: () => Promise<number>;
+  stop: () => Promise<void>;
+  commands: string[];
+} {
+  const commands: string[] = [];
+  const connections = new Set<net.Socket | tls.TLSSocket>();
+  let port = 0;
+
+  const respond = (sock: net.Socket | tls.TLSSocket, cmd: string): void => {
+    commands.push(cmd);
+    const r = handler(cmd);
+    if (r === null) return;
+    if (Array.isArray(r)) {
+      for (const line of r) sock.write(line + "\n");
+    } else {
+      sock.write(r + "\n");
+    }
+  };
+
+  const server = net.createServer(socket => {
+    connections.add(socket);
+    socket.setEncoding("utf8");
+    let buf = "";
+
+    const onPlain = (data: string): void => {
+      buf += data;
+      const lines = buf.split("\n");
+      buf = lines.pop()!;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (trimmed === "STARTTLS") {
+          commands.push("STARTTLS");
+          socket.removeListener("data", onPlain);
+          socket.write("OK STARTTLS\n");
+          // Upgrade THIS side to a TLS server socket — drives a genuine handshake.
+          const tlsSocket = new tls.TLSSocket(socket, {
+            isServer: true,
+            secureContext: tls.createSecureContext({ cert: TEST_TLS_CERT, key: TEST_TLS_KEY }),
+          });
+          connections.add(tlsSocket);
+          tlsSocket.setEncoding("utf8");
+          let tbuf = "";
+          tlsSocket.on("data", (tdata: string) => {
+            tbuf += tdata;
+            const tlines = tbuf.split("\n");
+            tbuf = tlines.pop()!;
+            for (const tline of tlines) {
+              const t = tline.trim();
+              if (t) respond(tlsSocket, t);
+            }
+          });
+          tlsSocket.on("error", () => {});
+          return; // anything buffered after STARTTLS would be a protocol violation — ignore
+        }
+        respond(socket, trimmed);
+      }
+    };
+
+    socket.on("data", onPlain);
+    socket.on("error", () => {});
+  });
+
+  return {
+    commands,
+    start: () =>
+      new Promise<number>(resolve => {
+        server.listen(0, "127.0.0.1", () => {
+          port = (server.address() as net.AddressInfo).port;
+          resolve(port);
+        });
+      }),
+    stop: () =>
+      new Promise<void>(resolve => {
+        for (const c of connections) c.destroy();
+        server.close(() => resolve());
+      }),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+/** A promise plus its resolver — for awaiting individual onConnect fires. */
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve: () => void = () => {};
+  const promise = new Promise<void>(r => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
 
 describe("NutClient", () => {
   // -----------------------------------------------------------------------
@@ -708,24 +853,35 @@ describe("NutClient", () => {
       }
     });
 
-    it("should process next command after timeout", async () => {
-      let firstCall = true;
+    it("desyncs and reconnects after a command timeout (resync)", { timeout: 10000 }, async () => {
+      let respond = false;
       const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) {
-          if (firstCall) {
-            firstCall = false;
-            return null; // no response → timeout
-          }
-          return 'VAR ups0 ups.load "15"';
+          return respond ? 'VAR ups0 ups.load "15"' : null; // no response → timeout
         }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
       try {
-        const client = new NutClient("127.0.0.1", port, { commandTimeout: 100 });
-        await client.connect();
+        const client = new NutClient("127.0.0.1", port, { commandTimeout: 80 });
+        const first = deferred();
+        const reconnected = deferred();
+        let n = 0;
+        client.setOnConnect(() => {
+          n += 1;
+          (n === 1 ? first : reconnected).resolve();
+        });
+        client.start();
+        await first.promise;
 
+        // A timeout desyncs the stream (no request IDs) → drop the connection to resync.
         await expect(client.getVar("ups0", "battery.charge")).rejects.toThrow(NutTimeoutError);
+        expect(client.isConnected).toBe(false);
+
+        // …then it reconnects and commands work again on a clean stream.
+        respond = true;
+        await reconnected.promise;
+        expect(client.isConnected).toBe(true);
         const val = await client.getVar("ups0", "ups.load");
         expect(val).toBe("15");
 
@@ -789,29 +945,109 @@ describe("NutClient", () => {
   // Reconnect
   // -----------------------------------------------------------------------
   describe("reconnect", () => {
-    it("should attempt reconnect after disconnect", { timeout: 10000 }, async () => {
+    it("reconnects on drop and re-fires onConnect (idempotent re-entry)", { timeout: 10000 }, async () => {
       const mock = createMockNutServer();
       const port = await mock.start();
       try {
         const client = new NutClient("127.0.0.1", port, { commandTimeout: 2000 });
-
-        const reconnected = new Promise<void>(resolve => {
-          client.setOnReconnect(() => resolve());
+        const first = deferred();
+        const reconnected = deferred();
+        let n = 0;
+        client.setOnConnect(() => {
+          n += 1;
+          (n === 1 ? first : reconnected).resolve();
         });
-
-        await client.connect();
+        client.start();
+        await first.promise;
         expect(client.isConnected).toBe(true);
 
         // Destroy socket directly — going through TCP (mock.disconnectAll) has timing variance
-        // @ts-expect-error accessing private socket for deterministic disconnect
+        // @ts-expect-error accessing private socket for a deterministic disconnect
         client.socket!.destroy();
 
-        await reconnected;
+        await reconnected.promise;
         expect(client.isConnected).toBe(true);
+        expect(n).toBe(2); // onConnect ran again on reconnect — initial == reconnect, one path
         client.destroy();
       } finally {
         await mock.stop();
       }
+    });
+
+    it("retries the initial connect with backoff until the server appears", { timeout: 10000 }, async () => {
+      const probe = createMockNutServer();
+      const port = await probe.start();
+      await probe.stop(); // port now free → the initial connect fails (ECONNREFUSED)
+
+      const client = new NutClient("127.0.0.1", port, { commandTimeout: 2000 });
+      const connected = deferred();
+      client.setOnConnect(() => connected.resolve());
+      client.start();
+
+      // Bring a server up on the same port; the backed-off retry must find it.
+      const reup = net.createServer(s => {
+        s.setEncoding("utf8");
+        s.on("error", () => {});
+      });
+      await new Promise<void>(r => reup.listen(port, "127.0.0.1", () => r()));
+      try {
+        await connected.promise; // a retry succeeded after the initial failure
+        expect(client.isConnected).toBe(true);
+        client.destroy();
+      } finally {
+        await new Promise<void>(r => reup.close(() => r()));
+      }
+    });
+
+    it("stops on a fatal TLS-config error (onFatal, no retry)", { timeout: 10000 }, async () => {
+      const mock = createMockNutServer(cmd => {
+        if (cmd === "STARTTLS") return "ERR FEATURE-NOT-CONFIGURED";
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port, { useTls: true });
+        const fatal = deferred();
+        let connectCount = 0;
+        let fatalErr: unknown;
+        client.setOnConnect(() => {
+          connectCount += 1;
+        });
+        client.setOnFatal(err => {
+          fatalErr = err;
+          fatal.resolve();
+        });
+        client.start();
+
+        await fatal.promise;
+        expect((fatalErr as NutError).code).toBe("FEATURE-NOT-CONFIGURED");
+        expect(client.isConnected).toBe(false);
+        // No retry must be scheduled — onConnect never fires.
+        await new Promise(r => setTimeout(r, 200));
+        expect(connectCount).toBe(0);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+
+    it("stops the retry loop on destroy() during backoff", { timeout: 10000 }, async () => {
+      const probe = createMockNutServer();
+      const port = await probe.start();
+      await probe.stop(); // port closed → initial connect fails, retry scheduled (~1s)
+
+      const client = new NutClient("127.0.0.1", port, { commandTimeout: 2000 });
+      let connectCount = 0;
+      client.setOnConnect(() => {
+        connectCount += 1;
+      });
+      client.start();
+
+      await new Promise(r => setTimeout(r, 100)); // let the first attempt fail + arm the retry
+      client.destroy();
+      await new Promise(r => setTimeout(r, 1300)); // past the backoff window — retry must not fire
+      expect(connectCount).toBe(0);
+      expect(client.isConnected).toBe(false);
     });
   });
 
@@ -998,5 +1234,195 @@ describe("NutClient", () => {
       expect(err.name).toBe("NutTimeoutError");
       expect(err).toBeInstanceOf(Error);
     });
+  });
+
+  // -----------------------------------------------------------------------
+  // STARTTLS
+  // -----------------------------------------------------------------------
+  describe("STARTTLS", () => {
+    it(
+      "upgrades to TLS and runs commands over the encrypted channel",
+      { timeout: 10000 },
+      async () => {
+        const mock = createStartTlsMockServer(cmd => {
+          if (cmd === "LIST UPS") {
+            return ["BEGIN LIST UPS", 'UPS ups0 "Secure UPS"', "END LIST UPS"];
+          }
+          if (cmd.startsWith("GET VAR")) {
+            return 'VAR ups0 battery.charge "88"';
+          }
+          return "ERR UNKNOWN-COMMAND";
+        });
+        const port = await mock.start();
+        try {
+          const client = new NutClient("127.0.0.1", port, { useTls: true, tlsRejectUnauthorized: false });
+          await client.connect();
+          expect(client.isTls).toBe(true);
+
+          // Commands after the upgrade must travel over TLS and still parse correctly.
+          const ups = await client.listUps();
+          expect(ups).toEqual([{ name: "ups0", description: "Secure UPS" }]);
+          const charge = await client.getVar("ups0", "battery.charge");
+          expect(charge).toBe("88");
+          expect(mock.commands).toContain("STARTTLS");
+
+          client.destroy();
+        } finally {
+          await mock.stop();
+        }
+      },
+    );
+
+    it("rejects connect when the server has no TLS support", async () => {
+      const mock = createMockNutServer(cmd => {
+        if (cmd === "STARTTLS") return "ERR FEATURE-NOT-CONFIGURED";
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port, { useTls: true });
+        await expect(client.connect()).rejects.toMatchObject({ code: "FEATURE-NOT-CONFIGURED" });
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // CRLF tolerance
+  // -----------------------------------------------------------------------
+  describe("CRLF tolerance", () => {
+    it("parses responses terminated with CRLF", async () => {
+      const server = net.createServer(socket => {
+        socket.setEncoding("utf8");
+        let buf = "";
+        socket.on("data", (data: string) => {
+          buf += data;
+          const lines = buf.split("\n");
+          buf = lines.pop()!;
+          for (const line of lines) {
+            if (line.replace(/\r$/, "").trim() === "LIST UPS") {
+              socket.write("BEGIN LIST UPS\r\n");
+              socket.write('UPS ups0 "CRLF UPS"\r\n');
+              socket.write("END LIST UPS\r\n");
+            }
+          }
+        });
+      });
+      const port = await new Promise<number>(resolve => {
+        server.listen(0, "127.0.0.1", () => resolve((server.address() as net.AddressInfo).port));
+      });
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        const ups = await client.listUps();
+        expect(ups).toEqual([{ name: "ups0", description: "CRLF UPS" }]);
+        client.destroy();
+      } finally {
+        await new Promise<void>(resolve => server.close(() => resolve()));
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // LOGOUT
+  // -----------------------------------------------------------------------
+  describe("logout", () => {
+    it("sends LOGOUT", async () => {
+      const mock = createMockNutServer(cmd => {
+        if (cmd === "LOGOUT") return "OK Goodbye";
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        await client.logout();
+        expect(mock.commands).toContain("LOGOUT");
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+
+    it("swallows errors during logout", async () => {
+      const mock = createMockNutServer(cmd => {
+        if (cmd === "LOGOUT") return "ERR UNKNOWN-COMMAND";
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        await expect(client.logout()).resolves.toBeUndefined();
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // shutdown (graceful onUnload teardown)
+  // -----------------------------------------------------------------------
+  describe("shutdown", () => {
+    it("sends a best-effort LOGOUT and closes", async () => {
+      let resolveLogout: () => void = () => {};
+      const gotLogout = new Promise<void>(r => (resolveLogout = r));
+      const mock = createMockNutServer(cmd => {
+        if (cmd === "LOGOUT") {
+          resolveLogout();
+          return "OK Goodbye";
+        }
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        client.shutdown();
+        // The half-close must flush the LOGOUT — the server still receives it.
+        await gotLogout;
+        expect(mock.commands).toContain("LOGOUT");
+        expect(client.isConnected).toBe(false);
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isTlsConfigError — fatal (go yellow) vs. transient (retry) classification
+// ---------------------------------------------------------------------------
+describe("isTlsConfigError", () => {
+  it("treats NUT no-TLS / SSL-mode errors as fatal", () => {
+    expect(isTlsConfigError(new NutError("FEATURE-NOT-CONFIGURED"))).toBe(true);
+    expect(isTlsConfigError(new NutError("FEATURE-NOT-SUPPORTED"))).toBe(true);
+    expect(isTlsConfigError(new NutError("ALREADY-SSL-MODE"))).toBe(true);
+  });
+
+  it("treats certificate-verification errors as fatal", () => {
+    expect(isTlsConfigError({ code: "DEPTH_ZERO_SELF_SIGNED_CERT" })).toBe(true);
+    expect(isTlsConfigError({ code: "SELF_SIGNED_CERT_IN_CHAIN" })).toBe(true);
+    expect(isTlsConfigError({ code: "UNABLE_TO_VERIFY_LEAF_SIGNATURE" })).toBe(true);
+    expect(isTlsConfigError({ code: "CERT_HAS_EXPIRED" })).toBe(true);
+    expect(isTlsConfigError({ code: "ERR_TLS_CERT_ALTNAME_INVALID" })).toBe(true);
+    expect(isTlsConfigError({ code: "ERR_SSL_WRONG_VERSION_NUMBER" })).toBe(true);
+  });
+
+  it("does NOT treat transient network errors (or other NUT errors) as fatal", () => {
+    expect(isTlsConfigError(Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }))).toBe(false);
+    expect(isTlsConfigError(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" }))).toBe(false);
+    expect(isTlsConfigError(new NutError("ACCESS-DENIED"))).toBe(false);
+  });
+
+  it("handles errors without a string code", () => {
+    expect(isTlsConfigError(null)).toBe(false);
+    expect(isTlsConfigError(undefined)).toBe(false);
+    expect(isTlsConfigError("boom")).toBe(false);
+    expect(isTlsConfigError(new Error("no code"))).toBe(false);
+    expect(isTlsConfigError({ code: 42 })).toBe(false);
   });
 });

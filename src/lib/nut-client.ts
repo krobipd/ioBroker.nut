@@ -1,11 +1,17 @@
 import * as net from "node:net";
+import * as tls from "node:tls";
+import { computeReconnectDelay } from "./coerce";
 import type { NutClientOptions, NutCommand, NutLogger, NutRange, NutVariable, UpsInfo } from "./types";
 import { NUT_DEFAULT_COMMAND_TIMEOUT } from "./types";
 
-/** NUT protocol error with error code. */
+/** Reconnect backoff bounds (exponential: 1s, 2s, 4s … capped at 60s). */
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 60000;
+
+/** NUT protocol error with error code (see types.ts:NUT_ERRORS for the documented set). */
 export class NutError extends Error {
   /**
-   * @param code NUT error code
+   * @param code NUT error code (a server may send codes outside the documented set, so this is `string`)
    * @param message Optional custom message
    */
   constructor(
@@ -28,17 +34,50 @@ export class NutTimeoutError extends Error {
   }
 }
 
+// Errors from connect()/STARTTLS that signal a TLS *configuration* problem (server offers
+// no TLS, or its certificate was rejected) rather than a transient network failure.
+const TLS_FATAL_ERROR_CODES = new Set<string>([
+  // NUT-level: the server cannot/does not start TLS
+  "FEATURE-NOT-CONFIGURED",
+  "FEATURE-NOT-SUPPORTED",
+  "ALREADY-SSL-MODE",
+  // Node certificate-verification failures (only reachable with tlsRejectUnauthorized=true)
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "CERT_HAS_EXPIRED",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+]);
+
+/**
+ * Whether a failed TLS connect is a configuration problem (won't fix itself → go yellow,
+ * no retry) as opposed to a transient network error (ECONNREFUSED/ETIMEDOUT → retry).
+ *
+ * @param err Caught value from a failed connect()/STARTTLS
+ */
+export function isTlsConfigError(err: unknown): boolean {
+  if (err instanceof NutError) {
+    return TLS_FATAL_ERROR_CODES.has(err.code);
+  }
+  const code = (err as { code?: unknown } | null)?.code;
+  if (typeof code !== "string") {
+    return false;
+  }
+  // Explicit set above, plus the whole OpenSSL/TLS-layer code family.
+  return TLS_FATAL_ERROR_CODES.has(code) || code.startsWith("ERR_TLS_") || code.startsWith("ERR_SSL_");
+}
+
 interface QueueEntry {
   command: string;
   resolve: (lines: string[]) => void;
   reject: (err: Error) => void;
-  timer: ReturnType<typeof setTimeout>;
+  timer: unknown;
   multiLine: boolean;
 }
 
-/** Persistent TCP client for the NUT protocol (port 3493). */
+/** Persistent TCP client for the NUT protocol (port 3493), with optional STARTTLS. */
 export class NutClient {
-  private socket: net.Socket | null = null;
+  private socket: net.Socket | tls.TLSSocket | null = null;
   private buffer = "";
   private queue: QueueEntry[] = [];
   private active: QueueEntry | null = null;
@@ -46,16 +85,28 @@ export class NutClient {
   private multiLineExpectedEnd = "";
   private connected = false;
   private destroyed = false;
+  private tlsActive = false;
 
   private readonly host: string;
   private readonly port: number;
   private readonly localAddress?: string;
   private readonly commandTimeout: number;
+  private readonly useTls: boolean;
+  private readonly tlsRejectUnauthorized: boolean;
   private readonly log?: NutLogger;
+  // Injected managed timers (adapter.setTimeout/clearTimeout in production → auto-cleared on
+  // unload; global timers as fallback for standalone use/tests).
+  private readonly setTimer: (cb: () => void, ms: number) => unknown;
+  private readonly clearTimer: (handle: unknown) => void;
 
-  private reconnectDelay = 1000;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private onReconnectHandler: (() => void) | null = null;
+  private reconnectAttempt = 0;
+  private reconnectTimer: unknown = null;
+  // Persistent mode (set by start()) owns the unified retry loop: it retries the initial
+  // connect, reconnects on drops, and stops yellow on a fatal TLS-config error. A plain
+  // connect() (e.g. the connection test) leaves this false — one-shot, never retries.
+  private persistent = false;
+  private onConnectHandler: (() => void) | null = null;
+  private onFatalHandler: ((err: unknown) => void) | null = null;
 
   /**
    * @param host NUT server hostname or IP
@@ -67,19 +118,85 @@ export class NutClient {
     this.port = port;
     this.localAddress = options?.localAddress;
     this.commandTimeout = options?.commandTimeout ?? NUT_DEFAULT_COMMAND_TIMEOUT;
+    this.useTls = options?.useTls ?? false;
+    this.tlsRejectUnauthorized = options?.tlsRejectUnauthorized ?? false;
     this.log = options?.logger;
+    this.setTimer = options?.setTimer ?? ((cb, ms) => globalThis.setTimeout(cb, ms));
+    this.clearTimer = options?.clearTimer ?? (h => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>));
   }
 
   /**
-   * Register a callback invoked after successful reconnect.
+   * Register a callback invoked after every successful (re)connection in persistent mode.
+   * Runs the post-connect setup (discover/auth/poll); must be idempotent.
    *
-   * @param handler Reconnect callback
+   * @param handler Connect callback
    */
-  setOnReconnect(handler: () => void): void {
-    this.onReconnectHandler = handler;
+  setOnConnect(handler: () => void): void {
+    this.onConnectHandler = handler;
   }
 
-  /** Establish TCP connection to the NUT server. */
+  /**
+   * Register a callback invoked when the persistent connection fails fatally (TLS
+   * misconfiguration) — the retry loop stops and the caller should go yellow.
+   *
+   * @param handler Fatal-error callback
+   */
+  setOnFatal(handler: (err: unknown) => void): void {
+    this.onFatalHandler = handler;
+  }
+
+  /**
+   * Start the persistent runtime connection: connect now and keep retrying with exponential
+   * backoff, reconnecting automatically on later drops. A fatal TLS-config error stops the
+   * loop (onFatal). Use connect() directly for a one-shot (e.g. the connection test).
+   */
+  start(): void {
+    this.persistent = true;
+    this.reconnectAttempt = 0;
+    this.attemptConnect();
+  }
+
+  /** One iteration of the persistent loop: connect, then fire onConnect or handle the failure. */
+  private attemptConnect(): void {
+    if (this.destroyed) {
+      return;
+    }
+    this.connect()
+      .then(() => {
+        this.reconnectAttempt = 0;
+        this.onConnectHandler?.();
+      })
+      .catch((err: unknown) => this.handleConnectFailure(err));
+  }
+
+  /**
+   * Decide a failed persistent connect: a TLS-config error stops the loop (onFatal, yellow);
+   * any other error schedules a backed-off retry.
+   *
+   * @param err The connect/STARTTLS failure
+   */
+  private handleConnectFailure(err: unknown): void {
+    if (this.destroyed) {
+      return;
+    }
+    // Tear down the failed socket so the next attempt starts clean. Clearing `connected`
+    // first means the close handler sees wasConnected=false and won't double-schedule.
+    this.connected = false;
+    const sock = this.socket;
+    this.socket = null;
+    sock?.destroy();
+
+    const msg = err instanceof Error ? err.message : String(err);
+    if (this.useTls && isTlsConfigError(err)) {
+      this.log?.warn(`TLS connection to NUT server ${this.host}:${this.port} failed — not retrying: ${msg}`);
+      this.onFatalHandler?.(err);
+      return;
+    }
+    this.log?.debug(`Connect attempt failed: ${msg}`);
+    this.scheduleReconnect();
+  }
+
+  /** Establish TCP connection (and STARTTLS upgrade if configured) to the NUT server. */
   connect(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (this.destroyed) {
@@ -87,44 +204,81 @@ export class NutClient {
         return;
       }
 
-      const opts: net.NetConnectOpts = {
-        host: this.host,
-        port: this.port,
-      };
+      const opts: net.NetConnectOpts = { host: this.host, port: this.port };
       if (this.localAddress) {
         opts.localAddress = this.localAddress;
       }
 
-      this.socket = net.createConnection(opts, () => {
+      const socket = net.createConnection(opts, () => {
         this.connected = true;
-        this.reconnectDelay = 1000;
+        this.tlsActive = false;
         this.buffer = "";
         this.log?.debug(`Connected to NUT server ${this.host}:${this.port}`);
-        resolve();
-      });
-
-      this.socket.setEncoding("utf8");
-
-      this.socket.on("data", (data: string) => {
-        this.onData(data);
-      });
-
-      this.socket.on("error", (err: Error) => {
-        this.log?.debug(`Socket error: ${err.message}`);
-        if (!this.connected) {
-          reject(err);
+        if (this.useTls) {
+          this.startTls().then(resolve).catch(reject);
+        } else {
+          resolve();
         }
       });
+      this.socket = socket;
+      // Detect a dead peer (NAT/firewall idle-drop leaves a half-open socket otherwise).
+      socket.setKeepAlive(true, 30000);
+      this.wireSocket(socket, reject);
+    });
+  }
 
-      this.socket.on("close", () => {
-        const wasConnected = this.connected;
-        this.connected = false;
-        this.rejectActive(new Error("Connection closed"));
-        if (wasConnected && !this.destroyed) {
-          this.log?.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
-          this.scheduleReconnect();
-        }
-      });
+  /**
+   * Attach data/error/close handlers to the current socket.
+   *
+   * @param socket The socket (plaintext or TLS) to wire up
+   * @param rejectConnect Optional connect() rejector, called if the socket errors before connecting
+   */
+  private wireSocket(socket: net.Socket | tls.TLSSocket, rejectConnect?: (err: Error) => void): void {
+    socket.setEncoding("utf8");
+    socket.on("data", (data: string) => this.onData(data));
+    socket.on("error", (err: Error) => {
+      this.log?.debug(`Socket error: ${err.message}`);
+      if (!this.connected && rejectConnect) {
+        rejectConnect(err);
+      }
+    });
+    socket.on("close", () => {
+      const wasConnected = this.connected;
+      this.connected = false;
+      this.rejectActive(new Error("Connection closed"));
+      // Only the persistent runtime connection auto-reconnects on a drop; a one-shot
+      // connect() (e.g. the connection test) must not.
+      if (wasConnected && !this.destroyed && this.persistent) {
+        this.log?.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
+        this.scheduleReconnect();
+      }
+    });
+  }
+
+  /** Upgrade the plaintext socket to TLS via STARTTLS. */
+  private async startTls(): Promise<void> {
+    const plain = this.socket as net.Socket;
+    await this.sendCommand("STARTTLS", false); // throws NutError on FEATURE-NOT-CONFIGURED/-SUPPORTED
+    // After "OK STARTTLS" the server begins TLS immediately — nothing plaintext may follow.
+    plain.removeAllListeners("data");
+    plain.removeAllListeners("error");
+    plain.removeAllListeners("close");
+    this.buffer = "";
+
+    // SNI must be a hostname — RFC 6066 forbids an IP literal (Node warns + ignores it).
+    const servername = net.isIP(this.host) === 0 ? this.host : undefined;
+    await new Promise<void>((resolve, reject) => {
+      const tlsSocket = tls.connect(
+        { socket: plain, rejectUnauthorized: this.tlsRejectUnauthorized, servername },
+        () => {
+          this.tlsActive = true;
+          this.log?.debug(`STARTTLS established with ${this.host}:${this.port}`);
+          resolve();
+        },
+      );
+      tlsSocket.once("error", (err: Error) => reject(err));
+      this.socket = tlsSocket;
+      this.wireSocket(tlsSocket);
     });
   }
 
@@ -132,7 +286,7 @@ export class NutClient {
   destroy(): void {
     this.destroyed = true;
     if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
+      this.clearTimer(this.reconnectTimer);
       this.reconnectTimer = null;
     }
     this.cancelAll();
@@ -143,16 +297,39 @@ export class NutClient {
     this.connected = false;
   }
 
+  /**
+   * Synchronous graceful teardown for onUnload — sends a best-effort LOGOUT and half-closes
+   * so the write flushes (vs. destroy()'s hard reset). Any server reply is ignored.
+   */
+  shutdown(): void {
+    this.destroyed = true;
+    if (this.reconnectTimer) {
+      this.clearTimer(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.cancelAll();
+    const sock = this.socket;
+    this.socket = null;
+    this.connected = false;
+    if (sock) {
+      try {
+        sock.end("LOGOUT\n");
+      } catch {
+        sock.destroy();
+      }
+    }
+  }
+
   /** Reject all pending and queued commands. */
   cancelAll(): void {
     const err = new Error("Client cancelled");
     if (this.active) {
-      clearTimeout(this.active.timer);
+      this.clearTimer(this.active.timer);
       this.active.reject(err);
       this.active = null;
     }
     for (const entry of this.queue) {
-      clearTimeout(entry.timer);
+      this.clearTimer(entry.timer);
       entry.reject(err);
     }
     this.queue = [];
@@ -165,17 +342,17 @@ export class NutClient {
     return this.connected;
   }
 
+  /** Whether the connection is TLS-encrypted. */
+  get isTls(): boolean {
+    return this.tlsActive;
+  }
+
   /** Discover all UPS devices on the NUT server. */
-  async listUps(): Promise<UpsInfo[]> {
-    const lines = await this.sendCommand("LIST UPS", true);
-    const result: UpsInfo[] = [];
-    for (const line of lines) {
-      const match = /^UPS\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/.exec(line);
-      if (match) {
-        result.push({ name: match[1], description: unescapeNut(match[2]) });
-      }
-    }
-    return result;
+  listUps(): Promise<UpsInfo[]> {
+    return this.parseList("LIST UPS", /^UPS\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, m => ({
+      name: m[1],
+      description: unescapeNut(m[2]),
+    }));
   }
 
   /**
@@ -183,16 +360,11 @@ export class NutClient {
    *
    * @param ups UPS name
    */
-  async listVar(ups: string): Promise<NutVariable[]> {
-    const lines = await this.sendCommand(`LIST VAR ${ups}`, true);
-    const result: NutVariable[] = [];
-    for (const line of lines) {
-      const match = /^VAR\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/.exec(line);
-      if (match) {
-        result.push({ name: match[1], value: unescapeNut(match[2]) });
-      }
-    }
-    return result;
+  listVar(ups: string): Promise<NutVariable[]> {
+    return this.parseList(`LIST VAR ${ups}`, /^VAR\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, m => ({
+      name: m[1],
+      value: unescapeNut(m[2]),
+    }));
   }
 
   /**
@@ -200,16 +372,11 @@ export class NutClient {
    *
    * @param ups UPS name
    */
-  async listRw(ups: string): Promise<NutVariable[]> {
-    const lines = await this.sendCommand(`LIST RW ${ups}`, true);
-    const result: NutVariable[] = [];
-    for (const line of lines) {
-      const match = /^RW\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/.exec(line);
-      if (match) {
-        result.push({ name: match[1], value: unescapeNut(match[2]) });
-      }
-    }
-    return result;
+  listRw(ups: string): Promise<NutVariable[]> {
+    return this.parseList(`LIST RW ${ups}`, /^RW\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, m => ({
+      name: m[1],
+      value: unescapeNut(m[2]),
+    }));
   }
 
   /**
@@ -217,16 +384,8 @@ export class NutClient {
    *
    * @param ups UPS name
    */
-  async listCmd(ups: string): Promise<NutCommand[]> {
-    const lines = await this.sendCommand(`LIST CMD ${ups}`, true);
-    const result: NutCommand[] = [];
-    for (const line of lines) {
-      const match = /^CMD\s+\S+\s+(\S+)/.exec(line);
-      if (match) {
-        result.push({ name: match[1] });
-      }
-    }
-    return result;
+  listCmd(ups: string): Promise<NutCommand[]> {
+    return this.parseList(`LIST CMD ${ups}`, /^CMD\s+\S+\s+(\S+)/, m => ({ name: m[1] }));
   }
 
   /**
@@ -235,16 +394,10 @@ export class NutClient {
    * @param ups UPS name
    * @param varName Variable name
    */
-  async listEnum(ups: string, varName: string): Promise<string[]> {
-    const lines = await this.sendCommand(`LIST ENUM ${ups} ${varName}`, true);
-    const result: string[] = [];
-    for (const line of lines) {
-      const match = /^ENUM\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/.exec(line);
-      if (match) {
-        result.push(unescapeNut(match[1]));
-      }
-    }
-    return result;
+  listEnum(ups: string, varName: string): Promise<string[]> {
+    return this.parseList(`LIST ENUM ${ups} ${varName}`, /^ENUM\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/, m =>
+      unescapeNut(m[1]),
+    );
   }
 
   /**
@@ -253,13 +406,28 @@ export class NutClient {
    * @param ups UPS name
    * @param varName Variable name
    */
-  async listRange(ups: string, varName: string): Promise<NutRange[]> {
-    const lines = await this.sendCommand(`LIST RANGE ${ups} ${varName}`, true);
-    const result: NutRange[] = [];
+  listRange(ups: string, varName: string): Promise<NutRange[]> {
+    return this.parseList(
+      `LIST RANGE ${ups} ${varName}`,
+      /^RANGE\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"\s+"((?:[^"\\]|\\.)*)"/,
+      m => ({ min: unescapeNut(m[1]), max: unescapeNut(m[2]) }),
+    );
+  }
+
+  /**
+   * Generic LIST/multi-line parser — runs a regex per response line and maps matches.
+   *
+   * @param command The LIST command to send
+   * @param lineRegex Regex applied to each response line
+   * @param map Maps a matched line to a result item
+   */
+  private async parseList<T>(command: string, lineRegex: RegExp, map: (m: RegExpExecArray) => T): Promise<T[]> {
+    const lines = await this.sendCommand(command, true);
+    const result: T[] = [];
     for (const line of lines) {
-      const match = /^RANGE\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"\s+"((?:[^"\\]|\\.)*)"/.exec(line);
+      const match = lineRegex.exec(line);
       if (match) {
-        result.push({ min: unescapeNut(match[1]), max: unescapeNut(match[2]) });
+        result.push(map(match));
       }
     }
     return result;
@@ -321,6 +489,15 @@ export class NutClient {
     await this.sendCommand(`LOGIN ${ups}`, false);
   }
 
+  /** Best-effort LOGOUT (graceful lifecycle; ignores errors). */
+  async logout(): Promise<void> {
+    try {
+      await this.sendCommand("LOGOUT", false);
+    } catch {
+      // Ignore — we are shutting down anyway.
+    }
+  }
+
   private sendCommand(command: string, multiLine: boolean): Promise<string[]> {
     return new Promise<string[]>((resolve, reject) => {
       if (!this.connected || !this.socket) {
@@ -328,14 +505,11 @@ export class NutClient {
         return;
       }
 
-      const timer = setTimeout(() => {
-        if (this.active?.command === command) {
-          this.active = null;
-        } else {
-          this.queue = this.queue.filter(e => e.command !== command);
-        }
+      const timer = this.setTimer(() => {
         reject(new NutTimeoutError(command));
-        this.processQueue();
+        // A timed-out command desyncs the stream (NUT has no request IDs — a late reply would
+        // be mis-attributed to the next command). Drop the connection and reconnect to resync.
+        this.resyncAfterTimeout(command);
       }, this.commandTimeout);
 
       const entry: QueueEntry = { command, resolve, reject, timer, multiLine };
@@ -345,6 +519,26 @@ export class NutClient {
         this.processQueue();
       }
     });
+  }
+
+  /**
+   * Drop the desynced connection and reconnect on a clean stream (resync).
+   *
+   * @param command The command that timed out
+   */
+  private resyncAfterTimeout(command: string): void {
+    if (this.active?.command === command) {
+      this.active = null;
+    } else {
+      this.queue = this.queue.filter(e => e.command !== command);
+    }
+    // We've decided to drop the socket — reflect it synchronously so callers see the desync
+    // immediately, and schedule the reconnect here. The async 'close' handler then sees
+    // wasConnected=false and won't double-schedule.
+    this.connected = false;
+    this.cancelAll();
+    this.socket?.destroy();
+    this.scheduleReconnect();
   }
 
   private processQueue(): void {
@@ -370,7 +564,8 @@ export class NutClient {
     this.buffer = lines.pop()!;
 
     for (const line of lines) {
-      this.processLine(line);
+      // NUT uses LF; tolerate CRLF from non-conformant servers.
+      this.processLine(line.endsWith("\r") ? line.slice(0, -1) : line);
     }
   }
 
@@ -382,7 +577,7 @@ export class NutClient {
 
     if (line.startsWith("ERR ")) {
       const code = line.slice(4).trim();
-      clearTimeout(this.active.timer);
+      this.clearTimer(this.active.timer);
       const entry = this.active;
       this.active = null;
       this.multiLineBuffer = [];
@@ -397,7 +592,7 @@ export class NutClient {
         return;
       }
       if (line === this.multiLineExpectedEnd) {
-        clearTimeout(this.active.timer);
+        this.clearTimer(this.active.timer);
         const entry = this.active;
         const result = [...this.multiLineBuffer];
         this.active = null;
@@ -412,7 +607,7 @@ export class NutClient {
     }
 
     // Single-line response
-    clearTimeout(this.active.timer);
+    this.clearTimer(this.active.timer);
     const entry = this.active;
     this.active = null;
     entry.resolve([line]);
@@ -421,7 +616,7 @@ export class NutClient {
 
   private rejectActive(err: Error): void {
     if (this.active) {
-      clearTimeout(this.active.timer);
+      this.clearTimer(this.active.timer);
       this.active.reject(err);
       this.active = null;
     }
@@ -430,30 +625,20 @@ export class NutClient {
   }
 
   private scheduleReconnect(): void {
-    if (this.destroyed || this.reconnectTimer) {
+    // Only the persistent runtime loop reconnects; guard against double-scheduling.
+    if (this.destroyed || this.reconnectTimer || !this.persistent) {
       return;
     }
 
-    this.log?.debug(`Reconnecting in ${this.reconnectDelay}ms`);
+    this.reconnectAttempt += 1;
+    const delay = computeReconnectDelay(this.reconnectAttempt, RECONNECT_BASE_MS, RECONNECT_MAX_MS);
+    this.log?.debug(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt})`);
 
-    this.reconnectTimer = setTimeout(() => {
+    this.reconnectTimer = this.setTimer(() => {
       this.reconnectTimer = null;
-      if (this.destroyed) {
-        return;
-      }
-
       this.log?.debug(`Attempting reconnect to ${this.host}:${this.port}`);
-      this.connect()
-        .then(() => {
-          this.log?.info(`Reconnected to NUT server ${this.host}:${this.port}`);
-          this.onReconnectHandler?.();
-        })
-        .catch((err: Error) => {
-          this.log?.debug(`Reconnect failed: ${err.message}`);
-          this.reconnectDelay = Math.min(this.reconnectDelay * 2, 60000);
-          this.scheduleReconnect();
-        });
-    }, this.reconnectDelay);
+      this.attemptConnect();
+    }, delay);
   }
 }
 

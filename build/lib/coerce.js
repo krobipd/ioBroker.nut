@@ -22,9 +22,11 @@ __export(coerce_exports, {
   coerceHost: () => coerceHost,
   coercePollIntervalSec: () => coercePollIntervalSec,
   coercePort: () => coercePort,
+  computeReconnectDelay: () => computeReconnectDelay,
   errText: () => errText
 });
 module.exports = __toCommonJS(coerce_exports);
+var import_types = require("./types");
 function errText(err) {
   if (err instanceof Error) {
     return err.message;
@@ -57,7 +59,7 @@ function coerceHost(raw) {
 function coercePort(raw) {
   const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
   if (!Number.isFinite(n)) {
-    return 3493;
+    return import_types.NUT_DEFAULT_PORT;
   }
   return Math.max(1, Math.min(65535, Math.floor(n)));
 }
@@ -75,12 +77,17 @@ function coerceCommandTimeoutMs(raw) {
   }
   return Math.max(1, Math.min(30, Math.floor(n))) * 1e3;
 }
+function computeReconnectDelay(attempt, baseMs, maxMs) {
+  const a = Math.max(1, Math.floor(attempt));
+  return Math.min(baseMs * 2 ** (a - 1), maxMs);
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   coerceCommandTimeoutMs,
   coerceHost,
   coercePollIntervalSec,
   coercePort,
+  computeReconnectDelay,
   errText
 });
 //# sourceMappingURL=coerce.js.map
