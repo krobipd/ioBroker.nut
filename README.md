@@ -121,7 +121,9 @@ nut.0.
     │   ├── overloaded                 — UPS is overloaded (bool)
     │   ├── forcedShutdown             — Forced shutdown in progress (bool)
     │   ├── alarm                      — Alarm active (bool)
-    │   ├── highEfficiency             — ECO / high efficiency mode (bool)
+    │   ├── ecoMode                    — ECO / high efficiency mode (bool)
+    │   ├── testing                    — Self-test in progress (bool)
+    │   ├── overheat                   — UPS overheated (bool)
     │   └── ...                        — (19 flags total)
     └── commands/                      — Instant commands (if enabled)
         ├── beeper.enable              — Button: enable beeper
