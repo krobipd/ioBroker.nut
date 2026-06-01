@@ -6,7 +6,7 @@
 
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
-- **Version:** 0.2.9 (released 2026-05-24, memory/perf audit: process.on compact-mode guard, setState→setStateChangedAsync in state-manager updateVariables+updateStatusFlags). Vorgänger **0.2.8** changelog user-centric rewrite. **0.2.7** CI Node 24 + LICENSE fix. **0.2.6** i18n migration to adapter-core. **0.2.5** Preserve user-modified state names. npm publish blockiert bis Apollon77-Transfer
+- **Version:** 0.3.0 (released 2026-06-01, In-Depth-Analyse: STARTTLS, unified Retry-Loop im Client, Flag-Katalog treiber-agnostisch gegen gebündelte nut-2.8.5 verifiziert (+TEST/OVERHEAT), charging/discharging aus battery.charger.status, type/role/unit-Fixes, +15 command-i18n). Vorgänger **0.2.9** memory/perf audit. **0.2.8** changelog rewrite. **0.2.7** CI Node 24 + LICENSE fix. **0.2.6** i18n migration. **0.2.5** preserve state names. npm publish blockiert bis Apollon77-Transfer
 - **GitHub:** https://github.com/krobipd/ioBroker.nut
 - **npm:** https://www.npmjs.com/package/iobroker.nut
 - **Repository PR:** noch nicht eingereicht
@@ -43,7 +43,7 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 2. **Multi-UPS per Instanz** via `LIST UPS` — alle UPS eines NUT-Servers automatisch entdeckt
 3. **Persistente TCP-Verbindung** — behebt den Per-Poll-Reconnect-Overhead des alten Adapters
 4. **parseFloat-Heuristik** statt GET TYPE — GET TYPE ist unzuverlässig (Eaton markiert alles als NUMBER). Known-String-Override + parseFloat-Fallback
-5. **Status-Flags als einzelne Booleans** — besser für Visualisierung/Scripting/Alerting als Raw-String. Computed Severity (0-4) für Dashboards
+5. **Status-Flags als einzelne Booleans** — 19 Flags (`status-parser.ts:STATUS_CATALOG`, single source). Treiber-agnostisch gegen gebündelte NUT-2.8.5-Quelle verifiziert: 14 dokumentierte Kern-Tokens + ALARM (intern) + WAIT (upsd-init) + reale Extras ECO/HE, TEST (apc_modbus/powercom u.a.), OVERHEAT. Treiber-private 1-Off-Tokens (ACFAIL/COMMFAULT/DEPLETED/BY/TIP/SD) bewusst NICHT gemappt (Spec: clients MAY ignore unknowns → bleiben in `status.raw`). **Severity (0-4) = reine Power-Quellen-Leiter; Fault-Flags (OVER/ALARM/OFF) bewusst NICHT eingerechnet** (eigene Booleans, keine Verwässerung — Krobi-Entscheidung)
 6. **Commands hinter Safety-Gate** — `enableCommands` Checkbox verhindert versehentliches `load.off`. SET VAR ebenfalls gated
 7. **Network-Interface-Selector** — govee/hassemu-Pattern, wichtig für Multi-Homed-Server
 8. **Dot-Depth-Sortierung** — Variables nach Punkttiefe sortiert, damit Parent-States vor Children existieren (battery.charge vor battery.charge.low)
@@ -51,24 +51,28 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 10. **Auth-Failure = stay alive, yellow, no connections** — bei konfiguriertem username+password und ACCESS-DENIED: `client.destroy()` trennt TCP komplett (kein Reconnect, kein Polling, kein Datentransfer), Adapter bleibt am Leben mit `info.connection = false` (gelb in Admin). sendTo-Button (Verbindung testen) funktioniert weiter — User kann Credentials korrigieren und testen bevor er speichert. checkConnection testet auch LOGIN pro UPS (nicht nur USERNAME/PASSWORD)
 11. **Per-UPS info.online** — `indicator.reachable` Boolean mit `statusStates.onlineId` auf Device-Objekt (beszel-Pattern)
 12. **Legacy-Cleanup** — `cleanupLegacyObjects()` löscht Root-Level-Orphans (alter Adapter) und v0.1.0-Dot-Style-Objekte in einem Pass
+13. **STARTTLS** — opt-in `useTls` verschlüsselt die Verbindung (Credentials sonst Klartext). `connect()` macht den Upgrade vor jedem Command. Default `tlsRejectUnauthorized=false` (NUT-Server meist self-signed); ehrlich eingeordnet (transit-encryption, kein MITM-Schutz ohne valides Zertifikat). TLS-Config-Fehler → gelb/kein Retry (wie Auth-Fail)
+14. **Unified Retry-Loop im Client** — `start()` besitzt EINE Schleife: retryt den initialen Connect, reconnectet bei Drops, stoppt gelb bei TLS-Config-Fatal (`onFatal`). `connect()` bleibt pur (One-Shot, kein Retry → Verbindungstest-Client unverändert). `setOnConnect` läuft idempotent bei initial UND Reconnect (kein Setup-Pfad-Drift). Backoff via purem `coerce.ts:computeReconnectDelay` (1s→60s). Timer managed (`adapter.setTimeout`-Injection → auto-cleared on unload)
+15. **charging/discharging auch aus `battery.charger.status`** — USVen ohne CHRG/DISCHRG-Flags (z.B. Eaton Ellipse ECO, Apollon77-Issues #168/#97) füllen die Booleans über `battery.charger.status` (charging/discharging)
 
 ## NUT-Protokoll Referenz
 
 - Protokoll-Spec: `Ressourcen/nut/nut-protocol-reference.md`
-- Krobi Live-Daten: `Ressourcen/nut/krobi-eaton-live-data.md` (51 Variablen, Eaton PRO 1600)
+- **Autoritative Quelle (Standard-Verifikation): `Ressourcen/nut/nut-2.8.5/`** — echte NUT-Release-Quelle. `docs/new-drivers.txt` = dokumentierte `status_set`-Werte; `docs/nut-names.txt` = Instant-Commands. Flag-/Command-Katalog treiber-agnostisch hiergegen verifiziert (NICHT gegen krobis Eaton). `grep -rhoE 'status_set\("[^"]+"' drivers/` für den realen Token-Satz
+- Krobi Live-Daten: `Ressourcen/nut/krobi-eaton-live-data.md` (51 Variablen, Eaton PRO 1600) — nur Test-Sample, NICHT als Standard-Referenz
 - Port: 3493/TCP, ASCII-Zeilenprotokoll
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (301 unit + 57 package = 358)
+## Tests (335 unit + 57 package = 392)
 
 ```
-src/lib/nut-client.test.ts      → TCP Client (45 tests)
-src/lib/type-detector.test.ts   → Variable-Type-Detection (82 tests)
-src/lib/status-parser.test.ts   → Status-Flag-Parsing (59 tests)
+src/lib/nut-client.test.ts      → TCP Client + STARTTLS handshake + unified retry loop + isTlsConfigError (58 tests)
+src/lib/type-detector.test.ts   → Variable-Type-Detection (90 tests)
+src/lib/status-parser.test.ts   → Status-Flag-Parsing (66 tests)
 src/lib/state-manager.test.ts   → State CRUD + Cleanup + nutVarToStateId/ReadableName + cleanupLegacy + cleanupDeprecated + enrichStateMetadata + preserve (53 tests)
-src/lib/coerce.test.ts          → Boundary-Validators (38 tests)
-src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test (20 tests)
+src/lib/coerce.test.ts          → Boundary-Validators + computeReconnectDelay (42 tests)
+src/lib/message-router.test.ts  → onMessage-Dispatcher + Auth/Login-Test + TLS/localAddress passthrough (22 tests)
 src/lib/i18n.test.ts            → tName delegation + i18n completeness (11 languages, identical keysets) (4 tests)
 test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 ```
@@ -77,6 +81,7 @@ test/package.js                 → @iobroker/testing Package-Tests (57 tests)
 
 | Version | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.3.0   | **In-Depth-Analyse.** STARTTLS-Verschlüsselung (opt-in, ehrlich eingeordnet). Unified Retry-Loop im NutClient (`start`/`onConnect`/`onFatal`, getesteter `computeReconnectDelay`, `connect()` bleibt pur) → ersetzt setupAfterConnect+rediscover-Divergenz. Flag-Katalog treiber-agnostisch gegen gebündelte nut-2.8.5 verifiziert: 19 Flags inkl. TEST/OVERHEAT (reale Treiber-Tokens), `STATUS_CATALOG` single-source. charging/discharging aus `battery.charger.status`. type/role/unit-Fixes (J/K/L/M), `*.voltage|frequency.status`-Enums. +15 Standard-Instant-Commands i18n. process.on-Handler raus, managed Timer. Severity unverändert (Power-Quellen-Leiter, by design). 335 unit + 57 package = 392 Tests. npm blockiert. |
 | 0.2.9   | Memory/Perf-Audit: process.on compact-mode guard (module-level), `setState`→`setStateChangedAsync` in state-manager (5 Stellen). |
 | 0.2.8   | Changelog user-centric rewrite (README + CHANGELOG_OLD + io-package.json news audited against Hard-Negativ-Liste). |
 | 0.2.7   | CI check-and-lint updated to Node.js 24 (repochecker S3021). LICENSE copyright formatting fix (W7003). |
