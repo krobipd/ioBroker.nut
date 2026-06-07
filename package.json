@@ -28,8 +28,7 @@
     "url": "https://github.com/krobipd/ioBroker.nut"
   },
   "engines": {
-    "node": ">=22",
-    "npm": ">=10"
+    "node": ">=22"
   },
   "files": [
     "admin",
