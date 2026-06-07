@@ -1,15 +1,10 @@
-# ioBroker.nut
+# <img src="https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg" width="48" align="top" /> ioBroker.nut
 
-[![npm version](https://img.shields.io/npm/v/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut)
-![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![npm downloads](https://img.shields.io/npm/dt/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut)
-![Installations](https://iobroker.live/badges/nut-installed.svg)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/krobipd)
-[![PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/krobipd)
+**Release:** [![npm version](https://img.shields.io/npm/v/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut) ![stable](https://iobroker.live/badges/nut-stable.svg) ![Installations](https://iobroker.live/badges/nut-installed.svg) [![npm downloads](https://img.shields.io/npm/dt/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut)
 
-<img src="https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg" width="100" />
+**Build:** [![Test and Release](https://github.com/krobipd/ioBroker.nut/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/krobipd/ioBroker.nut/actions/workflows/test-and-release.yml) ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+**Support:** [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/krobipd) [![PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/krobipd)
 
 Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://networkupstools.org/). All UPS devices connected to a NUT server are automatically discovered and polled.
 
