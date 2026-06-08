@@ -27,7 +27,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 ## Requirements
 
 - **Node.js >= 22**
-- **ioBroker js-controller >= 7.0.7**
+- **ioBroker js-controller >= 7.1.2**
 - **ioBroker Admin >= 7.8.23**
 - A running [NUT server](https://networkupstools.org/) (upsd) with at least one UPS configured
 
