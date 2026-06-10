@@ -73,7 +73,7 @@ nut.0.
 ├── info.connection                    — Connection to NUT server (bool)
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
-    │   └── online                     — UPS reachable (bool)
+    │   └── reachable                  — UPS responds / data is fresh (bool)
     ├── battery/
     │   ├── battery.charge             — Battery level (%, number)
     │   ├── battery.charge.low         — Low battery threshold (%)
