@@ -443,6 +443,10 @@ export class StateManager {
     const deprecated = [
       `${upsName}.info.name`,
       `${upsName}.info.description`,
+      // Renamed to info.reachable in 0.4.0 (the old `online` leaf collided with the
+      // status.online / OL flag). Without this delete the old state lingers frozen at its
+      // last value — ioBroker does not auto-remove states an adapter stops writing.
+      `${upsName}.info.online`,
       // Dropped non-standard status flags — not real NUT status_set tokens (COMM/NOCOMM),
       // or renamed (highEfficiency → ecoMode). NB: `testing` is NOT here — TEST is a real
       // token (apc_modbus, powercom, …) and is a current flag again.

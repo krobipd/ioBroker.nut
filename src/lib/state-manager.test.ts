@@ -736,17 +736,24 @@ describe("StateManager", () => {
   // cleanupDeprecatedInfoStates (called from ensureUpsDevice)
   // -----------------------------------------------------------------------
   describe("cleanupDeprecatedInfoStates", () => {
-    it("should delete legacy info.name and info.description on device init", async () => {
+    it("should delete legacy info.name, info.description and the renamed info.online on device init", async () => {
       const { adapter, objects, deletedIds } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       objects.set("ups0.info.name", { type: "state", common: { name: "UPS Name" }, native: {} });
       objects.set("ups0.info.description", { type: "state", common: { name: "Description" }, native: {} });
+      // 0.4.0 renamed info.online → info.reachable; the old state must be cleaned up, not
+      // left frozen at its last value (ioBroker does not auto-remove abandoned states).
+      objects.set("ups0.info.online", { type: "state", common: { name: "Online" }, native: {} });
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
 
       expect(deletedIds).toContain("ups0.info.name");
       expect(deletedIds).toContain("ups0.info.description");
+      expect(deletedIds).toContain("ups0.info.online");
+      // The replacement must still be created (and must NOT be deleted by the cleanup).
+      expect(objects.has("ups0.info.reachable")).toBe(true);
+      expect(deletedIds).not.toContain("ups0.info.reachable");
     });
 
     it("should not fail when deprecated states do not exist", async () => {

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "news": {
+      "0.4.1": {
+        "en": "The leftover online state from the 0.4.0 rename is now cleaned up — it had stayed behind frozen at its last value and is removed automatically on the next adapter start.",
+        "de": "Der nach dem 0.4.0-Rename übrig gebliebene online-State wird jetzt aufgeräumt — er hing eingefroren auf dem letzten Wert und wird beim nächsten Adapter-Start automatisch entfernt.",
+        "ru": "Оставшееся после переименования в 0.4.0 состояние online теперь очищается — оно зависало на последнем значении и удаляется автоматически при следующем запуске адаптера.",
+        "pt": "O estado online deixado pela renomeação da 0.4.0 é agora removido — ficava preso no último valor e é eliminado automaticamente no próximo arranque do adaptador.",
+        "nl": "De na de 0.4.0-hernoeming achtergebleven online-state wordt nu opgeruimd — die bleef bevroren op de laatste waarde en wordt bij de volgende adapterstart automatisch verwijderd.",
+        "fr": "L'état online laissé par le renommage de la 0.4.0 est maintenant nettoyé — il restait figé sur sa dernière valeur et est supprimé automatiquement au prochain démarrage de l'adaptateur.",
+        "it": "Lo stato online rimasto dopo la rinomina della 0.4.0 ora viene rimosso — restava bloccato sull'ultimo valore e viene eliminato automaticamente al prossimo avvio dell'adattatore.",
+        "es": "El estado online que quedó tras el cambio de nombre de la 0.4.0 ahora se limpia — se quedaba congelado en su último valor y se elimina automáticamente al reiniciar el adaptador.",
+        "pl": "Pozostały po zmianie nazwy w 0.4.0 stan online jest teraz usuwany — pozostawał zamrożony na ostatniej wartości i znika automatycznie przy następnym starcie adaptera.",
+        "uk": "Залишений після перейменування в 0.4.0 стан online тепер очищується — він залишався замороженим на останньому значенні та видаляється при наступному запуску адаптера.",
+        "zh-cn": "0.4.0 重命名后遗留的 online 状态现在会被清理——它一直冻结在最后的值，并在适配器下次启动时自动删除。"
+      },
       "0.4.0": {
         "en": "Fixed the connection indicator (no longer green while the server is unreachable). Each UPS's online state was renamed to reachable, separate from the on-mains status — update references.",
         "de": "Verbindungsanzeige korrigiert (nicht mehr grün bei nicht erreichbarem Server). Der online-State je USV heißt jetzt reachable, getrennt vom Netz-Status — Referenzen anpassen.",
@@ -80,19 +93,6 @@
         "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
         "uk": "Внутрішнє очищення. Без змін для користувачів.",
         "zh-cn": "内部清理。无用户可见的更改。"
-      },
-      "0.2.5": {
-        "en": "User-modified state names are no longer overwritten on adapter restart",
-        "de": "Vom Benutzer geänderte Datenpunktnamen werden beim Adapter-Neustart nicht mehr überschrieben",
-        "ru": "Пользовательские имена состояний больше не перезаписываются при перезапуске адаптера",
-        "pt": "Nomes de estados modificados pelo utilizador já não são substituídos ao reiniciar o adaptador",
-        "nl": "Door de gebruiker gewijzigde statusnamen worden niet meer overschreven bij het herstarten van de adapter",
-        "fr": "Les noms d'états modifiés par l'utilisateur ne sont plus écrasés lors du redémarrage de l'adaptateur",
-        "it": "I nomi degli stati modificati dall'utente non vengono più sovrascritti al riavvio dell'adattatore",
-        "es": "Los nombres de estados modificados por el usuario ya no se sobrescriben al reiniciar el adaptador",
-        "pl": "Nazwy stanów zmienione przez użytkownika nie są już nadpisywane przy ponownym uruchomieniu adaptera",
-        "uk": "Змінені користувачем назви станів більше не перезаписуються при перезапуску адаптера",
-        "zh-cn": "用户修改的状态名称在适配器重启时不再被覆盖"
       }
     },
     "titleLang": {

@@ -172,6 +172,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.4.1 (2026-06-10)
+
+- Cleaned up the obsolete `info.online` state left behind by the 0.4.0 rename. It stayed in the object tree frozen at its last value; the adapter now removes it automatically on the next start.
+
 ### 0.4.0 (2026-06-10)
 
 - Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
@@ -192,10 +196,6 @@ nut.0.
 ### 0.2.8 (2026-05-23)
 
 - Changelog rewritten in user-centric style across all versions.
-
-### 0.2.7 (2026-05-23)
-
-- Internal cleanup. No user-facing changes.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
