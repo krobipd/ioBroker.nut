@@ -41,7 +41,7 @@
   "statusDisplay": "Отображение статуса",
   "upsName": "Имя ИБП",
   "upsDescription": "Описание ИБП",
-  "upsOnline": "В сети",
+  "upsReachable": "Доступен",
   "channelUpsInfo": "Информация",
   "flagOnline": "Онлайн",
   "flagOnBattery": "На батарее",

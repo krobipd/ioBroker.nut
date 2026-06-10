@@ -299,14 +299,14 @@ class NutAdapter extends utils.Adapter {
             this.enrichedUps.add(upsName);
           }
 
-          await this.setStateChangedAsync(`${upsName}.info.online`, { val: true, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: true, ack: true });
 
           if (this.failedUps.has(upsName)) {
             this.log.info(`UPS '${upsName}' recovered`);
             this.failedUps.delete(upsName);
           }
         } catch (err) {
-          await this.setStateChangedAsync(`${upsName}.info.online`, { val: false, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: false, ack: true });
 
           const msg = `Failed to poll UPS '${upsName}': ${errText(err)}`;
           if (this.failedUps.has(upsName)) {
@@ -323,7 +323,10 @@ class NutAdapter extends utils.Adapter {
         }
       }
 
-      await this.setStateChangedAsync("info.connection", { val: true, ack: true });
+      // Reflect the real TCP/NUT-server connection, not "the poll loop ran": per-UPS errors are
+      // caught inside the loop, so an unconditional `true` here would show green even while the
+      // connection is down (poll keeps firing during the reconnect backoff). Gate on the client.
+      await this.setStateChangedAsync("info.connection", { val: this.client?.isConnected ?? false, ack: true });
 
       if (this.lastErrorCode) {
         this.log.info("Connection restored");

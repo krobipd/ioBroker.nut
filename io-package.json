@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "news": {
+      "0.4.0": {
+        "en": "Fixed the connection indicator (no longer green while the server is unreachable). Each UPS's online state was renamed to reachable, separate from the on-mains status — update references.",
+        "de": "Verbindungsanzeige korrigiert (nicht mehr grün bei nicht erreichbarem Server). Der online-State je USV heißt jetzt reachable, getrennt vom Netz-Status — Referenzen anpassen.",
+        "ru": "Исправлен индикатор подключения (больше не зелёный при недоступном сервере). Состояние online каждого ИБП переименовано в reachable, отдельно от статуса сети — обновите ссылки.",
+        "pt": "Indicador de ligação corrigido (já não fica verde com o servidor inacessível). O estado online de cada UPS passou a reachable, separado do estado de rede — atualize as referências.",
+        "nl": "Verbindingsindicator hersteld (niet meer groen als de server onbereikbaar is). De online-state per UPS heet nu reachable, los van de netvoeding-status — pas verwijzingen aan.",
+        "fr": "Indicateur de connexion corrigé (plus vert quand le serveur est injoignable). L'état online de chaque onduleur devient reachable, distinct de l'état secteur — adaptez les références.",
+        "it": "Indicatore di connessione corretto (non più verde se il server è irraggiungibile). Lo stato online di ogni UPS è ora reachable, distinto dallo stato di rete — aggiorna i riferimenti.",
+        "es": "Indicador de conexión corregido (ya no verde si el servidor es inaccesible). El estado online de cada SAI ahora es reachable, distinto del estado de red — actualiza las referencias.",
+        "pl": "Naprawiono wskaźnik połączenia (już nie zielony, gdy serwer jest nieosiągalny). Stan online każdego UPS to teraz reachable, oddzielnie od stanu sieci — zaktualizuj odwołania.",
+        "uk": "Виправлено індикатор з'єднання (більше не зелений, коли сервер недоступний). Стан online кожного ДБЖ перейменовано на reachable, окремо від стану мережі — оновіть посилання.",
+        "zh-cn": "修复了连接指示器（服务器不可达时不再显示绿色）。每个 UPS 的 online 状态已重命名为 reachable，与市电状态区分开，请更新引用。"
+      },
       "0.3.0": {
         "en": "Optional TLS encryption via STARTTLS so credentials are not sent in clear text. New status flags. The adapter now comes back on its own when the NUT server is temporarily unavailable.",
         "de": "Optionale TLS-Verschlüsselung über STARTTLS, damit Zugangsdaten nicht im Klartext gesendet werden. Neue Status-Flags. Der Adapter kommt jetzt von selbst zurück, wenn der NUT-Server kurz fehlt.",
@@ -80,19 +93,6 @@
         "pl": "Nazwy stanów zmienione przez użytkownika nie są już nadpisywane przy ponownym uruchomieniu adaptera",
         "uk": "Змінені користувачем назви станів більше не перезаписуються при перезапуску адаптера",
         "zh-cn": "用户修改的状态名称在适配器重启时不再被覆盖"
-      },
-      "0.2.4": {
-        "en": "Improved error handling and stability.",
-        "de": "Verbesserte Fehlerbehandlung und Stabilität.",
-        "ru": "Улучшена обработка ошибок и стабильность.",
-        "pt": "Melhor tratamento de erros e estabilidade.",
-        "nl": "Verbeterde foutafhandeling en stabiliteit.",
-        "fr": "Amélioration de la gestion des erreurs et de la stabilité.",
-        "it": "Migliorata la gestione degli errori e la stabilità.",
-        "es": "Mejora del manejo de errores y la estabilidad.",
-        "pl": "Poprawiona obsługa błędów i stabilność.",
-        "uk": "Покращено обробку помилок та стабільність.",
-        "zh-cn": "改进了错误处理和稳定性。"
       }
     },
     "titleLang": {

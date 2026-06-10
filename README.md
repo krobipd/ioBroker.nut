@@ -172,6 +172,11 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.4.0 (2026-06-10)
+
+- Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
+- Renamed each UPS's `info.online` state to `info.reachable` (does the UPS respond) — distinct from the `status.online` flag (on mains power). Update references in scripts or visualizations.
+
 ### 0.3.0 (2026-06-01)
 
 - Added optional TLS encryption via STARTTLS, so your username and password are no longer sent in clear text over the network.
@@ -189,10 +194,6 @@ nut.0.
 - Changelog rewritten in user-centric style across all versions.
 
 ### 0.2.7 (2026-05-23)
-
-- Internal cleanup. No user-facing changes.
-
-### 0.2.6 (2026-05-23)
 
 - Internal cleanup. No user-facing changes.
 

@@ -41,7 +41,7 @@
   "statusDisplay": "Affichage de l'état",
   "upsName": "Nom de l'onduleur",
   "upsDescription": "Description de l'onduleur",
-  "upsOnline": "En ligne",
+  "upsReachable": "Accessible",
   "channelUpsInfo": "Information",
   "flagOnline": "En ligne",
   "flagOnBattery": "Sur batterie",

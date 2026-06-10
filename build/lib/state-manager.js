@@ -176,7 +176,7 @@ class StateManager {
         common: {
           name: description,
           statusStates: {
-            onlineId: `${this.adapter.namespace}.${upsName}.info.online`
+            onlineId: `${this.adapter.namespace}.${upsName}.info.reachable`
           }
         },
         native: {}
@@ -185,12 +185,12 @@ class StateManager {
     );
     this.createdIds.add(upsName);
     await this.ensureChannel(upsName, "info");
-    await this.ensureState(`${upsName}.info.online`, {
+    await this.ensureState(`${upsName}.info.reachable`, {
       type: "boolean",
       role: "indicator.reachable",
       read: true,
       write: false,
-      name: (0, import_i18n.tName)("upsOnline")
+      name: (0, import_i18n.tName)("upsReachable")
     });
     await this.cleanupDeprecatedInfoStates(upsName);
   }

@@ -41,7 +41,7 @@
   "statusDisplay": "Visualización del estado",
   "upsName": "Nombre del SAI",
   "upsDescription": "Descripción del SAI",
-  "upsOnline": "En línea",
+  "upsReachable": "Accesible",
   "channelUpsInfo": "Información",
   "flagOnline": "En línea",
   "flagOnBattery": "En batería",

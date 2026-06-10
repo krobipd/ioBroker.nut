@@ -41,7 +41,7 @@
   "statusDisplay": "Statusanzeige",
   "upsName": "USV-Name",
   "upsDescription": "USV-Beschreibung",
-  "upsOnline": "Online",
+  "upsReachable": "Erreichbar",
   "channelUpsInfo": "Information",
   "flagOnline": "Online",
   "flagOnBattery": "Auf Batterie",

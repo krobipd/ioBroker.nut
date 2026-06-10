@@ -101,7 +101,7 @@ describe("StateManager", () => {
       expect(objects.get("ups0")?.type).toBe("device");
     });
 
-    it("should create info channel and info.online but not info.name or info.description", async () => {
+    it("should create info channel and info.reachable but not info.name or info.description", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -109,8 +109,8 @@ describe("StateManager", () => {
 
       expect(objects.has("ups0.info")).toBe(true);
       expect(objects.get("ups0.info")?.type).toBe("channel");
-      expect(objects.has("ups0.info.online")).toBe(true);
-      expect(objects.get("ups0.info.online")?.common.role).toBe("indicator.reachable");
+      expect(objects.has("ups0.info.reachable")).toBe(true);
+      expect(objects.get("ups0.info.reachable")?.common.role).toBe("indicator.reachable");
       expect(objects.has("ups0.info.name")).toBe(false);
       expect(objects.has("ups0.info.description")).toBe(false);
     });
@@ -122,7 +122,7 @@ describe("StateManager", () => {
       await sm.ensureUpsDevice("ups0", "Main UPS");
 
       const common = objects.get("ups0")?.common as any;
-      expect(common?.statusStates?.onlineId).toBe("nut.0.ups0.info.online");
+      expect(common?.statusStates?.onlineId).toBe("nut.0.ups0.info.reachable");
     });
 
     it("should update device description on re-discover", async () => {

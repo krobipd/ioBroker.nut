@@ -217,7 +217,7 @@ class NutAdapter extends utils.Adapter {
     return code || "UNKNOWN";
   }
   async poll() {
-    var _a, _b;
+    var _a, _b, _c, _d;
     if (this.isPolling) {
       this.log.debug("Skipping poll \u2014 previous poll still running");
       return;
@@ -281,13 +281,13 @@ class NutAdapter extends utils.Adapter {
             }
             this.enrichedUps.add(upsName);
           }
-          await this.setStateChangedAsync(`${upsName}.info.online`, { val: true, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: true, ack: true });
           if (this.failedUps.has(upsName)) {
             this.log.info(`UPS '${upsName}' recovered`);
             this.failedUps.delete(upsName);
           }
         } catch (err) {
-          await this.setStateChangedAsync(`${upsName}.info.online`, { val: false, ack: true });
+          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: false, ack: true });
           const msg = `Failed to poll UPS '${upsName}': ${(0, import_coerce.errText)(err)}`;
           if (this.failedUps.has(upsName)) {
             this.log.debug(msg);
@@ -302,7 +302,7 @@ class NutAdapter extends utils.Adapter {
           }
         }
       }
-      await this.setStateChangedAsync("info.connection", { val: true, ack: true });
+      await this.setStateChangedAsync("info.connection", { val: (_d = (_c = this.client) == null ? void 0 : _c.isConnected) != null ? _d : false, ack: true });
       if (this.lastErrorCode) {
         this.log.info("Connection restored");
         this.lastErrorCode = "";

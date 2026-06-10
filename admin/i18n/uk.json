@@ -41,7 +41,7 @@
   "statusDisplay": "Відображення стану",
   "upsName": "Ім'я ДБЖ",
   "upsDescription": "Опис ДБЖ",
-  "upsOnline": "Онлайн",
+  "upsReachable": "Доступний",
   "channelUpsInfo": "Інформація",
   "flagOnline": "Онлайн",
   "flagOnBattery": "На батареї",

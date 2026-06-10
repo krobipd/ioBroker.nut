@@ -41,7 +41,7 @@
   "statusDisplay": "Exibição do estado",
   "upsName": "Nome do UPS",
   "upsDescription": "Descrição do UPS",
-  "upsOnline": "Online",
+  "upsReachable": "Acessível",
   "channelUpsInfo": "Informação",
   "flagOnline": "Online",
   "flagOnBattery": "Na bateria",

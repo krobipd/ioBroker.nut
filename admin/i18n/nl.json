@@ -41,7 +41,7 @@
   "statusDisplay": "Statusweergave",
   "upsName": "UPS-naam",
   "upsDescription": "UPS-beschrijving",
-  "upsOnline": "Online",
+  "upsReachable": "Bereikbaar",
   "channelUpsInfo": "Informatie",
   "flagOnline": "Online",
   "flagOnBattery": "Op batterij",
