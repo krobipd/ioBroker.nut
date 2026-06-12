@@ -105,6 +105,13 @@ describe("coerce", () => {
       expect(coercePort("9999")).toBe(9999);
     });
 
+    it("rejects garbage-suffix and non-decimal strings (strict fleet line, v0.4.2)", () => {
+      // parseFloat would have half-parsed "34abc" → port 34.
+      expect(coercePort("34abc")).toBe(3493);
+      expect(coercePort("0x1FBB")).toBe(3493);
+      expect(coercePort("3e3")).toBe(3493);
+    });
+
     it("should clamp to minimum 1", () => {
       expect(coercePort(0)).toBe(1);
       expect(coercePort(-5)).toBe(1);
@@ -149,6 +156,11 @@ describe("coerce", () => {
       expect(coercePollIntervalSec("30")).toBe(30);
     });
 
+    it("rejects garbage-suffix strings → default (strict fleet line, v0.4.2)", () => {
+      expect(coercePollIntervalSec("30abc")).toBe(15);
+      expect(coercePollIntervalSec("1e2")).toBe(15);
+    });
+
     it("should clamp to minimum 5", () => {
       expect(coercePollIntervalSec(1)).toBe(5);
       expect(coercePollIntervalSec(0)).toBe(5);
@@ -190,6 +202,11 @@ describe("coerce", () => {
 
     it("should parse numeric strings", () => {
       expect(coerceCommandTimeoutMs("10")).toBe(10000);
+    });
+
+    it("rejects garbage-suffix strings → default (strict fleet line, v0.4.2)", () => {
+      expect(coerceCommandTimeoutMs("10abc")).toBe(5000);
+      expect(coerceCommandTimeoutMs("0x10")).toBe(5000);
     });
 
     it("should clamp to minimum 1s = 1000ms", () => {

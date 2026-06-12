@@ -48,13 +48,25 @@ function createMockAdapter(): {
         objects.set(id, obj);
       }
     },
-    extendObjectAsync: async (id: string, obj: MockObj) => {
+    getObjectAsync: async (id: string) => objects.get(id) ?? null,
+    // Mirrors the REAL js-controller preserve semantics (7.0.7
+    // removePreservedProperties): a preserved attribute that exists on the OLD
+    // object wins — the new value is dropped. The earlier mock merged
+    // unconditionally and thereby hid that the mfr+model name fallback never
+    // applied in production (v0.2.5-v0.4.1).
+    extendObjectAsync: async (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
       const existing = objects.get(id);
-      if (existing) {
-        existing.common = { ...existing.common, ...obj.common };
-      } else {
+      if (!existing) {
         objects.set(id, obj);
+        return;
       }
+      const newCommon = { ...obj.common };
+      for (const prop of options?.preserve?.common ?? []) {
+        if (existing.common?.[prop] !== undefined && newCommon[prop] !== undefined) {
+          delete newCommon[prop];
+        }
+      }
+      existing.common = { ...existing.common, ...newCommon };
     },
     setState: async (id: string, state: MockState) => {
       states.set(id, state);
@@ -125,14 +137,16 @@ describe("StateManager", () => {
       expect(common?.statusStates?.onlineId).toBe("nut.0.ups0.info.reachable");
     });
 
-    it("should update device description on re-discover", async () => {
+    it("preserves the existing device name on re-discover (user names win — mcm1957 line)", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
+      // The user may have renamed the device meanwhile; preserve keeps whatever
+      // name the object carries — a changed LIST UPS description does NOT win.
       await sm.ensureUpsDevice("ups0", "Updated UPS");
 
-      expect(objects.get("ups0")?.common.name).toBe("Updated UPS");
+      expect(objects.get("ups0")?.common.name).toBe("Main UPS");
     });
 
     it("should create multiple devices", async () => {
@@ -221,6 +235,52 @@ describe("StateManager", () => {
       await sm.updateDeviceName("ups0", "Description unavailable", [{ name: "battery.charge", value: "100" }]);
 
       expect(objects.get("ups0")?.common.name).toBe("Description unavailable");
+    });
+
+    it("does NOT overwrite a user-modified device name (fallback only replaces the auto-set value)", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      // User renamed the device in the admin meanwhile.
+      objects.get("ups0")!.common.name = "Keller-USV";
+
+      await sm.updateDeviceName("ups0", "Description unavailable", [
+        { name: "device.mfr", value: "EATON" },
+        { name: "device.model", value: "PRO 1600" },
+      ]);
+
+      expect(objects.get("ups0")?.common.name).toBe("Keller-USV");
+    });
+
+    it("runs the broker round-trip only once per runtime, not on every poll (v0.4.2)", async () => {
+      const { adapter } = createMockAdapter();
+      let getCalls = 0;
+      const origGet = adapter.getObjectAsync;
+      adapter.getObjectAsync = async (...args: any[]) => {
+        getCalls++;
+        return origGet(...args);
+      };
+      let extendCalls = 0;
+      const origExtend = adapter.extendObjectAsync;
+      adapter.extendObjectAsync = async (...args: any[]) => {
+        extendCalls++;
+        return origExtend(...args);
+      };
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      const baselineExtend = extendCalls;
+      const vars = [
+        { name: "device.mfr", value: "EATON" },
+        { name: "device.model", value: "PRO 1600" },
+      ];
+      await sm.updateDeviceName("ups0", "Description unavailable", vars);
+      await sm.updateDeviceName("ups0", "Description unavailable", vars);
+      await sm.updateDeviceName("ups0", "Description unavailable", vars);
+
+      expect(getCalls).toBe(1);
+      expect(extendCalls).toBe(baselineExtend + 1);
     });
   });
 

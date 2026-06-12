@@ -27,6 +27,16 @@ __export(coerce_exports, {
 });
 module.exports = __toCommonJS(coerce_exports);
 var import_types = require("./types");
+const DECIMAL_NUMBER_RE = /^-?\d+(\.\d+)?$/;
+function parseDecimal(raw) {
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) ? raw : NaN;
+  }
+  if (typeof raw === "string" && DECIMAL_NUMBER_RE.test(raw.trim())) {
+    return Number(raw.trim());
+  }
+  return NaN;
+}
 function errText(err) {
   if (err instanceof Error) {
     return err.message;
@@ -57,21 +67,21 @@ function coerceHost(raw) {
   return trimmed.length > 0 ? trimmed : null;
 }
 function coercePort(raw) {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return import_types.NUT_DEFAULT_PORT;
   }
   return Math.max(1, Math.min(65535, Math.floor(n)));
 }
 function coercePollIntervalSec(raw) {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return 15;
   }
   return Math.max(5, Math.min(300, Math.floor(n)));
 }
 function coerceCommandTimeoutMs(raw) {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return 5e3;
   }

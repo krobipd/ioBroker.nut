@@ -197,26 +197,42 @@ class StateManager {
   /**
    * Update device common.name from LIST VAR data when LIST UPS description is unusable.
    *
+   * The fallback must NOT use `preserve: common.name` — the device object always has a
+   * name (set by ensureUpsDevice from the unusable description), so a preserved write
+   * would never apply (js-controller 7.x `removePreservedProperties` drops the new name
+   * whenever the old object has one; this silently killed the feature in v0.2.5-v0.4.1).
+   * User-modified names stay safe through the guard instead: the fallback only fires
+   * while the CURRENT name is still the auto-set unusable value. Runs once per runtime
+   * per UPS (cache) — not on every poll.
+   *
    * @param upsName UPS identifier
    * @param description UPS description from LIST UPS
    * @param variables Variables from LIST VAR
    */
   async updateDeviceName(upsName, description, variables) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (description && description !== "Description unavailable") {
+      return;
+    }
+    const cacheKey = `${upsName}.__deviceNameFallback`;
+    if (this.createdIds.has(cacheKey)) {
       return;
     }
     const mfr = (_b = (_a = variables.find((v) => v.name === "device.mfr")) == null ? void 0 : _a.value) == null ? void 0 : _b.trim();
     const model = (_d = (_c = variables.find((v) => v.name === "device.model")) == null ? void 0 : _c.value) == null ? void 0 : _d.trim();
-    if (mfr || model) {
-      const name = [mfr, model].filter(Boolean).join(" ");
-      const cacheKey = `${upsName}.__deviceNameFallback`;
-      if (!this.createdIds.has(cacheKey)) {
-        this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
-        this.createdIds.add(cacheKey);
-      }
-      await this.adapter.extendObjectAsync(upsName, { common: { name } }, { preserve: { common: ["name"] } });
+    if (!mfr && !model) {
+      return;
     }
+    this.createdIds.add(cacheKey);
+    const obj = await this.adapter.getObjectAsync(upsName);
+    const currentName = (_e = obj == null ? void 0 : obj.common) == null ? void 0 : _e.name;
+    const isAutoSetUnusable = currentName === description || currentName === "Description unavailable" || currentName === "";
+    if (!isAutoSetUnusable) {
+      return;
+    }
+    const name = [mfr, model].filter(Boolean).join(" ");
+    this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
+    await this.adapter.extendObjectAsync(upsName, { common: { name } });
   }
   /**
    * Ensure a channel exists for a NUT domain (e.g. "battery", "ups").

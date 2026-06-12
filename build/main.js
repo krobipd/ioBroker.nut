@@ -5,6 +5,10 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -21,6 +25,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var main_exports = {};
+__export(main_exports, {
+  NutAdapter: () => NutAdapter
+});
+module.exports = __toCommonJS(main_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_adapter_core = require("@iobroker/adapter-core");
 var import_node_path = require("node:path");
@@ -42,6 +52,7 @@ class NutAdapter extends utils.Adapter {
   subscribed = false;
   unloaded = false;
   everConnected = false;
+  /** @param options Adapter options forwarded to the ioBroker base class. */
   constructor(options = {}) {
     super({ ...options, name: "nut" });
     this.on("ready", this.onReady.bind(this));
@@ -49,10 +60,19 @@ class NutAdapter extends utils.Adapter {
     this.on("unload", this.onUnload.bind(this));
     this.on("message", this.onMessage.bind(this));
   }
+  /** The native config, typed — single cast point for all config reads. */
+  nutConfig() {
+    return this.config;
+  }
+  // Factory seams — production builds the real collaborators; the orchestration
+  // unit tests (src/main.test.ts) override these fields with fakes so onReady,
+  // onConnected and poll can run without sockets or a js-controller.
+  makeClient = (...args) => new import_nut_client.NutClient(...args);
+  makeStateManager = () => new import_state_manager.StateManager(this);
   async onReady() {
     try {
       await import_adapter_core.I18n.init((0, import_node_path.join)(this.adapterDir, "admin"), this);
-      const config = this.config;
+      const config = this.nutConfig();
       this.log.debug(
         `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
       );
@@ -66,7 +86,7 @@ class NutAdapter extends utils.Adapter {
       const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
       this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
       const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
-      this.client = new import_nut_client.NutClient(host, port, {
+      this.client = this.makeClient(host, port, {
         localAddress,
         commandTimeout: commandTimeoutMs,
         useTls: !!config.useTls,
@@ -85,7 +105,7 @@ class NutAdapter extends utils.Adapter {
           info: (m) => this.log.info(m)
         }
       });
-      this.stateManager = new import_state_manager.StateManager(this);
+      this.stateManager = this.makeStateManager();
       this.client.setOnConnect(() => {
         void this.onConnected().catch((err) => this.log.error(`onConnected failed: ${(0, import_coerce.errText)(err)}`));
       });
@@ -106,7 +126,7 @@ class NutAdapter extends utils.Adapter {
     if (this.unloaded || !this.client || !this.stateManager) {
       return;
     }
-    const config = this.config;
+    const config = this.nutConfig();
     const host = (_a = (0, import_coerce.coerceHost)(config.host)) != null ? _a : "";
     const port = (0, import_coerce.coercePort)(config.port);
     try {
@@ -175,7 +195,7 @@ class NutAdapter extends utils.Adapter {
    */
   onConnectFatal(err) {
     var _a, _b;
-    const config = this.config;
+    const config = this.nutConfig();
     const host = (_a = (0, import_coerce.coerceHost)(config.host)) != null ? _a : "";
     const port = (0, import_coerce.coercePort)(config.port);
     this.log.error(
@@ -199,6 +219,16 @@ class NutAdapter extends utils.Adapter {
     const knownNames = new Set(this.discoveredUps.keys());
     await this.stateManager.cleanupRemovedUps(knownNames);
     await this.stateManager.cleanupLegacyObjects(knownNames);
+    for (const name of this.failedUps) {
+      if (!knownNames.has(name)) {
+        this.failedUps.delete(name);
+      }
+    }
+    for (const name of this.enrichedUps) {
+      if (!knownNames.has(name)) {
+        this.enrichedUps.delete(name);
+      }
+    }
   }
   classifyError(err) {
     if (err instanceof import_nut_client.NutError) {
@@ -329,7 +359,7 @@ class NutAdapter extends utils.Adapter {
       if (!state || state.ack) {
         return;
       }
-      const config = this.config;
+      const config = this.nutConfig();
       const localId = id.replace(`${this.namespace}.`, "");
       this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
       if (!this.client) {
@@ -434,4 +464,8 @@ if (require.main !== module) {
 } else {
   (() => new NutAdapter())();
 }
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  NutAdapter
+});
 //# sourceMappingURL=main.js.map

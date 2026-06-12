@@ -1,5 +1,20 @@
 import { NUT_DEFAULT_PORT } from "./types";
 
+// Strict decimal-only number parsing (fleet line, hassemu E8 origin): a plain
+// float parse would half-accept garbage suffixes ("34abc" → 34) and allow
+// hex/exponential notation. Only `-?\d+(\.\d+)?` counts as a number.
+const DECIMAL_NUMBER_RE = /^-?\d+(\.\d+)?$/;
+
+function parseDecimal(raw: unknown): number {
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) ? raw : NaN;
+  }
+  if (typeof raw === "string" && DECIMAL_NUMBER_RE.test(raw.trim())) {
+    return Number(raw.trim());
+  }
+  return NaN;
+}
+
 /**
  * Extract a log-friendly message from a thrown / rejected value.
  *
@@ -48,7 +63,7 @@ export function coerceHost(raw: unknown): string | null {
  * @param raw Raw port value from admin config
  */
 export function coercePort(raw: unknown): number {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return NUT_DEFAULT_PORT;
   }
@@ -62,7 +77,7 @@ export function coercePort(raw: unknown): number {
  * @param raw Raw pollInterval from admin config (seconds)
  */
 export function coercePollIntervalSec(raw: unknown): number {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return 15;
   }
@@ -76,7 +91,7 @@ export function coercePollIntervalSec(raw: unknown): number {
  * @param raw Raw commandTimeout from admin config (seconds)
  */
 export function coerceCommandTimeoutMs(raw: unknown): number {
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? parseFloat(raw) : NaN;
+  const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
     return 5000;
   }

@@ -7,7 +7,11 @@ import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
 import type { AdapterConfig, UpsInfo } from "./lib/types";
 
-class NutAdapter extends utils.Adapter {
+/**
+ * NUT adapter — lifecycle, polling, command/SET-VAR dispatch.
+ * Exported so the orchestration unit tests can drive its handlers directly.
+ */
+export class NutAdapter extends utils.Adapter {
   private client: NutClient | null = null;
   private stateManager: StateManager | null = null;
   private pollTimer: ioBroker.Interval | undefined = undefined;
@@ -22,6 +26,7 @@ class NutAdapter extends utils.Adapter {
   private unloaded = false;
   private everConnected = false;
 
+  /** @param options Adapter options forwarded to the ioBroker base class. */
   constructor(options: Partial<utils.AdapterOptions> = {}) {
     super({ ...options, name: "nut" });
     this.on("ready", this.onReady.bind(this));
@@ -30,10 +35,22 @@ class NutAdapter extends utils.Adapter {
     this.on("message", this.onMessage.bind(this));
   }
 
+  /** The native config, typed — single cast point for all config reads. */
+  private nutConfig(): AdapterConfig {
+    return this.config as unknown as AdapterConfig;
+  }
+
+  // Factory seams — production builds the real collaborators; the orchestration
+  // unit tests (src/main.test.ts) override these fields with fakes so onReady,
+  // onConnected and poll can run without sockets or a js-controller.
+  private makeClient: (...args: ConstructorParameters<typeof NutClient>) => NutClient = (...args) =>
+    new NutClient(...args);
+  private makeStateManager: () => StateManager = () => new StateManager(this);
+
   private async onReady(): Promise<void> {
     try {
       await I18n.init(join(this.adapterDir, "admin"), this);
-      const config = this.config as unknown as AdapterConfig;
+      const config = this.nutConfig();
       this.log.debug(
         `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`,
       );
@@ -55,7 +72,7 @@ class NutAdapter extends utils.Adapter {
           ? config.networkInterface.trim()
           : undefined;
 
-      this.client = new NutClient(host, port, {
+      this.client = this.makeClient(host, port, {
         localAddress,
         commandTimeout: commandTimeoutMs,
         useTls: !!config.useTls,
@@ -74,7 +91,7 @@ class NutAdapter extends utils.Adapter {
           info: (m: string) => this.log.info(m),
         },
       });
-      this.stateManager = new StateManager(this);
+      this.stateManager = this.makeStateManager();
 
       // Unified retry loop lives in the client (start): it retries the initial connect,
       // reconnects on drops, and runs the idempotent post-connect setup on every (re)connect.
@@ -98,7 +115,7 @@ class NutAdapter extends utils.Adapter {
     if (this.unloaded || !this.client || !this.stateManager) {
       return;
     }
-    const config = this.config as unknown as AdapterConfig;
+    const config = this.nutConfig();
     const host = coerceHost(config.host) ?? "";
     const port = coercePort(config.port);
 
@@ -174,7 +191,7 @@ class NutAdapter extends utils.Adapter {
    * @param err The fatal connect/STARTTLS error
    */
   private onConnectFatal(err: unknown): void {
-    const config = this.config as unknown as AdapterConfig;
+    const config = this.nutConfig();
     const host = coerceHost(config.host) ?? "";
     const port = coercePort(config.port);
     this.log.error(
@@ -200,6 +217,21 @@ class NutAdapter extends utils.Adapter {
     const knownNames = new Set(this.discoveredUps.keys());
     await this.stateManager.cleanupRemovedUps(knownNames);
     await this.stateManager.cleanupLegacyObjects(knownNames);
+
+    // Prune the in-memory per-UPS markers alongside the object cleanup — a UPS that
+    // disappears and later re-appears must start fresh (a stale failedUps entry would
+    // demote its first real error to debug; a stale enrichedUps entry would skip the
+    // enum/range enrichment).
+    for (const name of this.failedUps) {
+      if (!knownNames.has(name)) {
+        this.failedUps.delete(name);
+      }
+    }
+    for (const name of this.enrichedUps) {
+      if (!knownNames.has(name)) {
+        this.enrichedUps.delete(name);
+      }
+    }
   }
 
   private classifyError(err: unknown): string {
@@ -283,7 +315,7 @@ class NutAdapter extends utils.Adapter {
                 if (ranges.length > 0) {
                   const min = parseFloat(ranges[0].min);
                   const max = parseFloat(ranges[0].max);
-                  const patch: { min?: number; max?: number } = {};
+                  const patch: Partial<Record<"min" | "max", number>> = {};
                   if (!Number.isNaN(min)) {
                     patch.min = min;
                   }
@@ -357,7 +389,7 @@ class NutAdapter extends utils.Adapter {
       if (!state || state.ack) {
         return;
       }
-      const config = this.config as unknown as AdapterConfig;
+      const config = this.nutConfig();
       const localId = id.replace(`${this.namespace}.`, "");
       this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
 

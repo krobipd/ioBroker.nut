@@ -1,237 +1,237 @@
 {
-  "common": {
-    "name": "nut",
-    "version": "0.4.1",
-    "news": {
-      "0.4.1": {
-        "en": "The leftover online state from the 0.4.0 rename is now cleaned up — it had stayed behind frozen at its last value and is removed automatically on the next adapter start.",
-        "de": "Der nach dem 0.4.0-Rename übrig gebliebene online-State wird jetzt aufgeräumt — er hing eingefroren auf dem letzten Wert und wird beim nächsten Adapter-Start automatisch entfernt.",
-        "ru": "Оставшееся после переименования в 0.4.0 состояние online теперь очищается — оно зависало на последнем значении и удаляется автоматически при следующем запуске адаптера.",
-        "pt": "O estado online deixado pela renomeação da 0.4.0 é agora removido — ficava preso no último valor e é eliminado automaticamente no próximo arranque do adaptador.",
-        "nl": "De na de 0.4.0-hernoeming achtergebleven online-state wordt nu opgeruimd — die bleef bevroren op de laatste waarde en wordt bij de volgende adapterstart automatisch verwijderd.",
-        "fr": "L'état online laissé par le renommage de la 0.4.0 est maintenant nettoyé — il restait figé sur sa dernière valeur et est supprimé automatiquement au prochain démarrage de l'adaptateur.",
-        "it": "Lo stato online rimasto dopo la rinomina della 0.4.0 ora viene rimosso — restava bloccato sull'ultimo valore e viene eliminato automaticamente al prossimo avvio dell'adattatore.",
-        "es": "El estado online que quedó tras el cambio de nombre de la 0.4.0 ahora se limpia — se quedaba congelado en su último valor y se elimina automáticamente al reiniciar el adaptador.",
-        "pl": "Pozostały po zmianie nazwy w 0.4.0 stan online jest teraz usuwany — pozostawał zamrożony na ostatniej wartości i znika automatycznie przy następnym starcie adaptera.",
-        "uk": "Залишений після перейменування в 0.4.0 стан online тепер очищується — він залишався замороженим на останньому значенні та видаляється при наступному запуску адаптера.",
-        "zh-cn": "0.4.0 重命名后遗留的 online 状态现在会被清理——它一直冻结在最后的值，并在适配器下次启动时自动删除。"
-      },
-      "0.4.0": {
-        "en": "Fixed the connection indicator (no longer green while the server is unreachable). Each UPS's online state was renamed to reachable, separate from the on-mains status — update references.",
-        "de": "Verbindungsanzeige korrigiert (nicht mehr grün bei nicht erreichbarem Server). Der online-State je USV heißt jetzt reachable, getrennt vom Netz-Status — Referenzen anpassen.",
-        "ru": "Исправлен индикатор подключения (больше не зелёный при недоступном сервере). Состояние online каждого ИБП переименовано в reachable, отдельно от статуса сети — обновите ссылки.",
-        "pt": "Indicador de ligação corrigido (já não fica verde com o servidor inacessível). O estado online de cada UPS passou a reachable, separado do estado de rede — atualize as referências.",
-        "nl": "Verbindingsindicator hersteld (niet meer groen als de server onbereikbaar is). De online-state per UPS heet nu reachable, los van de netvoeding-status — pas verwijzingen aan.",
-        "fr": "Indicateur de connexion corrigé (plus vert quand le serveur est injoignable). L'état online de chaque onduleur devient reachable, distinct de l'état secteur — adaptez les références.",
-        "it": "Indicatore di connessione corretto (non più verde se il server è irraggiungibile). Lo stato online di ogni UPS è ora reachable, distinto dallo stato di rete — aggiorna i riferimenti.",
-        "es": "Indicador de conexión corregido (ya no verde si el servidor es inaccesible). El estado online de cada SAI ahora es reachable, distinto del estado de red — actualiza las referencias.",
-        "pl": "Naprawiono wskaźnik połączenia (już nie zielony, gdy serwer jest nieosiągalny). Stan online każdego UPS to teraz reachable, oddzielnie od stanu sieci — zaktualizuj odwołania.",
-        "uk": "Виправлено індикатор з'єднання (більше не зелений, коли сервер недоступний). Стан online кожного ДБЖ перейменовано на reachable, окремо від стану мережі — оновіть посилання.",
-        "zh-cn": "修复了连接指示器（服务器不可达时不再显示绿色）。每个 UPS 的 online 状态已重命名为 reachable，与市电状态区分开，请更新引用。"
-      },
-      "0.3.0": {
-        "en": "Optional TLS encryption via STARTTLS so credentials are not sent in clear text. New status flags. The adapter now comes back on its own when the NUT server is temporarily unavailable.",
-        "de": "Optionale TLS-Verschlüsselung über STARTTLS, damit Zugangsdaten nicht im Klartext gesendet werden. Neue Status-Flags. Der Adapter kommt jetzt von selbst zurück, wenn der NUT-Server kurz fehlt.",
-        "ru": "Опциональное шифрование TLS через STARTTLS, чтобы учётные данные не передавались открытым текстом. Новые флаги состояния. Адаптер сам восстанавливается, когда сервер NUT временно недоступен.",
-        "pt": "Criptografia TLS opcional via STARTTLS para que as credenciais não sejam enviadas em texto puro. Novos sinalizadores de status. O adaptador volta sozinho quando o servidor NUT fica indisponível.",
-        "nl": "Optionele TLS-versleuteling via STARTTLS, zodat inloggegevens niet in leesbare tekst worden verzonden. Nieuwe statusvlaggen. De adapter komt nu vanzelf terug als de NUT-server tijdelijk weg is.",
-        "fr": "Chiffrement TLS optionnel via STARTTLS pour que les identifiants ne soient plus envoyés en clair. Nouveaux indicateurs d'état. L'adaptateur revient seul quand le serveur NUT est indisponible.",
-        "it": "Crittografia TLS opzionale tramite STARTTLS, così le credenziali non vengono inviate in chiaro. Nuovi flag di stato. L'adattatore torna da solo quando il server NUT non è disponibile.",
-        "es": "Cifrado TLS opcional mediante STARTTLS para que las credenciales no se envíen en texto plano. Nuevos indicadores de estado. El adaptador vuelve solo cuando el servidor NUT no está disponible.",
-        "pl": "Opcjonalne szyfrowanie TLS przez STARTTLS, aby dane logowania nie były wysyłane jawnym tekstem. Nowe flagi stanu. Adapter sam wraca, gdy serwer NUT jest chwilowo niedostępny.",
-        "uk": "Опціональне шифрування TLS через STARTTLS, щоб облікові дані не надсилалися відкритим текстом. Нові прапорці стану. Адаптер сам повертається, коли сервер NUT тимчасово недоступний.",
-        "zh-cn": "可选的 TLS（STARTTLS）加密，凭据不再以明文发送。新增状态标志。当 NUT 服务器暂时不可用时，适配器现在会自行恢复。"
-      },
-      "0.2.9": {
-        "en": "Reduced unnecessary state-change events. Fixed duplicate error messages in compact mode.",
-        "de": "Unnötige State-Change-Events reduziert. Doppelte Fehlermeldungen im Compact-Modus behoben.",
-        "ru": "Сокращены ненужные события изменения состояний. Исправлены дублирующиеся сообщения об ошибках в компактном режиме.",
-        "pt": "Eventos de mudança de estado desnecessários reduzidos. Corrigidas mensagens de erro duplicadas no modo compacto.",
-        "nl": "Onnodige state-change-events verminderd. Dubbele foutmeldingen in compacte modus verholpen.",
-        "fr": "Réduction des événements de changement d'état inutiles. Correction des messages d'erreur en double en mode compact.",
-        "it": "Ridotti gli eventi di cambio stato non necessari. Corretti i messaggi di errore duplicati in modalità compatta.",
-        "es": "Reducidos los eventos de cambio de estado innecesarios. Corregidos los mensajes de error duplicados en modo compacto.",
-        "pl": "Zmniejszono niepotrzebne zdarzenia zmiany stanu. Naprawiono zduplikowane komunikaty o błędach w trybie kompaktowym.",
-        "uk": "Зменшено непотрібні події зміни стану. Виправлено дублювання повідомлень про помилки у компактному режимі.",
-        "zh-cn": "减少了不必要的状态变更事件。修复了紧凑模式下重复的错误消息。"
-      },
-      "0.2.8": {
-        "en": "Changelog rewritten in user-centric style across all versions.",
-        "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
-        "ru": "Журнал изменений переписан в пользовательском стиле для всех версий.",
-        "pt": "Registo de alterações reescrito em estilo centrado no utilizador em todas as versões.",
-        "nl": "Changelog herschreven in gebruikersgerichte stijl voor alle versies.",
-        "fr": "Journal des modifications réécrit dans un style centré sur l'utilisateur pour toutes les versions.",
-        "it": "Registro delle modifiche riscritto in stile orientato all'utente per tutte le versioni.",
-        "es": "Registro de cambios reescrito en estilo centrado en el usuario en todas las versiones.",
-        "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
-        "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
-        "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
-      },
-      "0.2.7": {
-        "en": "Internal cleanup. No user-facing changes.",
-        "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
-        "ru": "Внутренняя очистка. Нет изменений для пользователей.",
-        "pt": "Limpeza interna. Sem alterações para o utilizador.",
-        "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
-        "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
-        "it": "Pulizia interna. Nessuna modifica per l'utente.",
-        "es": "Limpieza interna. Sin cambios para el usuario.",
-        "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
-        "uk": "Внутрішнє очищення. Без змін для користувачів.",
-        "zh-cn": "内部清理。无用户可见的更改。"
-      },
-      "0.2.6": {
-        "en": "Internal cleanup. No user-facing changes.",
-        "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
-        "ru": "Внутренняя очистка. Нет изменений для пользователей.",
-        "pt": "Limpeza interna. Sem alterações para o utilizador.",
-        "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
-        "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
-        "it": "Pulizia interna. Nessuna modifica per l'utente.",
-        "es": "Limpieza interna. Sin cambios para el usuario.",
-        "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
-        "uk": "Внутрішнє очищення. Без змін для користувачів.",
-        "zh-cn": "内部清理。无用户可见的更改。"
-      }
-    },
-    "titleLang": {
-      "en": "Network UPS Tools",
-      "de": "Network UPS Tools",
-      "ru": "Network UPS Tools",
-      "pt": "Network UPS Tools",
-      "nl": "Network UPS Tools",
-      "fr": "Network UPS Tools",
-      "it": "Network UPS Tools",
-      "es": "Network UPS Tools",
-      "pl": "Network UPS Tools",
-      "uk": "Network UPS Tools",
-      "zh-cn": "Network UPS Tools"
-    },
-    "desc": {
-      "en": "Monitor uninterruptible power supplies via NUT (Network UPS Tools)",
-      "de": "Überwachung unterbrechungsfreier Stromversorgungen über NUT (Network UPS Tools)",
-      "ru": "Мониторинг источников бесперебойного питания через NUT (Network UPS Tools)",
-      "pt": "Monitorar fontes de alimentação ininterrupta via NUT (Network UPS Tools)",
-      "nl": "Monitor ononderbroken stroomvoorzieningen via NUT (Network UPS Tools)",
-      "fr": "Surveiller les alimentations sans interruption via NUT (Network UPS Tools)",
-      "it": "Monitorare gruppi di continuità tramite NUT (Network UPS Tools)",
-      "es": "Monitorear sistemas de alimentación ininterrumpida vía NUT (Network UPS Tools)",
-      "pl": "Monitorowanie zasilaczy awaryjnych przez NUT (Network UPS Tools)",
-      "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
-      "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
-    },
-    "authors": [
-      "Apollon77 <ingo@fischer-ka.de>",
-      "krobi <krobi@power-dreams.com>"
-    ],
-    "licenseInformation": {
-      "license": "MIT",
-      "type": "free"
-    },
-    "platform": "Javascript/Node.js",
-    "icon": "nut.svg",
-    "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
-    "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
-    "enabled": true,
-    "tier": 3,
-    "loglevel": "info",
-    "mode": "daemon",
-    "type": "hardware",
-    "compact": true,
-    "connectionType": "local",
-    "dataSource": "poll",
-    "messagebox": true,
-    "adminUI": {
-      "config": "json"
-    },
-    "supportedMessages": {
-      "stopInstance": true
-    },
-    "dependencies": [
-      {
-        "js-controller": ">=7.1.2"
-      }
-    ],
-    "globalDependencies": [
-      {
-        "admin": ">=7.8.23"
-      }
-    ],
-    "keywords": [
-      "ups",
-      "nut",
-      "network ups tools",
-      "uninterruptible power supply",
-      "usv",
-      "battery",
-      "power"
-    ]
-  },
-  "encryptedNative": [
-    "username",
-    "password"
-  ],
-  "protectedNative": [
-    "username",
-    "password"
-  ],
-  "native": {
-    "host": "",
-    "port": 3493,
-    "networkInterface": "",
-    "pollInterval": 15,
-    "username": "",
-    "password": "",
-    "commandTimeout": 5,
-    "enableCommands": false,
-    "enableSetVar": false
-  },
-  "instanceObjects": [
-    {
-      "_id": "info",
-      "type": "channel",
-      "common": {
-        "name": {
-          "en": "Adapter information",
-          "de": "Adapter-Informationen",
-          "ru": "Информация об адаптере",
-          "pt": "Informações do adaptador",
-          "nl": "Adapterinformatie",
-          "fr": "Informations sur l'adaptateur",
-          "it": "Informazioni sull'adattatore",
-          "es": "Información del adaptador",
-          "pl": "Informacje o adapterze",
-          "uk": "Інформація про адаптер",
-          "zh-cn": "适配器信息"
-        }
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.connection",
-      "type": "state",
-      "common": {
-        "name": {
-          "en": "Connection status",
-          "de": "Verbindungsstatus",
-          "ru": "Состояние соединения",
-          "pt": "Estado da conexão",
-          "nl": "Verbindingsstatus",
-          "fr": "État de la connexion",
-          "it": "Stato della connessione",
-          "es": "Estado de conexión",
-          "pl": "Stan połączenia",
-          "uk": "Стан з'єднання",
-          "zh-cn": "连接状态"
+    "common": {
+        "name": "nut",
+        "version": "0.4.1",
+        "news": {
+            "NEXT": {
+                "en": "Device names now fall back to manufacturer + model when the NUT server has no usable description; stricter number parsing for settings; returning UPS devices warn properly again",
+                "de": "Gerätenamen nutzen jetzt Hersteller + Modell, wenn der NUT-Server keine brauchbare Beschreibung liefert; strikteres Zahlen-Parsing in den Einstellungen; zurückkehrende USVen warnen wieder korrekt",
+                "ru": "Имена устройств теперь формируются из производителя и модели, если сервер NUT не даёт описания; более строгий разбор чисел в настройках; вернувшиеся ИБП снова корректно предупреждают",
+                "pt": "Os nomes dos dispositivos usam agora fabricante + modelo quando o servidor NUT não fornece descrição utilizável; análise de números mais rigorosa; UPS que regressam voltam a avisar corretamente",
+                "nl": "Apparaatnamen gebruiken nu fabrikant + model wanneer de NUT-server geen bruikbare beschrijving levert; striktere getalverwerking in instellingen; terugkerende UPS'en waarschuwen weer correct",
+                "fr": "Les noms d'appareils utilisent fabricant + modèle si le serveur NUT ne fournit pas de description ; analyse des nombres plus stricte ; les onduleurs qui reviennent avertissent à nouveau",
+                "it": "I nomi dei dispositivi usano produttore + modello se il server NUT non fornisce una descrizione; analisi dei numeri più rigorosa; gli UPS che ritornano avvisano di nuovo correttamente",
+                "es": "Los nombres de dispositivos usan fabricante + modelo si el servidor NUT no ofrece descripción; análisis de números más estricto; los SAI que regresan vuelven a avisar correctamente",
+                "pl": "Nazwy urządzeń korzystają teraz z producenta + modelu, gdy serwer NUT nie podaje opisu; ściślejsze parsowanie liczb w ustawieniach; powracające UPS-y znów poprawnie ostrzegają",
+                "uk": "Імена пристроїв тепер використовують виробника + модель, якщо сервер NUT не дає опису; суворіший розбір чисел у налаштуваннях; ДБЖ, що повертаються, знову коректно попереджають",
+                "zh-cn": "当 NUT 服务器没有可用描述时，设备名称现在使用制造商+型号；设置中的数字解析更严格；重新出现的 UPS 会再次正确发出警告"
+            },
+            "0.4.1": {
+                "en": "The leftover online state from the 0.4.0 rename is now cleaned up — it had stayed behind frozen at its last value and is removed automatically on the next adapter start.",
+                "de": "Der nach dem 0.4.0-Rename übrig gebliebene online-State wird jetzt aufgeräumt — er hing eingefroren auf dem letzten Wert und wird beim nächsten Adapter-Start automatisch entfernt.",
+                "ru": "Оставшееся после переименования в 0.4.0 состояние online теперь очищается — оно зависало на последнем значении и удаляется автоматически при следующем запуске адаптера.",
+                "pt": "O estado online deixado pela renomeação da 0.4.0 é agora removido — ficava preso no último valor e é eliminado automaticamente no próximo arranque do adaptador.",
+                "nl": "De na de 0.4.0-hernoeming achtergebleven online-state wordt nu opgeruimd — die bleef bevroren op de laatste waarde en wordt bij de volgende adapterstart automatisch verwijderd.",
+                "fr": "L'état online laissé par le renommage de la 0.4.0 est maintenant nettoyé — il restait figé sur sa dernière valeur et est supprimé automatiquement au prochain démarrage de l'adaptateur.",
+                "it": "Lo stato online rimasto dopo la rinomina della 0.4.0 ora viene rimosso — restava bloccato sull'ultimo valore e viene eliminato automaticamente al prossimo avvio dell'adattatore.",
+                "es": "El estado online que quedó tras el cambio de nombre de la 0.4.0 ahora se limpia — se quedaba congelado en su último valor y se elimina automáticamente al reiniciar el adaptador.",
+                "pl": "Pozostały po zmianie nazwy w 0.4.0 stan online jest teraz usuwany — pozostawał zamrożony na ostatniej wartości i znika automatycznie przy następnym starcie adaptera.",
+                "uk": "Залишений після перейменування в 0.4.0 стан online тепер очищується — він залишався замороженим на останньому значенні та видаляється при наступному запуску адаптера.",
+                "zh-cn": "0.4.0 重命名后遗留的 online 状态现在会被清理——它一直冻结在最后的值，并在适配器下次启动时自动删除。"
+            },
+            "0.4.0": {
+                "en": "Fixed the connection indicator (no longer green while the server is unreachable). Each UPS's online state was renamed to reachable, separate from the on-mains status — update references.",
+                "de": "Verbindungsanzeige korrigiert (nicht mehr grün bei nicht erreichbarem Server). Der online-State je USV heißt jetzt reachable, getrennt vom Netz-Status — Referenzen anpassen.",
+                "ru": "Исправлен индикатор подключения (больше не зелёный при недоступном сервере). Состояние online каждого ИБП переименовано в reachable, отдельно от статуса сети — обновите ссылки.",
+                "pt": "Indicador de ligação corrigido (já não fica verde com o servidor inacessível). O estado online de cada UPS passou a reachable, separado do estado de rede — atualize as referências.",
+                "nl": "Verbindingsindicator hersteld (niet meer groen als de server onbereikbaar is). De online-state per UPS heet nu reachable, los van de netvoeding-status — pas verwijzingen aan.",
+                "fr": "Indicateur de connexion corrigé (plus vert quand le serveur est injoignable). L'état online de chaque onduleur devient reachable, distinct de l'état secteur — adaptez les références.",
+                "it": "Indicatore di connessione corretto (non più verde se il server è irraggiungibile). Lo stato online di ogni UPS è ora reachable, distinto dallo stato di rete — aggiorna i riferimenti.",
+                "es": "Indicador de conexión corregido (ya no verde si el servidor es inaccesible). El estado online de cada SAI ahora es reachable, distinto del estado de red — actualiza las referencias.",
+                "pl": "Naprawiono wskaźnik połączenia (już nie zielony, gdy serwer jest nieosiągalny). Stan online każdego UPS to teraz reachable, oddzielnie od stanu sieci — zaktualizuj odwołania.",
+                "uk": "Виправлено індикатор з'єднання (більше не зелений, коли сервер недоступний). Стан online кожного ДБЖ перейменовано на reachable, окремо від стану мережі — оновіть посилання.",
+                "zh-cn": "修复了连接指示器（服务器不可达时不再显示绿色）。每个 UPS 的 online 状态已重命名为 reachable，与市电状态区分开，请更新引用。"
+            },
+            "0.3.0": {
+                "en": "Optional TLS encryption via STARTTLS so credentials are not sent in clear text. New status flags. The adapter now comes back on its own when the NUT server is temporarily unavailable.",
+                "de": "Optionale TLS-Verschlüsselung über STARTTLS, damit Zugangsdaten nicht im Klartext gesendet werden. Neue Status-Flags. Der Adapter kommt jetzt von selbst zurück, wenn der NUT-Server kurz fehlt.",
+                "ru": "Опциональное шифрование TLS через STARTTLS, чтобы учётные данные не передавались открытым текстом. Новые флаги состояния. Адаптер сам восстанавливается, когда сервер NUT временно недоступен.",
+                "pt": "Criptografia TLS opcional via STARTTLS para que as credenciais não sejam enviadas em texto puro. Novos sinalizadores de status. O adaptador volta sozinho quando o servidor NUT fica indisponível.",
+                "nl": "Optionele TLS-versleuteling via STARTTLS, zodat inloggegevens niet in leesbare tekst worden verzonden. Nieuwe statusvlaggen. De adapter komt nu vanzelf terug als de NUT-server tijdelijk weg is.",
+                "fr": "Chiffrement TLS optionnel via STARTTLS pour que les identifiants ne soient plus envoyés en clair. Nouveaux indicateurs d'état. L'adaptateur revient seul quand le serveur NUT est indisponible.",
+                "it": "Crittografia TLS opzionale tramite STARTTLS, così le credenziali non vengono inviate in chiaro. Nuovi flag di stato. L'adattatore torna da solo quando il server NUT non è disponibile.",
+                "es": "Cifrado TLS opcional mediante STARTTLS para que las credenciales no se envíen en texto plano. Nuevos indicadores de estado. El adaptador vuelve solo cuando el servidor NUT no está disponible.",
+                "pl": "Opcjonalne szyfrowanie TLS przez STARTTLS, aby dane logowania nie były wysyłane jawnym tekstem. Nowe flagi stanu. Adapter sam wraca, gdy serwer NUT jest chwilowo niedostępny.",
+                "uk": "Опціональне шифрування TLS через STARTTLS, щоб облікові дані не надсилалися відкритим текстом. Нові прапорці стану. Адаптер сам повертається, коли сервер NUT тимчасово недоступний.",
+                "zh-cn": "可选的 TLS（STARTTLS）加密，凭据不再以明文发送。新增状态标志。当 NUT 服务器暂时不可用时，适配器现在会自行恢复。"
+            },
+            "0.2.9": {
+                "en": "Reduced unnecessary state-change events. Fixed duplicate error messages in compact mode.",
+                "de": "Unnötige State-Change-Events reduziert. Doppelte Fehlermeldungen im Compact-Modus behoben.",
+                "ru": "Сокращены ненужные события изменения состояний. Исправлены дублирующиеся сообщения об ошибках в компактном режиме.",
+                "pt": "Eventos de mudança de estado desnecessários reduzidos. Corrigidas mensagens de erro duplicadas no modo compacto.",
+                "nl": "Onnodige state-change-events verminderd. Dubbele foutmeldingen in compacte modus verholpen.",
+                "fr": "Réduction des événements de changement d'état inutiles. Correction des messages d'erreur en double en mode compact.",
+                "it": "Ridotti gli eventi di cambio stato non necessari. Corretti i messaggi di errore duplicati in modalità compatta.",
+                "es": "Reducidos los eventos de cambio de estado innecesarios. Corregidos los mensajes de error duplicados en modo compacto.",
+                "pl": "Zmniejszono niepotrzebne zdarzenia zmiany stanu. Naprawiono zduplikowane komunikaty o błędach w trybie kompaktowym.",
+                "uk": "Зменшено непотрібні події зміни стану. Виправлено дублювання повідомлень про помилки у компактному режимі.",
+                "zh-cn": "减少了不必要的状态变更事件。修复了紧凑模式下重复的错误消息。"
+            },
+            "0.2.8": {
+                "en": "Changelog rewritten in user-centric style across all versions.",
+                "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
+                "ru": "Журнал изменений переписан в пользовательском стиле для всех версий.",
+                "pt": "Registo de alterações reescrito em estilo centrado no utilizador em todas as versões.",
+                "nl": "Changelog herschreven in gebruikersgerichte stijl voor alle versies.",
+                "fr": "Journal des modifications réécrit dans un style centré sur l'utilisateur pour toutes les versions.",
+                "it": "Registro delle modifiche riscritto in stile orientato all'utente per tutte le versioni.",
+                "es": "Registro de cambios reescrito en estilo centrado en el usuario en todas las versiones.",
+                "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
+                "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
+                "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
+            },
+            "0.2.7": {
+                "en": "Internal cleanup. No user-facing changes.",
+                "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
+                "ru": "Внутренняя очистка. Нет изменений для пользователей.",
+                "pt": "Limpeza interna. Sem alterações para o utilizador.",
+                "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
+                "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
+                "it": "Pulizia interna. Nessuna modifica per l'utente.",
+                "es": "Limpieza interna. Sin cambios para el usuario.",
+                "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
+                "uk": "Внутрішнє очищення. Без змін для користувачів.",
+                "zh-cn": "内部清理。无用户可见的更改。"
+            }
         },
-        "type": "boolean",
-        "role": "indicator.connected",
-        "read": true,
-        "write": false,
-        "def": false
-      },
-      "native": {}
-    }
-  ]
+        "titleLang": {
+            "en": "Network UPS Tools",
+            "de": "Network UPS Tools",
+            "ru": "Network UPS Tools",
+            "pt": "Network UPS Tools",
+            "nl": "Network UPS Tools",
+            "fr": "Network UPS Tools",
+            "it": "Network UPS Tools",
+            "es": "Network UPS Tools",
+            "pl": "Network UPS Tools",
+            "uk": "Network UPS Tools",
+            "zh-cn": "Network UPS Tools"
+        },
+        "desc": {
+            "en": "Monitor uninterruptible power supplies via NUT (Network UPS Tools)",
+            "de": "Überwachung unterbrechungsfreier Stromversorgungen über NUT (Network UPS Tools)",
+            "ru": "Мониторинг источников бесперебойного питания через NUT (Network UPS Tools)",
+            "pt": "Monitorar fontes de alimentação ininterrupta via NUT (Network UPS Tools)",
+            "nl": "Monitor ononderbroken stroomvoorzieningen via NUT (Network UPS Tools)",
+            "fr": "Surveiller les alimentations sans interruption via NUT (Network UPS Tools)",
+            "it": "Monitorare gruppi di continuità tramite NUT (Network UPS Tools)",
+            "es": "Monitorear sistemas de alimentación ininterrumpida vía NUT (Network UPS Tools)",
+            "pl": "Monitorowanie zasilaczy awaryjnych przez NUT (Network UPS Tools)",
+            "uk": "Моніторинг джерел безперебійного живлення через NUT (Network UPS Tools)",
+            "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
+        },
+        "authors": [
+            "Apollon77 <ingo@fischer-ka.de>",
+            "krobi <krobi@power-dreams.com>"
+        ],
+        "licenseInformation": {
+            "license": "MIT",
+            "type": "free"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "nut.svg",
+        "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
+        "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
+        "enabled": true,
+        "tier": 3,
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "hardware",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "messagebox": true,
+        "adminUI": {
+            "config": "json"
+        },
+        "supportedMessages": {
+            "stopInstance": true
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=7.1.2"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=7.8.23"
+            }
+        ],
+        "keywords": [
+            "ups",
+            "nut",
+            "network ups tools",
+            "uninterruptible power supply",
+            "usv",
+            "battery",
+            "power"
+        ]
+    },
+    "encryptedNative": [
+        "username",
+        "password"
+    ],
+    "protectedNative": [
+        "username",
+        "password"
+    ],
+    "native": {
+        "host": "",
+        "port": 3493,
+        "networkInterface": "",
+        "pollInterval": 15,
+        "username": "",
+        "password": "",
+        "commandTimeout": 5,
+        "enableCommands": false,
+        "enableSetVar": false
+    },
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": {
+                    "en": "Adapter information",
+                    "de": "Adapter-Informationen",
+                    "ru": "Информация об адаптере",
+                    "pt": "Informações do adaptador",
+                    "nl": "Adapterinformatie",
+                    "fr": "Informations sur l'adaptateur",
+                    "it": "Informazioni sull'adattatore",
+                    "es": "Información del adaptador",
+                    "pl": "Informacje o adapterze",
+                    "uk": "Інформація про адаптер",
+                    "zh-cn": "适配器信息"
+                }
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "name": {
+                    "en": "Connection status",
+                    "de": "Verbindungsstatus",
+                    "ru": "Состояние соединения",
+                    "pt": "Estado da conexão",
+                    "nl": "Verbindingsstatus",
+                    "fr": "État de la connexion",
+                    "it": "Stato della connessione",
+                    "es": "Estado de conexión",
+                    "pl": "Stan połączenia",
+                    "uk": "Стан з'єднання",
+                    "zh-cn": "连接状态"
+                },
+                "type": "boolean",
+                "role": "indicator.connected",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
 }
