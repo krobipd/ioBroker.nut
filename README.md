@@ -172,7 +172,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.4.2 (2026-06-12)
 
 - UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"
 - Number settings with stray characters (like a port of "34abc") no longer half-apply — they fall back to safe defaults
@@ -198,10 +198,6 @@ nut.0.
 
 - Reduced unnecessary state-change events by skipping writes when the value has not changed.
 - Fixed duplicate error messages that could appear when running in compact mode.
-
-### 0.2.8 (2026-05-23)
-
-- Changelog rewritten in user-centric style across all versions.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

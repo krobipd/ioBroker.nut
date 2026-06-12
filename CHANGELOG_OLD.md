@@ -1,4 +1,8 @@
 # Older changes
+## 0.2.8 (2026-05-23)
+
+- Changelog rewritten in user-centric style across all versions.
+
 ## 0.2.7 (2026-05-23)
 
 - Internal cleanup. No user-facing changes.
