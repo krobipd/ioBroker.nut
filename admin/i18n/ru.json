@@ -39,8 +39,6 @@
   "statusRaw": "Необработанный статус",
   "statusSeverity": "Уровень серьёзности",
   "statusDisplay": "Отображение статуса",
-  "upsName": "Имя ИБП",
-  "upsDescription": "Описание ИБП",
   "upsReachable": "Доступен",
   "channelUpsInfo": "Информация",
   "flagOnline": "Онлайн",

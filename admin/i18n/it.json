@@ -39,8 +39,6 @@
   "statusRaw": "Stato grezzo",
   "statusSeverity": "Livello di gravità",
   "statusDisplay": "Visualizzazione stato",
-  "upsName": "Nome UPS",
-  "upsDescription": "Descrizione UPS",
   "upsReachable": "Raggiungibile",
   "channelUpsInfo": "Informazione",
   "flagOnline": "Online",

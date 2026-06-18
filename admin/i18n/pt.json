@@ -39,8 +39,6 @@
   "statusRaw": "Estado bruto",
   "statusSeverity": "Nível de gravidade",
   "statusDisplay": "Exibição do estado",
-  "upsName": "Nome do UPS",
-  "upsDescription": "Descrição do UPS",
   "upsReachable": "Acessível",
   "channelUpsInfo": "Informação",
   "flagOnline": "Online",

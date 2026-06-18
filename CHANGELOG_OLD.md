@@ -1,4 +1,9 @@
 # Older changes
+## 0.2.9 (2026-05-23)
+
+- Reduced unnecessary state-change events by skipping writes when the value has not changed.
+- Fixed duplicate error messages that could appear when running in compact mode.
+
 ## 0.2.8 (2026-05-23)
 
 - Changelog rewritten in user-centric style across all versions.

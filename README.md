@@ -27,7 +27,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 ## Requirements
 
 - **Node.js >= 22**
-- **ioBroker js-controller >= 7.1.2**
+- **ioBroker js-controller >= 7.2.2**
 - **ioBroker Admin >= 7.8.23**
 - A running [NUT server](https://networkupstools.org/) (upsd) with at least one UPS configured
 
@@ -172,6 +172,11 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.4.3 (2026-06-18)
+
+- Raised the minimum ioBroker js-controller to 7.2.2, matching the current stable release.
+- Internal code and test cleanup — no change to how the adapter behaves.
+
 ### 0.4.2 (2026-06-12)
 
 - UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"
@@ -193,11 +198,6 @@ nut.0.
 - Charging and discharging are now also detected from the battery charger status, so they work on UPS models that don't report them directly.
 - Added status flags for waiting, ECO mode, self-test and overheating, plus clearer labels for more instant commands.
 - The adapter now keeps trying to reach the NUT server when it is unavailable and comes back on its own once it returns, instead of staying idle.
-
-### 0.2.9 (2026-05-23)
-
-- Reduced unnecessary state-change events by skipping writes when the value has not changed.
-- Fixed duplicate error messages that could appear when running in compact mode.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

@@ -39,8 +39,6 @@
   "statusRaw": "Ruwe status",
   "statusSeverity": "Ernst",
   "statusDisplay": "Statusweergave",
-  "upsName": "UPS-naam",
-  "upsDescription": "UPS-beschrijving",
   "upsReachable": "Bereikbaar",
   "channelUpsInfo": "Informatie",
   "flagOnline": "Online",

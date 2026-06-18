@@ -39,8 +39,6 @@
   "statusRaw": "Estado sin procesar",
   "statusSeverity": "Nivel de gravedad",
   "statusDisplay": "Visualización del estado",
-  "upsName": "Nombre del SAI",
-  "upsDescription": "Descripción del SAI",
   "upsReachable": "Accesible",
   "channelUpsInfo": "Información",
   "flagOnline": "En línea",

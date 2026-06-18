@@ -461,6 +461,14 @@ export class StateManager {
   }
 
   private async cleanupDeprecatedInfoStates(upsName: string): Promise<void> {
+    // Once per runtime per UPS — these states are gone after the first connect, so re-running
+    // the delObject calls on every reconnect is wasted work. Cache-keyed like the name fallback;
+    // cleared together with the device in cleanupRemovedUps, so a re-added UPS cleans up again.
+    const cacheKey = `${upsName}.__deprecatedCleanup`;
+    if (this.createdIds.has(cacheKey)) {
+      return;
+    }
+    this.createdIds.add(cacheKey);
     const deprecated = [
       `${upsName}.info.name`,
       `${upsName}.info.description`,
@@ -528,8 +536,6 @@ export class StateManager {
       unit?: string;
       def?: boolean;
       states?: Record<string, string>;
-      min?: number;
-      max?: number;
     },
   ): Promise<void> {
     if (this.createdIds.has(id)) {

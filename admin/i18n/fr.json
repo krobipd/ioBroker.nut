@@ -39,8 +39,6 @@
   "statusRaw": "État brut",
   "statusSeverity": "Niveau de gravité",
   "statusDisplay": "Affichage de l'état",
-  "upsName": "Nom de l'onduleur",
-  "upsDescription": "Description de l'onduleur",
   "upsReachable": "Accessible",
   "channelUpsInfo": "Information",
   "flagOnline": "En ligne",

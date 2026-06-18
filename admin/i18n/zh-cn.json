@@ -39,8 +39,6 @@
   "statusRaw": "原始状态",
   "statusSeverity": "严重程度",
   "statusDisplay": "状态显示",
-  "upsName": "UPS名称",
-  "upsDescription": "UPS描述",
   "upsReachable": "可访问",
   "channelUpsInfo": "信息",
   "flagOnline": "在线",

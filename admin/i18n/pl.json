@@ -39,8 +39,6 @@
   "statusRaw": "Stan surowy",
   "statusSeverity": "Poziom ważności",
   "statusDisplay": "Wyświetlanie stanu",
-  "upsName": "Nazwa UPS",
-  "upsDescription": "Opis UPS",
   "upsReachable": "Osiągalny",
   "channelUpsInfo": "Informacja",
   "flagOnline": "Online",

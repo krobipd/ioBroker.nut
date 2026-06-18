@@ -39,8 +39,6 @@
   "statusRaw": "Необроблений стан",
   "statusSeverity": "Рівень серйозності",
   "statusDisplay": "Відображення стану",
-  "upsName": "Ім'я ДБЖ",
-  "upsDescription": "Опис ДБЖ",
   "upsReachable": "Доступний",
   "channelUpsInfo": "Інформація",
   "flagOnline": "Онлайн",

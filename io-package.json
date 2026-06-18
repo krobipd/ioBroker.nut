@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.4.2",
+    "version": "0.4.3",
     "news": {
+      "0.4.3": {
+        "en": "Requires ioBroker js-controller 7.2.2 (the current stable release). Internal code and test cleanup — no change to adapter behaviour.",
+        "de": "Benötigt ioBroker js-controller 7.2.2 (aktuelle Stable). Interne Code- und Test-Bereinigung — keine Änderung am Verhalten des Adapters.",
+        "ru": "Требуется ioBroker js-controller 7.2.2 (текущий стабильный выпуск). Внутренняя очистка кода и тестов — без изменений в поведении адаптера.",
+        "pt": "Requer o ioBroker js-controller 7.2.2 (versão estável atual). Limpeza interna de código e testes — sem alterações no comportamento do adaptador.",
+        "nl": "Vereist ioBroker js-controller 7.2.2 (huidige stable). Interne code- en testopschoning — geen wijziging in het gedrag van de adapter.",
+        "fr": "Nécessite ioBroker js-controller 7.2.2 (version stable actuelle). Nettoyage interne du code et des tests — aucun changement de comportement.",
+        "it": "Richiede ioBroker js-controller 7.2.2 (stable attuale). Pulizia interna di codice e test — nessuna modifica al comportamento dell'adattatore.",
+        "es": "Requiere ioBroker js-controller 7.2.2 (estable actual). Limpieza interna de código y pruebas — sin cambios en el comportamiento del adaptador.",
+        "pl": "Wymaga ioBroker js-controller 7.2.2 (aktualna wersja stabilna). Wewnętrzne porządki w kodzie i testach — bez zmian w działaniu adaptera.",
+        "uk": "Потрібен ioBroker js-controller 7.2.2 (поточний стабільний). Внутрішнє очищення коду й тестів — без змін у поведінці адаптера.",
+        "zh-cn": "需要 ioBroker js-controller 7.2.2（当前稳定版）。内部代码与测试清理——适配器行为无变化。"
+      },
       "0.4.2": {
         "en": "Device names now fall back to manufacturer + model when the NUT server has no usable description; stricter number parsing for settings; returning UPS devices warn properly again",
         "de": "Gerätenamen nutzen jetzt Hersteller + Modell, wenn der NUT-Server keine brauchbare Beschreibung liefert; strikteres Zahlen-Parsing in den Einstellungen; zurückkehrende USVen warnen wieder korrekt",
@@ -80,19 +93,6 @@
         "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
         "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
         "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
-      },
-      "0.2.7": {
-        "en": "Internal cleanup. No user-facing changes.",
-        "de": "Interne Bereinigung. Keine Änderungen für Benutzer.",
-        "ru": "Внутренняя очистка. Нет изменений для пользователей.",
-        "pt": "Limpeza interna. Sem alterações para o utilizador.",
-        "nl": "Interne opruiming. Geen wijzigingen voor gebruikers.",
-        "fr": "Nettoyage interne. Aucun changement pour l'utilisateur.",
-        "it": "Pulizia interna. Nessuna modifica per l'utente.",
-        "es": "Limpieza interna. Sin cambios para el usuario.",
-        "pl": "Wewnętrzne porządki. Brak zmian dla użytkownika.",
-        "uk": "Внутрішнє очищення. Без змін для користувачів.",
-        "zh-cn": "内部清理。无用户可见的更改。"
       }
     },
     "titleLang": {
@@ -150,7 +150,7 @@
     },
     "dependencies": [
       {
-        "js-controller": ">=7.1.2"
+        "js-controller": ">=7.2.2"
       }
     ],
     "globalDependencies": [
@@ -183,6 +183,8 @@
     "pollInterval": 15,
     "username": "",
     "password": "",
+    "useTls": false,
+    "tlsRejectUnauthorized": false,
     "commandTimeout": 5,
     "enableCommands": false,
     "enableSetVar": false

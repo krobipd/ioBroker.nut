@@ -83,7 +83,7 @@ function coercePollIntervalSec(raw) {
 function coerceCommandTimeoutMs(raw) {
   const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
-    return 5e3;
+    return import_types.NUT_DEFAULT_COMMAND_TIMEOUT;
   }
   return Math.max(1, Math.min(30, Math.floor(n))) * 1e3;
 }

@@ -635,52 +635,182 @@ describe("StateManager", () => {
   // Full Eaton PRO 1600 scenario
   // -----------------------------------------------------------------------
   describe("Eaton PRO 1600 scenario", () => {
-    it("should handle all 54 variables from live test", async () => {
+    it("processes the complete LIST VAR set of one sample device (Eaton PRO 1600, 54 variables)", async () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
+      // ONE real sample device — NOT the universe of NUT variables. This Eaton happens to
+      // expose these 54; the adapter is dynamic and creates states for whatever a driver
+      // reports. Variables this device does NOT have (three-phase, ambient/EMP sensors,
+      // outlet groups, other vendors' vars) are covered by the next test. Captured live from
+      // Ressourcen/nut/krobi-eaton-live-data.md: battery 4, device 4, driver 10, input 5,
+      // outlet 11, output 4, ups 16 = 54.
       const vars = [
+        // battery (4)
         { name: "battery.charge", value: "100" },
         { name: "battery.charge.low", value: "15" },
-        { name: "battery.runtime", value: "2207" },
+        { name: "battery.runtime", value: "2050" },
         { name: "battery.type", value: "PbAc" },
+        // device (4)
         { name: "device.mfr", value: "EATON" },
         { name: "device.model", value: "Ellipse PRO 1600 " },
         { name: "device.serial", value: "G364T29133" },
         { name: "device.type", value: "ups" },
-        { name: "ups.status", value: "OL" },
-        { name: "ups.load", value: "15" },
-        { name: "ups.power", value: "159" },
-        { name: "ups.realpower", value: "147" },
-        { name: "input.voltage", value: "221.0" },
+        // driver (10)
+        { name: "driver.flag.ignorelb", value: "enabled" },
+        { name: "driver.name", value: "usbhid-ups" },
+        { name: "driver.parameter.pollfreq", value: "30" },
+        { name: "driver.parameter.pollinterval", value: "2" },
+        { name: "driver.parameter.port", value: "auto" },
+        { name: "driver.parameter.synchronous", value: "auto" },
+        { name: "driver.version", value: "2.8.0" },
+        { name: "driver.version.data", value: "MGE HID 1.46" },
+        { name: "driver.version.internal", value: "0.47" },
+        { name: "driver.version.usb", value: "libusb-1.0.26 (API: 0x1000109)" },
+        // input (5)
         { name: "input.frequency", value: "50.0" },
-        { name: "output.voltage", value: "223.0" },
+        { name: "input.transfer.high", value: "285" },
+        { name: "input.transfer.low", value: "165" },
+        { name: "input.voltage", value: "221.0" },
+        { name: "input.voltage.extended", value: "no" },
+        // outlet (11)
+        { name: "outlet.desc", value: "Main Outlet" },
+        { name: "outlet.id", value: "1" },
+        { name: "outlet.switchable", value: "no" },
+        { name: "outlet.1.desc", value: "PowerShare Outlet 1" },
+        { name: "outlet.1.id", value: "2" },
+        { name: "outlet.1.status", value: "on" },
+        { name: "outlet.1.switchable", value: "no" },
+        { name: "outlet.2.desc", value: "PowerShare Outlet 2" },
+        { name: "outlet.2.id", value: "3" },
+        { name: "outlet.2.status", value: "on" },
+        { name: "outlet.2.switchable", value: "no" },
+        // output (4)
         { name: "output.frequency", value: "50.0" },
+        { name: "output.frequency.nominal", value: "50" },
+        { name: "output.voltage", value: "223.0" },
+        { name: "output.voltage.nominal", value: "230" },
+        // ups (16)
+        { name: "ups.beeper.status", value: "enabled" },
+        { name: "ups.delay.shutdown", value: "20" },
+        { name: "ups.delay.start", value: "30" },
+        { name: "ups.firmware", value: "01.18.0022" },
+        { name: "ups.load", value: "15" },
+        { name: "ups.mfr", value: "EATON" },
+        { name: "ups.model", value: "Ellipse PRO 1600 " },
+        { name: "ups.power", value: "159" },
+        { name: "ups.power.nominal", value: "1600" },
+        { name: "ups.productid", value: "ffff" },
+        { name: "ups.realpower", value: "147" },
+        { name: "ups.serial", value: "G364T29133" },
+        { name: "ups.status", value: "OL" },
+        { name: "ups.timer.shutdown", value: "-1" },
+        { name: "ups.timer.start", value: "-1" },
+        { name: "ups.vendorid", value: "0463" },
       ];
+      expect(vars).toHaveLength(54);
 
-      await sm.updateVariables("ups0", vars, new Set(["ups.delay.shutdown", "ups.delay.start"]));
+      // The 9 writable variables (LIST RW ups0).
+      const rw = new Set([
+        "input.transfer.high",
+        "input.transfer.low",
+        "input.voltage.extended",
+        "outlet.1.desc",
+        "outlet.2.desc",
+        "outlet.desc",
+        "output.voltage.nominal",
+        "ups.delay.shutdown",
+        "ups.delay.start",
+      ]);
+      await sm.updateVariables("ups0", vars, rw);
 
-      // Numeric types (dots→dashes after channel)
+      // A state object exists for every one of the 54 variables (distinct ids).
+      expect([...objects.values()].filter(o => o.type === "state")).toHaveLength(54);
+
+      // Numbers (dots→dashes after the channel), incl. negative + nominal
       expect(states.get("ups0.battery.charge")?.val).toBe(100);
-      expect(states.get("ups0.battery.runtime")?.val).toBe(2207);
-      expect(states.get("ups0.input.voltage")?.val).toBe(221.0);
-      expect(states.get("ups0.ups.load")?.val).toBe(15);
-      expect(states.get("ups0.ups.power")?.val).toBe(159);
-      expect(states.get("ups0.ups.realpower")?.val).toBe(147);
+      expect(states.get("ups0.battery.runtime")?.val).toBe(2050);
       expect(states.get("ups0.battery.charge-low")?.val).toBe(15);
+      expect(states.get("ups0.input.voltage")?.val).toBe(221.0);
+      expect(states.get("ups0.ups.realpower")?.val).toBe(147);
+      expect(states.get("ups0.ups.timer-shutdown")?.val).toBe(-1);
+      expect(states.get("ups0.output.frequency-nominal")?.val).toBe(50);
 
-      // String types
+      // Strings — trailing space, leading zeros, hex-looking id, known-string suffix/prefix
       expect(states.get("ups0.battery.type")?.val).toBe("PbAc");
-      expect(states.get("ups0.device.mfr")?.val).toBe("EATON");
       expect(states.get("ups0.device.model")?.val).toBe("Ellipse PRO 1600 ");
       expect(states.get("ups0.ups.status")?.val).toBe("OL");
+      expect(states.get("ups0.ups.vendorid")?.val).toBe("0463");
+      expect(states.get("ups0.ups.productid")?.val).toBe("ffff");
+      expect(states.get("ups0.input.voltage-extended")?.val).toBe("no");
+      expect(states.get("ups0.outlet.1-status")?.val).toBe("on");
 
-      // Channels created
-      expect(objects.has("ups0.battery")).toBe(true);
-      expect(objects.has("ups0.device")).toBe(true);
-      expect(objects.has("ups0.ups")).toBe(true);
+      // Writable variable carries write:true
+      expect(objects.get("ups0.ups.delay-shutdown")?.common.write).toBe(true);
+
+      // All seven NUT channels created
+      for (const ch of ["battery", "device", "driver", "input", "outlet", "output", "ups"]) {
+        expect(objects.has(`ups0.${ch}`)).toBe(true);
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Standard NUT coverage beyond the one sample device
+  // -----------------------------------------------------------------------
+  describe("standard NUT coverage beyond the sample device", () => {
+    it("handles three-phase, ambient/EMP and outlet-group variables the Eaton lacks", async () => {
+      const { adapter, objects, states } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      // Real NUT 2.8.5 standard variables (Ressourcen/nut/nut-2.8.5/docs/nut-names.txt) that
+      // the single Eaton sample never reports — the adapter must create them just the same.
+      const vars = [
+        // three-phase, incl. phase-pair names that ALREADY contain a dash
+        { name: "input.phases", value: "3" },
+        { name: "input.L1.current", value: "133.0" },
+        { name: "input.L2.current", value: "48.2" },
+        { name: "input.L3-L1.voltage", value: "405.4" },
+        { name: "input.bypass.L1-L2.voltage", value: "398.3" },
+        // ambient / EMP environment sensors (the spec's "n" → instance 1)
+        { name: "ambient.count", value: "2" },
+        { name: "ambient.1.name", value: "sensor 1" },
+        { name: "ambient.1.temperature", value: "23.5" },
+        { name: "ambient.1.humidity", value: "45" },
+        { name: "ambient.1.temperature.status", value: "good" },
+        // outlet groups
+        { name: "outlet.group.count", value: "2" },
+        { name: "outlet.group.1.name", value: "Branch Circuit A" },
+        { name: "outlet.group.1.voltage", value: "244.23" },
+        { name: "outlet.group.1.status", value: "on" },
+        { name: "outlet.group.1.phase", value: "L1" },
+      ];
+      await sm.updateVariables("ups0", vars, new Set());
+
+      // Dash conversion survives names that already contain a dash (phase pairs): only the
+      // dot after the channel becomes a dash, the existing L3-L1 / L1-L2 dashes stay.
+      expect(states.get("ups0.input.L3-L1-voltage")?.val).toBe(405.4);
+      expect(objects.get("ups0.input.L3-L1-voltage")?.common.unit).toBe("V");
+      expect(states.get("ups0.input.bypass-L1-L2-voltage")?.val).toBe(398.3);
+      expect(states.get("ups0.input.L1-current")?.val).toBe(133.0);
+      expect(objects.get("ups0.input.L1-current")?.common.unit).toBe("A");
+
+      // Ambient / EMP — numbers with units, known-string name, status as text
+      expect(states.get("ups0.ambient.1-temperature")?.val).toBe(23.5);
+      expect(objects.get("ups0.ambient.1-temperature")?.common.unit).toBe("°C");
+      expect(states.get("ups0.ambient.1-humidity")?.val).toBe(45);
+      expect(objects.get("ups0.ambient.1-humidity")?.common.unit).toBe("%");
+      expect(objects.get("ups0.ambient.1-name")?.common.type).toBe("string");
+
+      // Outlet groups
+      expect(states.get("ups0.outlet.group-1-voltage")?.val).toBe(244.23);
+      expect(states.get("ups0.outlet.group-1-name")?.val).toBe("Branch Circuit A");
+      expect(states.get("ups0.outlet.group-1-status")?.val).toBe("on");
+
+      // Channels the Eaton sample never created
+      expect(objects.has("ups0.ambient")).toBe(true);
+      expect(objects.has("ups0.outlet")).toBe(true);
       expect(objects.has("ups0.input")).toBe(true);
-      expect(objects.has("ups0.output")).toBe(true);
     });
   });
 
@@ -821,6 +951,18 @@ describe("StateManager", () => {
       const sm = new StateManager(adapter);
 
       await expect(sm.ensureUpsDevice("ups0", "Main UPS")).resolves.not.toThrow();
+    });
+
+    it("runs the deprecated-state cleanup only once per runtime, not on every reconnect", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.info.online", { type: "state", common: { name: "Online" }, native: {} });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS"); // first connect → cleanup runs
+      await sm.ensureUpsDevice("ups0", "Main UPS"); // reconnect → cleanup must be skipped (cached)
+
+      expect(deletedIds.filter(id => id === "ups0.info.online")).toHaveLength(1);
     });
   });
 

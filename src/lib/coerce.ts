@@ -1,4 +1,4 @@
-import { NUT_DEFAULT_PORT } from "./types";
+import { NUT_DEFAULT_COMMAND_TIMEOUT, NUT_DEFAULT_PORT } from "./types";
 
 // Strict decimal-only number parsing (fleet line, hassemu E8 origin): a plain
 // float parse would half-accept garbage suffixes ("34abc" → 34) and allow
@@ -93,7 +93,7 @@ export function coercePollIntervalSec(raw: unknown): number {
 export function coerceCommandTimeoutMs(raw: unknown): number {
   const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
-    return 5000;
+    return NUT_DEFAULT_COMMAND_TIMEOUT;
   }
   return Math.max(1, Math.min(30, Math.floor(n))) * 1000;
 }

@@ -425,6 +425,11 @@ class StateManager {
     }
   }
   async cleanupDeprecatedInfoStates(upsName) {
+    const cacheKey = `${upsName}.__deprecatedCleanup`;
+    if (this.createdIds.has(cacheKey)) {
+      return;
+    }
+    this.createdIds.add(cacheKey);
     const deprecated = [
       `${upsName}.info.name`,
       `${upsName}.info.description`,

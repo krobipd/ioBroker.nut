@@ -45,4 +45,57 @@ describe("i18n completeness", () => {
       }
     }
   });
+
+  // Keyset-equality alone does NOT catch a key that is referenced but absent (user sees the
+  // raw key) or a key present in every language but used nowhere (dead weight). This gate
+  // closes both — it would have caught the orphaned upsName/upsDescription keys.
+  it("every en.json key is used, and every referenced key exists", () => {
+    const root = join(__dirname, "..", "..");
+    const readRoot = (p: string): string => readFileSync(join(root, p), "utf8");
+
+    // Keys referenced at RUNTIME — TypeScript source (tName, flag/channel/command maps,
+    // TRANSLATED_VARIABLES) + admin/jsonConfig labels/help/text.
+    const referenced = new Set<string>();
+    const add = (re: RegExp, text: string): void => {
+      for (const m of text.matchAll(re)) referenced.add(m[1]);
+    };
+    const srcDir = join(__dirname, "..");
+    for (const rel of readdirSync(srcDir, { recursive: true })) {
+      if (typeof rel !== "string" || !rel.endsWith(".ts") || rel.endsWith(".test.ts")) {
+        continue;
+      }
+      const text = readFileSync(join(srcDir, rel), "utf8");
+      add(/tName\("([^"]+)"\)/g, text);
+      add(/i18nKey:\s*"([^"]+)"/g, text);
+      add(/"(channel[A-Za-z]+|cmd[A-Za-z]+)"/g, text);
+      const block = text.match(/TRANSLATED_VARIABLES = new Set[\s\S]*?\] as I18nKey\[\]/);
+      if (block) {
+        add(/"([^"]+)"/g, block[0]);
+      }
+    }
+    add(/"(?:label|help|tooltip|text|okText|errorText)":\s*"([^"]+)"/g, readRoot("admin/jsonConfig.json"));
+
+    const en = JSON.parse(readRoot("admin/i18n/en.json")) as Record<string, string>;
+
+    // Build-time keys: io-package.json instanceObjects names are generated from i18n keys by
+    // sync-iopackage-from-i18n.py, so a key whose English text equals an instanceObjects name
+    // is used at build time (e.g. connectionStatus → info.connection) — not dead.
+    const ioPkg = JSON.parse(readRoot("io-package.json")) as {
+      instanceObjects: { common: { name?: string | Record<string, string> } }[];
+    };
+    const buildTimeNames = new Set(
+      ioPkg.instanceObjects
+        .map(o => o.common?.name)
+        .map(n => (typeof n === "object" && n ? n.en : n))
+        .filter((n): n is string => typeof n === "string"),
+    );
+
+    const missing = [...referenced].filter(k => !(k in en)).sort();
+    expect(missing, `referenced in code/jsonConfig but missing from en.json: ${missing.join(", ")}`).toEqual([]);
+
+    const dead = Object.keys(en)
+      .filter(k => !referenced.has(k) && !buildTimeNames.has(en[k]))
+      .sort();
+    expect(dead, `present in en.json but never used (dead i18n keys): ${dead.join(", ")}`).toEqual([]);
+  });
 });

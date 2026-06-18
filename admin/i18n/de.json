@@ -39,8 +39,6 @@
   "statusRaw": "Rohstatus",
   "statusSeverity": "Schweregrad",
   "statusDisplay": "Statusanzeige",
-  "upsName": "USV-Name",
-  "upsDescription": "USV-Beschreibung",
   "upsReachable": "Erreichbar",
   "channelUpsInfo": "Information",
   "flagOnline": "Online",
