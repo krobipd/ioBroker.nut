@@ -1,4 +1,9 @@
 # Older changes
+## 0.4.0 (2026-06-10)
+
+- Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
+- Renamed each UPS's `info.online` state to `info.reachable` (does the UPS respond) — distinct from the `status.online` flag (on mains power). Update references in scripts or visualizations.
+
 ## 0.3.0 (2026-06-01)
 
 - Added optional TLS encryption via STARTTLS, so your username and password are no longer sent in clear text over the network.

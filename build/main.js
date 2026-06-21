@@ -137,10 +137,7 @@ class NutAdapter extends utils.Adapter {
         try {
           await this.client.authenticate(config.username, config.password);
           this.authenticated = true;
-          for (const ups of this.discoveredUps.keys()) {
-            await this.client.login(ups);
-          }
-          this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
+          this.log.debug(`Authenticated to NUT server ${host}:${port}`);
         } catch (err) {
           this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
           this.log.info(

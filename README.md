@@ -172,6 +172,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.4.5 (2026-06-21)
+
+- With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.
+
 ### 0.4.4 (2026-06-21)
 
 - The network interface setting now offers an "all interfaces" choice and uses it by default, so the adapter binds correctly on multi-homed servers without manual configuration.
@@ -193,11 +197,6 @@ nut.0.
 ### 0.4.1 (2026-06-10)
 
 - Cleaned up the obsolete `info.online` state left behind by the 0.4.0 rename. It stayed in the object tree frozen at its last value; the adapter now removes it automatically on the next start.
-
-### 0.4.0 (2026-06-10)
-
-- Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
-- Renamed each UPS's `info.online` state to `info.reachable` (does the UPS respond) — distinct from the `status.online` flag (on mains power). Update references in scripts or visualizations.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

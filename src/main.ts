@@ -130,12 +130,13 @@ export class NutAdapter extends utils.Adapter {
       this.authenticated = false;
       if (config.username && config.password) {
         try {
+          // USERNAME/PASSWORD is all that GET/LIST + SET VAR + INSTCMD need. We deliberately do
+          // NOT send LOGIN per UPS: NUT permits only one LOGIN per connection, so a multi-UPS
+          // server fails the second with ALREADY-LOGGED-IN — and LOGIN only matters for upsmon
+          // shutdown coordination, which this adapter does not do.
           await this.client.authenticate(config.username, config.password);
           this.authenticated = true;
-          for (const ups of this.discoveredUps.keys()) {
-            await this.client.login(ups);
-          }
-          this.log.debug(`Authenticated and logged in to ${this.discoveredUps.size} UPS(es)`);
+          this.log.debug(`Authenticated to NUT server ${host}:${port}`);
         } catch (err) {
           this.log.error(`Authentication failed: ${errText(err)} — check NUT server credentials`);
           this.log.info(

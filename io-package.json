@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.4.4",
+    "version": "0.4.5",
     "news": {
+      "0.4.5": {
+        "en": "With login credentials, a NUT server that has more than one UPS no longer leaves the adapter offline — multi-UPS setups with authentication now connect and poll.",
+        "de": "Mit Zugangsdaten lässt ein NUT-Server mit mehr als einer USV den Adapter nicht mehr offline — Multi-USV-Setups mit Authentifizierung verbinden sich jetzt korrekt.",
+        "ru": "С учётными данными NUT-сервер с несколькими ИБП больше не оставляет адаптер офлайн — конфигурации с несколькими ИБП и аутентификацией теперь работают.",
+        "pt": "Com credenciais, um servidor NUT com mais de um UPS já não deixa o adaptador offline — configurações multi-UPS com autenticação agora ligam-se corretamente.",
+        "nl": "Met inloggegevens laat een NUT-server met meerdere UPS'en de adapter niet meer offline — multi-UPS-opstellingen met authenticatie werken nu correct.",
+        "fr": "Avec des identifiants, un serveur NUT comportant plusieurs onduleurs ne laisse plus l'adaptateur hors ligne — les configurations multi-onduleurs avec authentification fonctionnent.",
+        "it": "Con le credenziali, un server NUT con più di un UPS non lascia più l'adattatore offline — le configurazioni multi-UPS con autenticazione ora si connettono.",
+        "es": "Con credenciales, un servidor NUT con más de un SAI ya no deja el adaptador sin conexión — las configuraciones multi-SAI con autenticación ahora funcionan.",
+        "pl": "Z poświadczeniami serwer NUT z więcej niż jednym UPS-em nie pozostawia już adaptera offline — konfiguracje wielu UPS-ów z uwierzytelnianiem teraz działają.",
+        "uk": "З обліковими даними сервер NUT із кількома ДБЖ більше не залишає адаптер офлайн — конфігурації з кількома ДБЖ та автентифікацією тепер працюють.",
+        "zh-cn": "配置了登录凭据后，带有多个 UPS 的 NUT 服务器不再让适配器离线——带身份验证的多 UPS 配置现在可以正常连接。"
+      },
       "0.4.4": {
         "en": "More robust handling of unusual UPS readings and device names, plus a new option to use all network interfaces.",
         "de": "Robusterer Umgang mit ungewöhnlichen USV-Werten und Gerätenamen, plus eine neue Option für alle Netzwerk-Schnittstellen.",
@@ -80,19 +93,6 @@
         "pl": "Opcjonalne szyfrowanie TLS przez STARTTLS, aby dane logowania nie były wysyłane jawnym tekstem. Nowe flagi stanu. Adapter sam wraca, gdy serwer NUT jest chwilowo niedostępny.",
         "uk": "Опціональне шифрування TLS через STARTTLS, щоб облікові дані не надсилалися відкритим текстом. Нові прапорці стану. Адаптер сам повертається, коли сервер NUT тимчасово недоступний.",
         "zh-cn": "可选的 TLS（STARTTLS）加密，凭据不再以明文发送。新增状态标志。当 NUT 服务器暂时不可用时，适配器现在会自行恢复。"
-      },
-      "0.2.9": {
-        "en": "Reduced unnecessary state-change events. Fixed duplicate error messages in compact mode.",
-        "de": "Unnötige State-Change-Events reduziert. Doppelte Fehlermeldungen im Compact-Modus behoben.",
-        "ru": "Сокращены ненужные события изменения состояний. Исправлены дублирующиеся сообщения об ошибках в компактном режиме.",
-        "pt": "Eventos de mudança de estado desnecessários reduzidos. Corrigidas mensagens de erro duplicadas no modo compacto.",
-        "nl": "Onnodige state-change-events verminderd. Dubbele foutmeldingen in compacte modus verholpen.",
-        "fr": "Réduction des événements de changement d'état inutiles. Correction des messages d'erreur en double en mode compact.",
-        "it": "Ridotti gli eventi di cambio stato non necessari. Corretti i messaggi di errore duplicati in modalità compatta.",
-        "es": "Reducidos los eventos de cambio de estado innecesarios. Corregidos los mensajes de error duplicados en modo compacto.",
-        "pl": "Zmniejszono niepotrzebne zdarzenia zmiany stanu. Naprawiono zduplikowane komunikaty o błędach w trybie kompaktowym.",
-        "uk": "Зменшено непотрібні події зміни стану. Виправлено дублювання повідомлень про помилки у компактному режимі.",
-        "zh-cn": "减少了不必要的状态变更事件。修复了紧凑模式下重复的错误消息。"
       }
     },
     "titleLang": {

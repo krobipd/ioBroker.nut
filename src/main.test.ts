@@ -310,10 +310,10 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(stub, "info").some(m => m.includes("Reconnected to NUT server"))).toBe(true);
   });
 
-  it("authenticates + logs in per UPS when credentials are configured", async () => {
+  it("authenticates but does NOT LOGIN per UPS (one LOGIN/connection — multi-UPS would ALREADY-LOGGED-IN)", async () => {
     const { client } = await setupConnected({ username: "admin", password: "secret" });
     expect(client.authenticate).toHaveBeenCalledWith("admin", "secret");
-    expect(client.login).toHaveBeenCalledWith("ups0");
+    expect(client.login).not.toHaveBeenCalled();
   });
 
   it("auth failure → error+info logs, client destroyed, yellow, NO poll timer", async () => {
