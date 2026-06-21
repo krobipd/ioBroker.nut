@@ -22,6 +22,7 @@ __export(type_detector_exports, {
   detectType: () => detectType
 });
 module.exports = __toCommonJS(type_detector_exports);
+var import_coerce = require("./coerce");
 const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "model",
   "mfr",
@@ -57,8 +58,8 @@ function detectType(varName, rawValue, isWritable) {
       parsedValue: rawValue
     };
   }
-  const num = parseFloat(rawValue);
-  if (!Number.isNaN(num)) {
+  const num = (0, import_coerce.parseDecimal)(rawValue);
+  if (Number.isFinite(num)) {
     return {
       type: "number",
       role: detectRole(varName, "number", isWritable),
@@ -74,7 +75,8 @@ function detectType(varName, rawValue, isWritable) {
     unit: void 0,
     read: true,
     write: isWritable,
-    parsedValue: rawValue
+    parsedValue: rawValue,
+    expectedNumeric: detectUnit(varName) !== void 0
   };
 }
 function isKnownString(varName) {

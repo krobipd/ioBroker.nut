@@ -172,6 +172,13 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.4.4 (2026-06-21)
+
+- The network interface setting now offers an "all interfaces" choice and uses it by default, so the adapter binds correctly on multi-homed servers without manual configuration.
+- A reading from the NUT server that is not a clean number is no longer stored as a wrong number — non-numeric text stays text, and a numeric field with garbage is skipped and warned once.
+- The device name now corrects itself once manufacturer and model become available after the first reading, instead of staying stuck on an earlier placeholder name.
+- A UPS variable whose name contains no dot, such as a bare ALARM, is now created as a proper data point instead of an invalid object.
+
 ### 0.4.3 (2026-06-18)
 
 - Raised the minimum ioBroker js-controller to 7.2.2, matching the current stable release.
@@ -191,13 +198,6 @@ nut.0.
 
 - Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
 - Renamed each UPS's `info.online` state to `info.reachable` (does the UPS respond) — distinct from the `status.online` flag (on mains power). Update references in scripts or visualizations.
-
-### 0.3.0 (2026-06-01)
-
-- Added optional TLS encryption via STARTTLS, so your username and password are no longer sent in clear text over the network.
-- Charging and discharging are now also detected from the battery charger status, so they work on UPS models that don't report them directly.
-- Added status flags for waiting, ECO mode, self-test and overheating, plus clearer labels for more instant commands.
-- The adapter now keeps trying to reach the NUT server when it is unavailable and comes back on its own once it returns, instead of staying idle.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

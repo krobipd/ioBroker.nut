@@ -46,7 +46,7 @@ async function dispatchMessage(obj, deps) {
         const port = (0, import_coerce.coercePort)(config.port);
         const username = typeof config.username === "string" ? config.username : "";
         const password = typeof config.password === "string" ? config.password : "";
-        const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
+        const localAddress = (0, import_coerce.localAddressOf)(config.networkInterface);
         const options = {
           localAddress,
           commandTimeout: (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout),

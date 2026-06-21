@@ -155,6 +155,10 @@ function nutVarToReadableName(nutVarName) {
 class StateManager {
   adapter;
   createdIds = /* @__PURE__ */ new Set();
+  /** NUT variables already warned about as garbage in a numeric field (warn once). */
+  warnedGarbageVars = /* @__PURE__ */ new Set();
+  /** Last device name derived from mfr+model per UPS — lets a transient/wrong fallback self-correct. */
+  fallbackNames = /* @__PURE__ */ new Map();
   /**
    * @param adapter The ioBroker adapter instance
    */
@@ -202,8 +206,9 @@ class StateManager {
    * would never apply (js-controller 7.x `removePreservedProperties` drops the new name
    * whenever the old object has one; this silently killed the feature in v0.2.5-v0.4.1).
    * User-modified names stay safe through the guard instead: the fallback only fires
-   * while the CURRENT name is still the auto-set unusable value. Runs once per runtime
-   * per UPS (cache) — not on every poll.
+   * while the CURRENT name is still the auto-set placeholder or a value WE derived
+   * earlier — so a transient/wrong mfr+model that arrived first self-corrects, while a
+   * user-chosen name is left untouched. No broker round-trip while the derived name is stable.
    *
    * @param upsName UPS identifier
    * @param description UPS description from LIST UPS
@@ -214,25 +219,24 @@ class StateManager {
     if (description && description !== "Description unavailable") {
       return;
     }
-    const cacheKey = `${upsName}.__deviceNameFallback`;
-    if (this.createdIds.has(cacheKey)) {
-      return;
-    }
     const mfr = (_b = (_a = variables.find((v) => v.name === "device.mfr")) == null ? void 0 : _a.value) == null ? void 0 : _b.trim();
     const model = (_d = (_c = variables.find((v) => v.name === "device.model")) == null ? void 0 : _c.value) == null ? void 0 : _d.trim();
     if (!mfr && !model) {
       return;
     }
-    this.createdIds.add(cacheKey);
-    const obj = await this.adapter.getObjectAsync(upsName);
-    const currentName = (_e = obj == null ? void 0 : obj.common) == null ? void 0 : _e.name;
-    const isAutoSetUnusable = currentName === description || currentName === "Description unavailable" || currentName === "";
-    if (!isAutoSetUnusable) {
+    const name = [mfr, model].filter(Boolean).join(" ");
+    if (this.fallbackNames.get(upsName) === name) {
       return;
     }
-    const name = [mfr, model].filter(Boolean).join(" ");
+    const obj = await this.adapter.getObjectAsync(upsName);
+    const currentName = (_e = obj == null ? void 0 : obj.common) == null ? void 0 : _e.name;
+    const replaceable = currentName === description || currentName === "Description unavailable" || currentName === "" || currentName === this.fallbackNames.get(upsName);
+    if (!replaceable) {
+      return;
+    }
     this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
     await this.adapter.extendObjectAsync(upsName, { common: { name } });
+    this.fallbackNames.set(upsName, name);
   }
   /**
    * Ensure a channel exists for a NUT domain (e.g. "battery", "ups").
@@ -268,10 +272,21 @@ class StateManager {
       return depthA - depthB;
     });
     for (const v of sorted) {
-      const channel = v.name.split(".")[0];
-      await this.ensureChannel(upsName, channel);
+      const firstDot = v.name.indexOf(".");
+      if (firstDot >= 0) {
+        await this.ensureChannel(upsName, v.name.slice(0, firstDot));
+      }
       const isWritable = rwNames.has(v.name);
       const detected = (0, import_type_detector.detectType)(v.name, v.value, isWritable);
+      if (detected.expectedNumeric) {
+        if (!this.warnedGarbageVars.has(v.name)) {
+          this.warnedGarbageVars.add(v.name);
+          this.adapter.log.warn(
+            `Discarding non-numeric value ${JSON.stringify(v.value)} for numeric variable '${v.name}' on ${upsName}`
+          );
+        }
+        continue;
+      }
       const stateId = nutVarToStateId(upsName, v.name);
       const states = (0, import_type_detector.detectStates)(v.name);
       await this.ensureState(stateId, {

@@ -85,7 +85,7 @@ class NutAdapter extends utils.Adapter {
       const port = (0, import_coerce.coercePort)(config.port);
       const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
       this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
-      const localAddress = typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0 ? config.networkInterface.trim() : void 0;
+      const localAddress = (0, import_coerce.localAddressOf)(config.networkInterface);
       this.client = this.makeClient(host, port, {
         localAddress,
         commandTimeout: commandTimeoutMs,

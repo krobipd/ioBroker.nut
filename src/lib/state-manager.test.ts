@@ -282,6 +282,26 @@ describe("StateManager", () => {
       expect(getCalls).toBe(1);
       expect(extendCalls).toBe(baselineExtend + 1);
     });
+
+    it("self-corrects the name when mfr/model change after first discovery (#5)", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+
+      // first discovery: a transient/placeholder mfr+model arrives
+      await sm.updateDeviceName("ups0", "Description unavailable", [
+        { name: "device.mfr", value: "Dummy Manufacturer" },
+        { name: "device.model", value: "Dummy UPS" },
+      ]);
+      expect(objects.get("ups0")?.common.name).toBe("Dummy Manufacturer Dummy UPS");
+
+      // later poll: the real values arrive → name self-corrects (no freeze)
+      await sm.updateDeviceName("ups0", "Description unavailable", [
+        { name: "device.mfr", value: "Eaton" },
+        { name: "device.model", value: "5PX 1500" },
+      ]);
+      expect(objects.get("ups0")?.common.name).toBe("Eaton 5PX 1500");
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -1054,6 +1074,20 @@ describe("StateManager", () => {
       const stateCall = calls.find(c => c[0] === "ups0.battery.charge");
       expect(stateCall).toBeDefined();
       expect(stateCall![2]).toEqual({ preserve: { common: ["name"] } });
+    });
+  });
+
+  describe("updateVariables — dotless variable (#4)", () => {
+    it("stores a dotless variable as a real state under the device, not a colliding channel", async () => {
+      const { adapter, objects, states } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "ALARM", value: "On battery" }], new Set());
+
+      const obj = objects.get("ups0.ALARM");
+      expect(obj?.type).toBe("state");
+      expect(obj?.common.type).toBe("string");
+      expect(states.get("ups0.ALARM")?.val).toBe("On battery");
     });
   });
 });

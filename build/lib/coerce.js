@@ -23,7 +23,9 @@ __export(coerce_exports, {
   coercePollIntervalSec: () => coercePollIntervalSec,
   coercePort: () => coercePort,
   computeReconnectDelay: () => computeReconnectDelay,
-  errText: () => errText
+  errText: () => errText,
+  localAddressOf: () => localAddressOf,
+  parseDecimal: () => parseDecimal
 });
 module.exports = __toCommonJS(coerce_exports);
 var import_types = require("./types");
@@ -66,6 +68,13 @@ function coerceHost(raw) {
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
+function localAddressOf(raw) {
+  if (typeof raw !== "string") {
+    return void 0;
+  }
+  const trimmed = raw.trim();
+  return trimmed.length > 0 && trimmed !== "0.0.0.0" ? trimmed : void 0;
+}
 function coercePort(raw) {
   const n = parseDecimal(raw);
   if (!Number.isFinite(n)) {
@@ -98,6 +107,8 @@ function computeReconnectDelay(attempt, baseMs, maxMs) {
   coercePollIntervalSec,
   coercePort,
   computeReconnectDelay,
-  errText
+  errText,
+  localAddressOf,
+  parseDecimal
 });
 //# sourceMappingURL=coerce.js.map

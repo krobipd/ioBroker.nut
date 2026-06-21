@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "news": {
+      "0.4.4": {
+        "en": "More robust handling of unusual UPS readings and device names, plus a new option to use all network interfaces.",
+        "de": "Robusterer Umgang mit ungewöhnlichen USV-Werten und Gerätenamen, plus eine neue Option für alle Netzwerk-Schnittstellen.",
+        "ru": "Более надёжная обработка необычных значений ИБП и имён устройств, а также новая опция для всех сетевых интерфейсов.",
+        "pt": "Tratamento mais robusto de leituras incomuns do UPS e nomes de dispositivos, além de uma nova opção para todas as interfaces de rede.",
+        "nl": "Robuustere verwerking van ongebruikelijke UPS-waarden en apparaatnamen, plus een nieuwe optie voor alle netwerkinterfaces.",
+        "fr": "Gestion plus robuste des valeurs d'onduleur inhabituelles et des noms d'appareils, ainsi qu'une nouvelle option pour toutes les interfaces réseau.",
+        "it": "Gestione più robusta di valori UPS insoliti e nomi dei dispositivi, più una nuova opzione per tutte le interfacce di rete.",
+        "es": "Manejo más robusto de lecturas inusuales del SAI y nombres de dispositivos, además de una nueva opción para todas las interfaces de red.",
+        "pl": "Bardziej odporna obsługa nietypowych odczytów UPS i nazw urządzeń oraz nowa opcja dla wszystkich interfejsów sieciowych.",
+        "uk": "Надійніша обробка незвичних значень ДБЖ та імен пристроїв, а також нова опція для всіх мережевих інтерфейсів.",
+        "zh-cn": "更稳健地处理异常的 UPS 读数和设备名称，并新增使用所有网络接口的选项。"
+      },
       "0.4.3": {
         "en": "Requires ioBroker js-controller 7.2.2 (the current stable release). Internal code and test cleanup — no change to adapter behaviour.",
         "de": "Benötigt ioBroker js-controller 7.2.2 (aktuelle Stable). Interne Code- und Test-Bereinigung — keine Änderung am Verhalten des Adapters.",
@@ -80,19 +93,6 @@
         "pl": "Zmniejszono niepotrzebne zdarzenia zmiany stanu. Naprawiono zduplikowane komunikaty o błędach w trybie kompaktowym.",
         "uk": "Зменшено непотрібні події зміни стану. Виправлено дублювання повідомлень про помилки у компактному режимі.",
         "zh-cn": "减少了不必要的状态变更事件。修复了紧凑模式下重复的错误消息。"
-      },
-      "0.2.8": {
-        "en": "Changelog rewritten in user-centric style across all versions.",
-        "de": "Changelog in benutzerorientiertem Stil über alle Versionen neu geschrieben.",
-        "ru": "Журнал изменений переписан в пользовательском стиле для всех версий.",
-        "pt": "Registo de alterações reescrito em estilo centrado no utilizador em todas as versões.",
-        "nl": "Changelog herschreven in gebruikersgerichte stijl voor alle versies.",
-        "fr": "Journal des modifications réécrit dans un style centré sur l'utilisateur pour toutes les versions.",
-        "it": "Registro delle modifiche riscritto in stile orientato all'utente per tutte le versioni.",
-        "es": "Registro de cambios reescrito en estilo centrado en el usuario en todas las versiones.",
-        "pl": "Dziennik zmian przepisany w stylu zorientowanym na użytkownika we wszystkich wersjach.",
-        "uk": "Журнал змін переписано у стилі, орієнтованому на користувача, для всіх версій.",
-        "zh-cn": "所有版本的更新日志已重写为以用户为中心的风格。"
       }
     },
     "titleLang": {
@@ -179,7 +179,7 @@
   "native": {
     "host": "",
     "port": 3493,
-    "networkInterface": "",
+    "networkInterface": "0.0.0.0",
     "pollInterval": 15,
     "username": "",
     "password": "",

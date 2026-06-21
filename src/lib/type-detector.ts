@@ -1,4 +1,6 @@
-/** Known-string suffixes — always string regardless of parseFloat. */
+import { parseDecimal } from "./coerce";
+
+/** Known-string suffixes — always string regardless of numeric parsing. */
 const KNOWN_STRING_SUFFIXES = new Set([
   "model",
   "mfr",
@@ -40,6 +42,12 @@ export interface TypeDetectResult {
   write: boolean;
   /** Parsed value (number or string) */
   parsedValue: number | string;
+  /**
+   * True when the variable name denotes a numeric quantity (carries a unit) but
+   * the raw value is not a strict number (garbage / non-finite). The caller
+   * should discard the value and warn once rather than store junk.
+   */
+  expectedNumeric?: boolean;
 }
 
 /**
@@ -61,8 +69,11 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
     };
   }
 
-  const num = parseFloat(rawValue);
-  if (!Number.isNaN(num)) {
+  // Strict decimal only (same fleet line as the config coerce): garbage suffixes
+  // ("12abc" → 12) and non-finite tokens ("Infinity" → null on setState) must NOT
+  // become numbers — a number field never holds letters. Such values stay raw strings.
+  const num = parseDecimal(rawValue);
+  if (Number.isFinite(num)) {
     return {
       type: "number",
       role: detectRole(varName, "number", isWritable),
@@ -73,7 +84,9 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
     };
   }
 
-  // Not a known string and not parseable as a number → opaque string, no unit.
+  // Not a known string and not a strict number → opaque string. If the variable
+  // name denotes a numeric quantity (carries a unit), the value is garbage for a
+  // number field → flag it so the caller discards it and warns once.
   return {
     type: "string",
     role: detectRole(varName, "string", isWritable),
@@ -81,6 +94,7 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
     read: true,
     write: isWritable,
     parsedValue: rawValue,
+    expectedNumeric: detectUnit(varName) !== undefined,
   };
 }
 

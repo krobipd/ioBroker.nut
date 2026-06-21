@@ -150,6 +150,46 @@ describe("type-detector", () => {
       expect(r.type).toBe("number");
       expect(r.parsedValue).toBe(15);
     });
+
+    // Strict decimal: garbage suffixes and non-finite tokens are NOT numbers
+    // (krobi 2026-06-21 via test-lab: a number field never holds letters; a
+    // non-finite value must not silently become null on setState).
+    it("should NOT parse garbage-suffix as number (12abc)", () => {
+      const r = detectType("battery.charge", "12abc", false);
+      expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("12abc");
+      expect(r.expectedNumeric).toBe(true); // charge is a numeric quantity (%)
+    });
+
+    it("should NOT parse Infinity as number", () => {
+      const r = detectType("input.voltage", "Infinity", false);
+      expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("Infinity");
+      expect(r.expectedNumeric).toBe(true); // voltage is a numeric quantity (V)
+    });
+
+    it("flags garbage in a numeric field but not in a genuine text field", () => {
+      // numeric quantity (has a unit) + garbage → expectedNumeric (discard+warn)
+      expect(detectType("ups.load", "n/a", false).expectedNumeric).toBe(true);
+      // no unit → a genuine text value, keep it as string
+      expect(detectType("some.unknown.var", "enabled", false).expectedNumeric).toBe(false);
+    });
+
+    it("should NOT parse -Infinity as number", () => {
+      const r = detectType("output.voltage", "-Infinity", false);
+      expect(r.type).toBe("string");
+    });
+
+    it("should NOT parse locale comma as number (230,4)", () => {
+      const r = detectType("battery.voltage", "230,4", false);
+      expect(r.type).toBe("string");
+      expect(r.parsedValue).toBe("230,4");
+    });
+
+    it("should NOT parse scientific notation as number (1e3)", () => {
+      const r = detectType("ups.realpower", "1e3", false);
+      expect(r.type).toBe("string");
+    });
   });
 
   // -----------------------------------------------------------------------

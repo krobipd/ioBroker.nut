@@ -1,4 +1,11 @@
 # Older changes
+## 0.3.0 (2026-06-01)
+
+- Added optional TLS encryption via STARTTLS, so your username and password are no longer sent in clear text over the network.
+- Charging and discharging are now also detected from the battery charger status, so they work on UPS models that don't report them directly.
+- Added status flags for waiting, ECO mode, self-test and overheating, plus clearer labels for more instant commands.
+- The adapter now keeps trying to reach the NUT server when it is unavailable and comes back on its own once it returns, instead of staying idle.
+
 ## 0.2.9 (2026-05-23)
 
 - Reduced unnecessary state-change events by skipping writes when the value has not changed.

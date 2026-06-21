@@ -1,5 +1,5 @@
 import type { NutClient } from "./nut-client";
-import { coerceCommandTimeoutMs, coerceHost, coercePort, errText } from "./coerce";
+import { coerceCommandTimeoutMs, coerceHost, coercePort, errText, localAddressOf } from "./coerce";
 import type { AdapterConfig, NutClientOptions, NutLogger } from "./types";
 
 /**
@@ -77,10 +77,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
         const password = typeof config.password === "string" ? config.password : "";
 
         // Mirror the production client so the test exercises the real path (multi-homed bind, TLS).
-        const localAddress =
-          typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0
-            ? config.networkInterface.trim()
-            : undefined;
+        const localAddress = localAddressOf(config.networkInterface);
         const options: NutClientOptions = {
           localAddress,
           commandTimeout: coerceCommandTimeoutMs(config.commandTimeout),

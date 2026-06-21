@@ -1,7 +1,14 @@
 import * as utils from "@iobroker/adapter-core";
 import { I18n } from "@iobroker/adapter-core";
 import { join } from "node:path";
-import { coerceCommandTimeoutMs, coerceHost, coercePollIntervalSec, coercePort, errText } from "./lib/coerce";
+import {
+  coerceCommandTimeoutMs,
+  coerceHost,
+  coercePollIntervalSec,
+  coercePort,
+  errText,
+  localAddressOf,
+} from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
@@ -67,10 +74,7 @@ export class NutAdapter extends utils.Adapter {
       const commandTimeoutMs = coerceCommandTimeoutMs(config.commandTimeout);
       this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
 
-      const localAddress =
-        typeof config.networkInterface === "string" && config.networkInterface.trim().length > 0
-          ? config.networkInterface.trim()
-          : undefined;
+      const localAddress = localAddressOf(config.networkInterface);
 
       this.client = this.makeClient(host, port, {
         localAddress,

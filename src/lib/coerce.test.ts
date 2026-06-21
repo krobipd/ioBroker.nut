@@ -5,6 +5,7 @@ import {
   coercePort,
   computeReconnectDelay,
   errText,
+  localAddressOf,
 } from "./coerce";
 
 describe("coerce", () => {
@@ -247,6 +248,24 @@ describe("coerce", () => {
     it("treats attempts < 1 as the first attempt", () => {
       expect(computeReconnectDelay(0, 1000, 60000)).toBe(1000);
       expect(computeReconnectDelay(-5, 1000, 60000)).toBe(1000);
+    });
+  });
+
+  describe("localAddressOf", () => {
+    it("returns undefined for empty / whitespace / non-string", () => {
+      expect(localAddressOf("")).toBeUndefined();
+      expect(localAddressOf("   ")).toBeUndefined();
+      expect(localAddressOf(undefined)).toBeUndefined();
+    });
+
+    it("treats the 0.0.0.0 'all interfaces' sentinel as no bind", () => {
+      expect(localAddressOf("0.0.0.0")).toBeUndefined();
+      expect(localAddressOf(" 0.0.0.0 ")).toBeUndefined();
+    });
+
+    it("returns a concrete interface address, trimmed", () => {
+      expect(localAddressOf("10.47.88.2")).toBe("10.47.88.2");
+      expect(localAddressOf("  192.168.1.5  ")).toBe("192.168.1.5");
     });
   });
 });

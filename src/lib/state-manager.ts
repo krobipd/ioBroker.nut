@@ -153,6 +153,10 @@ export function nutVarToReadableName(nutVarName: string): string {
 export class StateManager {
   private readonly adapter: utils.AdapterInstance;
   private readonly createdIds = new Set<string>();
+  /** NUT variables already warned about as garbage in a numeric field (warn once). */
+  private readonly warnedGarbageVars = new Set<string>();
+  /** Last device name derived from mfr+model per UPS — lets a transient/wrong fallback self-correct. */
+  private readonly fallbackNames = new Map<string, string>();
 
   /**
    * @param adapter The ioBroker adapter instance
@@ -206,8 +210,9 @@ export class StateManager {
    * would never apply (js-controller 7.x `removePreservedProperties` drops the new name
    * whenever the old object has one; this silently killed the feature in v0.2.5-v0.4.1).
    * User-modified names stay safe through the guard instead: the fallback only fires
-   * while the CURRENT name is still the auto-set unusable value. Runs once per runtime
-   * per UPS (cache) — not on every poll.
+   * while the CURRENT name is still the auto-set placeholder or a value WE derived
+   * earlier — so a transient/wrong mfr+model that arrived first self-corrects, while a
+   * user-chosen name is left untouched. No broker round-trip while the derived name is stable.
    *
    * @param upsName UPS identifier
    * @param description UPS description from LIST UPS
@@ -221,30 +226,33 @@ export class StateManager {
     if (description && description !== "Description unavailable") {
       return;
     }
-    const cacheKey = `${upsName}.__deviceNameFallback`;
-    if (this.createdIds.has(cacheKey)) {
-      return;
-    }
     const mfr = variables.find(v => v.name === "device.mfr")?.value?.trim();
     const model = variables.find(v => v.name === "device.model")?.value?.trim();
     if (!mfr && !model) {
       return;
     }
-    this.createdIds.add(cacheKey);
-
-    const obj = await this.adapter.getObjectAsync(upsName);
-    const currentName = obj?.common?.name;
-    // Only replace the name WE auto-set from the unusable description; anything else
-    // is a user-chosen name and must stay (preserve line, mcm1957).
-    const isAutoSetUnusable =
-      currentName === description || currentName === "Description unavailable" || currentName === "";
-    if (!isAutoSetUnusable) {
+    const name = [mfr, model].filter(Boolean).join(" ");
+    // Already applied this exact fallback name → no broker round-trip on steady-state polls.
+    if (this.fallbackNames.get(upsName) === name) {
       return;
     }
 
-    const name = [mfr, model].filter(Boolean).join(" ");
+    const obj = await this.adapter.getObjectAsync(upsName);
+    const currentName = obj?.common?.name;
+    // Replace the auto-set placeholder OR a name WE derived earlier (self-correct a
+    // transient/wrong mfr+model that arrived first). A user-chosen name stays (preserve, mcm1957).
+    const replaceable =
+      currentName === description ||
+      currentName === "Description unavailable" ||
+      currentName === "" ||
+      currentName === this.fallbackNames.get(upsName);
+    if (!replaceable) {
+      return;
+    }
+
     this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
     await this.adapter.extendObjectAsync(upsName, { common: { name } });
+    this.fallbackNames.set(upsName, name);
   }
 
   /**
@@ -283,11 +291,28 @@ export class StateManager {
     });
 
     for (const v of sorted) {
-      const channel = v.name.split(".")[0];
-      await this.ensureChannel(upsName, channel);
+      // Dotless variables (e.g. a bare "ALARM" that some drivers expose) have no
+      // channel segment — a same-named channel would collide with the state id and
+      // leave a typeless object. Create those directly under the device instead.
+      const firstDot = v.name.indexOf(".");
+      if (firstDot >= 0) {
+        await this.ensureChannel(upsName, v.name.slice(0, firstDot));
+      }
 
       const isWritable = rwNames.has(v.name);
       const detected = detectType(v.name, v.value, isWritable);
+
+      // Garbage value in a numeric field (e.g. "Infinity", "12abc") → discard
+      // instead of storing junk, and warn once per variable (no log spam).
+      if (detected.expectedNumeric) {
+        if (!this.warnedGarbageVars.has(v.name)) {
+          this.warnedGarbageVars.add(v.name);
+          this.adapter.log.warn(
+            `Discarding non-numeric value ${JSON.stringify(v.value)} for numeric variable '${v.name}' on ${upsName}`,
+          );
+        }
+        continue;
+      }
 
       const stateId = nutVarToStateId(upsName, v.name);
       const states = detectStates(v.name);

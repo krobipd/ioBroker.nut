@@ -5,7 +5,15 @@ import { NUT_DEFAULT_COMMAND_TIMEOUT, NUT_DEFAULT_PORT } from "./types";
 // hex/exponential notation. Only `-?\d+(\.\d+)?` counts as a number.
 const DECIMAL_NUMBER_RE = /^-?\d+(\.\d+)?$/;
 
-function parseDecimal(raw: unknown): number {
+/**
+ * Strict decimal parse: returns the number only for a plain finite decimal
+ * (`-?\d+(\.\d+)?`), otherwise NaN. Rejects garbage suffixes ("12abc"),
+ * non-finite tokens ("Infinity") and hex/exponential notation. Shared by the
+ * config validators and the device-value type detector.
+ *
+ * @param raw Raw value (string from NUT/admin config, or already a number)
+ */
+export function parseDecimal(raw: unknown): number {
   if (typeof raw === "number") {
     return Number.isFinite(raw) ? raw : NaN;
   }
@@ -55,6 +63,21 @@ export function coerceHost(raw: unknown): string | null {
   }
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Resolve the outgoing source-bind address from the admin `networkInterface`.
+ * Empty or the "all interfaces" sentinel `0.0.0.0` mean "let the OS choose the
+ * source" → undefined (no explicit bind).
+ *
+ * @param raw Raw networkInterface value from admin config
+ */
+export function localAddressOf(raw: unknown): string | undefined {
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  return trimmed.length > 0 && trimmed !== "0.0.0.0" ? trimmed : undefined;
 }
 
 /**
