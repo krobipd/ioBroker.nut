@@ -50,7 +50,7 @@ const STATUS_CATALOG: StatusFlagDef[] = [
   { token: "DISCHRG", flag: "discharging", label: "Discharging", i18nKey: "flagDischarging", role: "indicator" },
   { token: "BYPASS", flag: "bypass", label: "Bypass", i18nKey: "flagBypass", role: "indicator" },
   { token: "CAL", flag: "calibrating", label: "Calibrating", i18nKey: "flagCalibrating", role: "indicator" },
-  { token: "OFF", flag: "off", label: "Offline", i18nKey: "flagOff", role: "indicator" },
+  { token: "OFF", flag: "off", label: "Off", i18nKey: "flagOff", role: "indicator" },
   { token: "OVER", flag: "overloaded", label: "Overloaded", i18nKey: "flagOverloaded", role: "indicator.alarm" },
   { token: "TRIM", flag: "trimming", label: "Trimming", i18nKey: "flagTrimming", role: "indicator" },
   { token: "BOOST", flag: "boosting", label: "Boosting", i18nKey: "flagBoosting", role: "indicator" },

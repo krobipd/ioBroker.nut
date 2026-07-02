@@ -48,7 +48,7 @@
   "flagDischarging": "Discharging",
   "flagBypass": "Bypass active",
   "flagCalibrating": "Calibrating",
-  "flagOff": "Offline",
+  "flagOff": "Off",
   "flagOverloaded": "Overloaded",
   "flagTrimming": "Trimming voltage",
   "flagBoosting": "Boosting voltage",

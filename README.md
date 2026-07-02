@@ -182,6 +182,7 @@ nut.0.
 - Device readings are now typed correctly instead of dumped as plain text: yes/no fields become booleans, status/switch/alarm/contact fields carry their value list, more numeric fields get their unit (V/s/%), and opaque identifiers stay text.
 - The overall status severity now carries readable labels (OK / Info / Warning / Critical / Emergency) instead of a bare 0–4 number.
 - Three-phase and multi-sensor readings (e.g. `input.L1.voltage`, `input.L1-L2.voltage`) now get their proper translated name instead of a raw fallback.
+- The `off` status flag now reads "Off" instead of the misleading "Offline" (English/Chinese) — it means the UPS output is off, not that the connection was lost.
 - Writing to a three-phase reading (e.g. `input.L1-L2.voltage`) now sends the correct variable name to the server instead of a mangled one.
 - The adapter no longer gets stuck connected-but-idle if writing a device object fails during startup — it keeps polling and recovers on its own.
 - While variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring any change you make.

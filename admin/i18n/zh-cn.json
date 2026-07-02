@@ -48,7 +48,7 @@
   "flagDischarging": "放电中",
   "flagBypass": "旁路激活",
   "flagCalibrating": "校准中",
-  "flagOff": "离线",
+  "flagOff": "关闭",
   "flagOverloaded": "过载",
   "flagTrimming": "削减电压",
   "flagBoosting": "升压",
