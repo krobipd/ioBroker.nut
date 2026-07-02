@@ -205,6 +205,7 @@ export class StateManager {
       read: true,
       write: false,
       name: tName("upsReachable"),
+      def: false,
     });
 
     await this.cleanupDeprecatedInfoStates(upsName);

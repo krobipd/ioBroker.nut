@@ -200,7 +200,8 @@ class StateManager {
       role: "indicator.reachable",
       read: true,
       write: false,
-      name: (0, import_i18n.tName)("upsReachable")
+      name: (0, import_i18n.tName)("upsReachable"),
+      def: false
     });
     await this.cleanupDeprecatedInfoStates(upsName);
   }
