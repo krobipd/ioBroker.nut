@@ -396,7 +396,7 @@ class NutAdapter extends utils.Adapter {
         } catch (err) {
           this.log.error(`Command failed: ${cmdName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
         }
-        await this.setStateAsync(id, { val: false, ack: true });
+        await this.setState(id, { val: false, ack: true });
         return;
       }
       if (!config.enableSetVar) {
@@ -408,7 +408,7 @@ class NutAdapter extends utils.Adapter {
       this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
       try {
         await this.client.setVar(upsName, varName, value);
-        await this.setStateAsync(id, { val: state.val, ack: true });
+        await this.setState(id, { val: state.val, ack: true });
         this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
       } catch (err) {
         this.log.error(`SET VAR failed: ${varName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);

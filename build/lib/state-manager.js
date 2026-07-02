@@ -179,7 +179,7 @@ class StateManager {
    */
   async ensureUpsDevice(upsName, description) {
     this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
-    await this.adapter.extendObjectAsync(
+    await this.adapter.extendObject(
       upsName,
       {
         type: "device",
@@ -241,7 +241,7 @@ class StateManager {
       return;
     }
     this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
-    await this.adapter.extendObjectAsync(upsName, { common: { name } });
+    await this.adapter.extendObject(upsName, { common: { name } });
     this.fallbackNames.set(upsName, name);
   }
   /**
@@ -513,7 +513,7 @@ class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.extendObjectAsync(
+    await this.adapter.extendObject(
       id,
       {
         type: "state",
@@ -526,7 +526,7 @@ class StateManager {
   }
   /**
    * Enrich an existing state with ENUM/RANGE metadata from the NUT server.
-   * Uses extendObjectAsync to deep-merge — overwrites only the provided keys.
+   * Uses extendObject to deep-merge — overwrites only the provided keys.
    *
    * @param id State object ID
    * @param patch Metadata to apply (states for ENUM, min/max for RANGE)
@@ -547,7 +547,7 @@ class StateManager {
       common.max = patch.max;
     }
     if (Object.keys(common).length > 0) {
-      await this.adapter.extendObjectAsync(id, { common }, { preserve: { common: ["name"] } });
+      await this.adapter.extendObject(id, { common }, { preserve: { common: ["name"] } });
     }
   }
 }

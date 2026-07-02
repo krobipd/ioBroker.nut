@@ -46,10 +46,6 @@ vi.mock("@iobroker/adapter-core", () => {
       this.states.set(this.fullId(id), { val: state.val, ack: state.ack ?? false });
     }
 
-    async setStateAsync(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
-      this.states.set(this.fullId(id), { val: state.val, ack: state.ack ?? false });
-    }
-
     async setStateChangedAsync(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
       this.states.set(this.fullId(id), { val: state.val, ack: state.ack ?? false });
     }

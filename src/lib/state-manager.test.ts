@@ -54,7 +54,7 @@ function createMockAdapter(): {
     // object wins — the new value is dropped. The earlier mock merged
     // unconditionally and thereby hid that the mfr+model name fallback never
     // applied in production (v0.2.5-v0.4.1).
-    extendObjectAsync: async (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
+    extendObject: async (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
       const existing = objects.get(id);
       if (!existing) {
         objects.set(id, obj);
@@ -262,8 +262,8 @@ describe("StateManager", () => {
         return origGet(...args);
       };
       let extendCalls = 0;
-      const origExtend = adapter.extendObjectAsync;
-      adapter.extendObjectAsync = async (...args: any[]) => {
+      const origExtend = adapter.extendObject;
+      adapter.extendObject = async (...args: any[]) => {
         extendCalls++;
         return origExtend(...args);
       };
@@ -1006,7 +1006,7 @@ describe("StateManager", () => {
   // enrichStateMetadata
   // -----------------------------------------------------------------------
   describe("enrichStateMetadata", () => {
-    it("should set common.states via extendObjectAsync", async () => {
+    it("should set common.states via extendObject", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -1024,7 +1024,7 @@ describe("StateManager", () => {
       expect(common.states).toEqual({ "200": "200", "208": "208", "220": "220", "230": "230", "240": "240" });
     });
 
-    it("should set common.min and common.max via extendObjectAsync", async () => {
+    it("should set common.min and common.max via extendObject", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
@@ -1041,11 +1041,11 @@ describe("StateManager", () => {
       expect(common.max).toBe(300);
     });
 
-    it("should not call extendObjectAsync when patch is empty", async () => {
+    it("should not call extendObject when patch is empty", async () => {
       let extendCalled = false;
       const { adapter } = createMockAdapter();
-      const origExtend = adapter.extendObjectAsync;
-      adapter.extendObjectAsync = async (...args: any[]) => {
+      const origExtend = adapter.extendObject;
+      adapter.extendObject = async (...args: any[]) => {
         extendCalled = true;
         return origExtend(...args);
       };
@@ -1061,8 +1061,8 @@ describe("StateManager", () => {
     it("ensureUpsDevice passes preserve for common.name", async () => {
       const { adapter } = createMockAdapter();
       const calls: any[][] = [];
-      const origExtend = adapter.extendObjectAsync;
-      adapter.extendObjectAsync = async (...args: any[]) => {
+      const origExtend = adapter.extendObject;
+      adapter.extendObject = async (...args: any[]) => {
         calls.push(args);
         return origExtend(...args);
       };
@@ -1078,8 +1078,8 @@ describe("StateManager", () => {
     it("ensureState passes preserve for common.name", async () => {
       const { adapter } = createMockAdapter();
       const calls: any[][] = [];
-      const origExtend = adapter.extendObjectAsync;
-      adapter.extendObjectAsync = async (...args: any[]) => {
+      const origExtend = adapter.extendObject;
+      adapter.extendObject = async (...args: any[]) => {
         calls.push(args);
         return origExtend(...args);
       };
