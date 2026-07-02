@@ -17,6 +17,11 @@ const KNOWN_STRING_SUFFIXES = new Set([
   "contact",
   "vendorid",
   "productid",
+  // Opaque despite carrying a numeric-unit substring in the name: battery.charge.approx may be
+  // "<85"; input.voltage.extended / input.frequency.extended are yes/no. Without this the "charge"
+  // / "frequency" substring makes detectUnit see a numeric field and the value gets discarded.
+  "approx",
+  "extended",
 ]);
 
 /** Known-string exact prefixes — always string. */
@@ -25,7 +30,6 @@ const KNOWN_STRING_PREFIXES = [
   "driver.parameter.port",
   "driver.parameter.synchronous",
   "driver.version.",
-  "input.voltage.extended",
 ];
 
 /** Result of type detection for a NUT variable. */

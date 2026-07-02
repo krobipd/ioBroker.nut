@@ -38,14 +38,18 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "location",
   "contact",
   "vendorid",
-  "productid"
+  "productid",
+  // Opaque despite carrying a numeric-unit substring in the name: battery.charge.approx may be
+  // "<85"; input.voltage.extended / input.frequency.extended are yes/no. Without this the "charge"
+  // / "frequency" substring makes detectUnit see a numeric field and the value gets discarded.
+  "approx",
+  "extended"
 ]);
 const KNOWN_STRING_PREFIXES = [
   "driver.flag.",
   "driver.parameter.port",
   "driver.parameter.synchronous",
-  "driver.version.",
-  "input.voltage.extended"
+  "driver.version."
 ];
 function detectType(varName, rawValue, isWritable) {
   if (isKnownString(varName)) {

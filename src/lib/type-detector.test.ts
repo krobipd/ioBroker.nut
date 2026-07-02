@@ -175,6 +175,21 @@ describe("type-detector", () => {
       expect(detectType("some.unknown.var", "enabled", false).expectedNumeric).toBe(false);
     });
 
+    it("keeps documented opaque vars (.approx / .extended) as strings, not discarded garbage", () => {
+      // battery.charge.approx is opaque (may be "<85") — the "charge" substring must not force a
+      // numeric field that then discards the value.
+      const approx = detectType("battery.charge.approx", "<85", false);
+      expect(approx.type).toBe("string");
+      expect(approx.parsedValue).toBe("<85");
+      expect(approx.expectedNumeric).toBeFalsy();
+
+      // input.frequency.extended is opaque yes/no — the missed twin of input.voltage.extended.
+      const ext = detectType("input.frequency.extended", "no", false);
+      expect(ext.type).toBe("string");
+      expect(ext.parsedValue).toBe("no");
+      expect(ext.expectedNumeric).toBeFalsy();
+    });
+
     it("should NOT parse -Infinity as number", () => {
       const r = detectType("output.voltage", "-Infinity", false);
       expect(r.type).toBe("string");
