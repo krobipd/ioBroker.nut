@@ -138,33 +138,10 @@ class NutAdapter extends utils.Adapter {
     try {
       this.enrichedUps.clear();
       await this.discover();
-      this.authenticated = false;
-      if (config.username && config.password) {
-        try {
-          await this.client.authenticate(config.username, config.password);
-          this.authenticated = true;
-          this.log.debug(`Authenticated to NUT server ${host}:${port}`);
-        } catch (err) {
-          this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
-          this.log.info(
-            `Authentication required \u2014 adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`
-          );
-          this.client.destroy();
-          await this.setStateChangedAsync("info.connection", { val: false, ack: true });
-          return;
-        }
+      if (!await this.authenticateIfConfigured(host, port)) {
+        return;
       }
-      if (this.authenticated && config.enableCommands) {
-        for (const ups of this.discoveredUps.keys()) {
-          try {
-            const commands = await this.client.listCmd(ups);
-            await this.stateManager.createCommandButtons(ups, commands);
-            this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
-          } catch (err) {
-            this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
-          }
-        }
-      }
+      await this.setupCommandButtons();
       await this.poll();
       this.armPollTimer(config.pollInterval, pollSec);
       if (!this.subscribed && (config.enableCommands || config.enableSetVar)) {
@@ -183,6 +160,55 @@ class NutAdapter extends utils.Adapter {
     } catch (err) {
       this.log.error(`Post-connect setup failed: ${(0, import_coerce.errText)(err)}`);
       this.armPollTimer(config.pollInterval, pollSec);
+    }
+  }
+  /**
+   * Authenticate when credentials are configured. USERNAME/PASSWORD is all that GET/LIST + SET VAR
+   * + INSTCMD need; we deliberately do NOT send LOGIN per UPS (NUT permits only one LOGIN per
+   * connection, so a multi-UPS server fails the second with ALREADY-LOGGED-IN, and LOGIN only
+   * matters for upsmon shutdown coordination, which this adapter does not do).
+   *
+   * @param host NUT server host (for logging)
+   * @param port NUT server port (for logging)
+   * @returns true to continue setup; false when authentication failed and the client was destroyed
+   */
+  async authenticateIfConfigured(host, port) {
+    this.authenticated = false;
+    const config = this.nutConfig();
+    if (!config.username || !config.password || !this.client) {
+      return true;
+    }
+    try {
+      await this.client.authenticate(config.username, config.password);
+      this.authenticated = true;
+      this.log.debug(`Authenticated to NUT server ${host}:${port}`);
+      return true;
+    } catch (err) {
+      this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
+      this.log.info(
+        `Authentication required \u2014 adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`
+      );
+      this.client.destroy();
+      await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      return false;
+    }
+  }
+  /**
+   * Create instant-command button states for every discovered UPS. Only runs when we authenticated
+   * and commands are enabled; each UPS is best-effort.
+   */
+  async setupCommandButtons() {
+    if (!this.authenticated || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+      return;
+    }
+    for (const ups of this.discoveredUps.keys()) {
+      try {
+        const commands = await this.client.listCmd(ups);
+        await this.stateManager.createCommandButtons(ups, commands);
+        this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+      } catch (err) {
+        this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
+      }
     }
   }
   /**
@@ -287,41 +313,7 @@ class NutAdapter extends utils.Adapter {
             const chargerStatus = (_b = variables.find((v) => v.name === "battery.charger.status")) == null ? void 0 : _b.value;
             await this.stateManager.updateStatusFlags(upsName, statusVar.value, chargerStatus);
           }
-          if (!this.enrichedUps.has(upsName) && rwVars.length > 0) {
-            for (const rw of rwVars) {
-              const stateId = (0, import_state_manager.nutVarToStateId)(upsName, rw.name);
-              try {
-                const enumVals = await this.client.listEnum(upsName, rw.name);
-                if (enumVals.length > 0) {
-                  const states = {};
-                  for (const v of enumVals) {
-                    states[v] = v;
-                  }
-                  await this.stateManager.enrichStateMetadata(stateId, { states });
-                }
-              } catch (err) {
-                this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
-              }
-              try {
-                const ranges = await this.client.listRange(upsName, rw.name);
-                if (ranges.length > 0) {
-                  const min = (0, import_coerce.parseDecimal)(ranges[0].min);
-                  const max = (0, import_coerce.parseDecimal)(ranges[0].max);
-                  const patch = {};
-                  if (!Number.isNaN(min)) {
-                    patch.min = min;
-                  }
-                  if (!Number.isNaN(max)) {
-                    patch.max = max;
-                  }
-                  await this.stateManager.enrichStateMetadata(stateId, patch);
-                }
-              } catch (err) {
-                this.log.debug(`LIST RANGE ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
-              }
-            }
-            this.enrichedUps.add(upsName);
-          }
+          await this.enrichWritableVars(upsName, rwVars);
           await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: true, ack: true });
           if (this.failedUps.has(upsName)) {
             this.log.info(`UPS '${upsName}' recovered`);
@@ -364,6 +356,52 @@ class NutAdapter extends utils.Adapter {
     } finally {
       this.isPolling = false;
     }
+  }
+  /**
+   * Enrich writable variables with ENUM (common.states) and RANGE (min/max) metadata, once per UPS
+   * per connection (guarded by enrichedUps). Each query is best-effort — a driver that does not
+   * support LIST ENUM/RANGE just logs at debug.
+   *
+   * @param upsName UPS identifier
+   * @param rwVars Writable variables from LIST RW
+   */
+  async enrichWritableVars(upsName, rwVars) {
+    if (!this.client || !this.stateManager || this.enrichedUps.has(upsName) || rwVars.length === 0) {
+      return;
+    }
+    for (const rw of rwVars) {
+      const stateId = (0, import_state_manager.nutVarToStateId)(upsName, rw.name);
+      try {
+        const enumVals = await this.client.listEnum(upsName, rw.name);
+        if (enumVals.length > 0) {
+          const states = {};
+          for (const v of enumVals) {
+            states[v] = v;
+          }
+          await this.stateManager.enrichStateMetadata(stateId, { states });
+        }
+      } catch (err) {
+        this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
+      }
+      try {
+        const ranges = await this.client.listRange(upsName, rw.name);
+        if (ranges.length > 0) {
+          const min = (0, import_coerce.parseDecimal)(ranges[0].min);
+          const max = (0, import_coerce.parseDecimal)(ranges[0].max);
+          const patch = {};
+          if (!Number.isNaN(min)) {
+            patch.min = min;
+          }
+          if (!Number.isNaN(max)) {
+            patch.max = max;
+          }
+          await this.stateManager.enrichStateMetadata(stateId, patch);
+        }
+      } catch (err) {
+        this.log.debug(`LIST RANGE ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
+      }
+    }
+    this.enrichedUps.add(upsName);
   }
   async onStateChange(id, state) {
     var _a, _b, _c, _d;
