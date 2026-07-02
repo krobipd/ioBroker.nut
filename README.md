@@ -14,7 +14,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 
 - Automatic discovery of all UPS devices on a NUT server via `LIST UPS`
 - Dynamic state creation from `LIST VAR` — whatever your UPS reports appears as ioBroker states
-- Proper data types: numeric values as numbers (not strings), with units (V, Hz, A, %, W, VA, s, °C)
+- Proper data types: numeric values as numbers (not strings), with units (V, Hz, A, Ah, %, W, VA, s, °C)
 - Parsed `ups.status` flags as individual booleans (online, onBattery, lowBattery, charging, ...) plus computed severity (0–4)
 - Instant commands (INSTCMD) via button states — beeper control, load management, self-test
 - Writable variables (SET VAR) — change UPS settings directly from ioBroker
@@ -76,7 +76,7 @@ nut.0.
     │   └── reachable                  — UPS responds / data is fresh (bool)
     ├── battery/
     │   ├── battery.charge             — Battery level (%, number)
-    │   ├── battery.charge.low         — Low battery threshold (%)
+    │   ├── battery.charge-low         — Low battery threshold (%)
     │   ├── battery.runtime            — Remaining runtime (s)
     │   ├── battery.type               — Battery chemistry (string)
     │   └── ...
@@ -121,11 +121,13 @@ nut.0.
     │   ├── overheat                   — UPS overheated (bool)
     │   └── ...                        — (19 flags total)
     └── commands/                      — Instant commands (if enabled)
-        ├── beeper.enable              — Button: enable beeper
-        ├── beeper.disable             — Button: disable beeper
-        ├── test.battery.start         — Button: start battery test
+        ├── beeper-enable              — Button: enable beeper
+        ├── beeper-disable             — Button: disable beeper
+        ├── test-battery-start         — Button: start battery test
         └── ...                        — (from LIST CMD)
 ```
+
+> **State IDs:** the first dot in a NUT variable name is the channel separator; any further dots become dashes. So `battery.charge.low` is stored as `battery.charge-low`, and the instant command `test.battery.start` becomes `commands.test-battery-start`.
 
 ### Status Severity Levels
 
