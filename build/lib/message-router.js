@@ -40,7 +40,7 @@ async function dispatchMessage(obj, deps) {
         const host = (0, import_coerce.coerceHost)(config.host);
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
-          deps.sendTo(obj.from, obj.command, { success: false, message: "Host is required" }, obj.callback);
+          deps.sendTo(obj.from, obj.command, { error: "Host is required" }, obj.callback);
           return;
         }
         const port = (0, import_coerce.coercePort)(config.port);
@@ -65,14 +65,14 @@ async function dispatchMessage(obj, deps) {
             deps.sendTo(
               obj.from,
               obj.command,
-              { success: true, message: `Connected and authenticated \u2014 ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected and authenticated \u2014 ${upsList.length} UPS(es): ${names}` },
               obj.callback
             );
           } else {
             deps.sendTo(
               obj.from,
               obj.command,
-              { success: true, message: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
               obj.callback
             );
           }
@@ -88,7 +88,7 @@ async function dispatchMessage(obj, deps) {
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${(0, import_coerce.errText)(err)}`);
-    deps.sendTo(obj.from, obj.command, { success: false, message: (0, import_coerce.errText)(err) }, obj.callback);
+    deps.sendTo(obj.from, obj.command, { error: (0, import_coerce.errText)(err) }, obj.callback);
   }
 }
 // Annotate the CommonJS export names for ESM import in node:

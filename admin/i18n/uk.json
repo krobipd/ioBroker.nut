@@ -12,8 +12,6 @@
   "help_username": "Ім'я користувача NUT (необов'язково — потрібно для команд і записуваних змінних)",
   "label_password": "Пароль",
   "btn_checkConnection": "Тестувати з'єднання",
-  "msg_connectionOk": "З'єднання успішне",
-  "msg_connectionFailed": "Помилка з'єднання",
   "label_commandTimeout": "Час очікування команд (с)",
   "help_commandTimeout": "Час очікування для окремих команд NUT (1–30 секунд)",
   "label_enableCommands": "Увімкнути миттєві команди",

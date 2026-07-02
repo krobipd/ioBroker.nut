@@ -68,7 +68,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
 
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
-          deps.sendTo(obj.from, obj.command, { success: false, message: "Host is required" }, obj.callback);
+          deps.sendTo(obj.from, obj.command, { error: "Host is required" }, obj.callback);
           return;
         }
 
@@ -100,14 +100,14 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
             deps.sendTo(
               obj.from,
               obj.command,
-              { success: true, message: `Connected and authenticated — ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected and authenticated — ${upsList.length} UPS(es): ${names}` },
               obj.callback,
             );
           } else {
             deps.sendTo(
               obj.from,
               obj.command,
-              { success: true, message: `Connected — ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected — ${upsList.length} UPS(es): ${names}` },
               obj.callback,
             );
           }
@@ -123,6 +123,6 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${errText(err)}`);
-    deps.sendTo(obj.from, obj.command, { success: false, message: errText(err) }, obj.callback);
+    deps.sendTo(obj.from, obj.command, { error: errText(err) }, obj.callback);
   }
 }

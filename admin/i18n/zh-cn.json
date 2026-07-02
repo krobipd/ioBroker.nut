@@ -12,8 +12,6 @@
   "help_username": "NUT 用户名（可选——发送命令和修改可写变量时需要）",
   "label_password": "密码",
   "btn_checkConnection": "测试连接",
-  "msg_connectionOk": "连接成功",
-  "msg_connectionFailed": "连接失败",
   "label_commandTimeout": "命令超时（秒）",
   "help_commandTimeout": "单个 NUT 命令的超时时间（1–30 秒）",
   "label_enableCommands": "启用即时命令",

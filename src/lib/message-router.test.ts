@@ -135,7 +135,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "", port: 3493 } }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect(h.sends[0].response).toEqual({ success: false, message: "Host is required" });
+      expect(h.sends[0].response).toEqual({ error: "Host is required" });
       expect(h.createdClients).toHaveLength(0);
     });
 
@@ -151,11 +151,10 @@ describe("dispatchMessage", () => {
 
       expect(h.createdClients).toEqual([{ host: "192.168.1.100", port: 3493 }]);
       expect(h.sends).toHaveLength(1);
-      const resp = h.sends[0].response as { success: boolean; message: string };
-      expect(resp.success).toBe(true);
-      expect(resp.message).toContain("2 UPS(es)");
-      expect(resp.message).toContain("ups0");
-      expect(resp.message).toContain("ups1");
+      const resp = h.sends[0].response as { result: string };
+      expect(resp.result).toContain("2 UPS(es)");
+      expect(resp.result).toContain("ups0");
+      expect(resp.result).toContain("ups1");
     });
 
     it("should use default port 3493 when port is not a number", async () => {
@@ -210,9 +209,8 @@ describe("dispatchMessage", () => {
       );
 
       expect(h.sends).toHaveLength(1);
-      const resp = h.sends[0].response as { success: boolean; message: string };
-      expect(resp.success).toBe(false);
-      expect(resp.message).toBe("ECONNREFUSED");
+      const resp = h.sends[0].response as { error: string };
+      expect(resp.error).toBe("ECONNREFUSED");
     });
   });
 
@@ -231,9 +229,8 @@ describe("dispatchMessage", () => {
       );
 
       expect(h.sends).toHaveLength(1);
-      const resp = h.sends[0].response as { success: boolean; message: string };
-      expect(resp.success).toBe(true);
-      expect(resp.message).toContain("authenticated");
+      const resp = h.sends[0].response as { result: string };
+      expect(resp.result).toContain("authenticated");
     });
 
     it("should not authenticate when no credentials provided", async () => {
@@ -247,9 +244,8 @@ describe("dispatchMessage", () => {
       );
 
       expect(h.sends).toHaveLength(1);
-      const resp = h.sends[0].response as { success: boolean; message: string };
-      expect(resp.success).toBe(true);
-      expect(resp.message).not.toContain("authenticated");
+      const resp = h.sends[0].response as { result: string };
+      expect(resp.result).not.toContain("authenticated");
     });
 
     it("should return failure when auth fails", async () => {
@@ -263,9 +259,8 @@ describe("dispatchMessage", () => {
       );
 
       expect(h.sends).toHaveLength(1);
-      const resp = h.sends[0].response as { success: boolean; message: string };
-      expect(resp.success).toBe(false);
-      expect(resp.message).toContain("ACCESS-DENIED");
+      const resp = h.sends[0].response as { error: string };
+      expect(resp.error).toContain("ACCESS-DENIED");
     });
 
     it("should still call onTestClientDone when auth fails", async () => {
@@ -293,7 +288,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: null as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect(h.sends[0].response).toEqual({ success: false, message: "Host is required" });
+      expect(h.sends[0].response).toEqual({ error: "Host is required" });
     });
 
     it("should treat string obj.message as missing host", async () => {
@@ -301,7 +296,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: "junk" as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect((h.sends[0].response as { success: boolean }).success).toBe(false);
+      expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
     });
 
     it("should treat array obj.message as missing host", async () => {
@@ -309,7 +304,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: [] as unknown as ioBroker.Message["message"] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect((h.sends[0].response as { success: boolean }).success).toBe(false);
+      expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
     });
   });
 
@@ -351,7 +346,7 @@ describe("dispatchMessage", () => {
       expect(completed).toHaveLength(1);
       expect(registered[0]).toBe(completed[0]);
       expect(sends).toHaveLength(1);
-      expect((sends[0].response as { success: boolean }).success).toBe(false);
+      expect((sends[0].response as { error?: string }).error).toBe("boom");
     });
 
     it("should not register a test-client when host is missing", async () => {

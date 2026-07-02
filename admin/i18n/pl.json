@@ -12,8 +12,6 @@
   "help_username": "Nazwa użytkownika NUT (opcjonalnie — wymagana do poleceń i zmiennych zapisywalnych)",
   "label_password": "Hasło",
   "btn_checkConnection": "Testuj połączenie",
-  "msg_connectionOk": "Połączenie udane",
-  "msg_connectionFailed": "Połączenie nieudane",
   "label_commandTimeout": "Limit czasu poleceń (s)",
   "help_commandTimeout": "Limit czasu dla poszczególnych poleceń NUT (1–30 sekund)",
   "label_enableCommands": "Włącz polecenia natychmiastowe",

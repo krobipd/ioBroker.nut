@@ -12,8 +12,6 @@
   "help_username": "Nome utente NUT (opzionale — richiesto per comandi e variabili scrivibili)",
   "label_password": "Password",
   "btn_checkConnection": "Testa connessione",
-  "msg_connectionOk": "Connessione riuscita",
-  "msg_connectionFailed": "Connessione fallita",
   "label_commandTimeout": "Timeout comandi (s)",
   "help_commandTimeout": "Timeout per i singoli comandi NUT (1–30 secondi)",
   "label_enableCommands": "Abilita comandi istantanei",

@@ -12,8 +12,6 @@
   "help_username": "Nombre de usuario NUT (opcional — necesario para comandos y variables editables)",
   "label_password": "Contraseña",
   "btn_checkConnection": "Probar conexión",
-  "msg_connectionOk": "Conexión exitosa",
-  "msg_connectionFailed": "Error de conexión",
   "label_commandTimeout": "Tiempo de espera de comandos (s)",
   "help_commandTimeout": "Tiempo de espera para comandos NUT individuales (1–30 segundos)",
   "label_enableCommands": "Activar comandos instantáneos",

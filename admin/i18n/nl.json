@@ -12,8 +12,6 @@
   "help_username": "NUT-gebruikersnaam (optioneel — vereist voor commando's en schrijfbare variabelen)",
   "label_password": "Wachtwoord",
   "btn_checkConnection": "Verbinding testen",
-  "msg_connectionOk": "Verbinding geslaagd",
-  "msg_connectionFailed": "Verbinding mislukt",
   "label_commandTimeout": "Commandotimeout (s)",
   "help_commandTimeout": "Timeout voor individuele NUT-commando's (1–30 seconden)",
   "label_enableCommands": "Directe commando's inschakelen",

@@ -12,8 +12,6 @@
   "help_username": "NUT-Benutzername (optional — erforderlich für Befehle und beschreibbare Variablen)",
   "label_password": "Passwort",
   "btn_checkConnection": "Verbindung testen",
-  "msg_connectionOk": "Verbindung erfolgreich",
-  "msg_connectionFailed": "Verbindung fehlgeschlagen",
   "label_commandTimeout": "Befehlstimeout (s)",
   "help_commandTimeout": "Timeout für einzelne NUT-Befehle (1–30 Sekunden)",
   "label_enableCommands": "Sofortbefehle aktivieren",
