@@ -175,19 +175,29 @@ describe("type-detector", () => {
       expect(detectType("some.unknown.var", "enabled", false).expectedNumeric).toBe(false);
     });
 
-    it("keeps documented opaque vars (.approx / .extended) as strings, not discarded garbage", () => {
-      // battery.charge.approx is opaque (may be "<85") — the "charge" substring must not force a
-      // numeric field that then discards the value.
-      const approx = detectType("battery.charge.approx", "<85", false);
-      expect(approx.type).toBe("string");
-      expect(approx.parsedValue).toBe("<85");
-      expect(approx.expectedNumeric).toBeFalsy();
-
-      // input.frequency.extended is opaque yes/no — the missed twin of input.voltage.extended.
+    it("types yes/no readings as real booleans, even with a unit substring in the name", () => {
+      // input.frequency.extended = "no": the "frequency" substring must NOT make it a numeric
+      // field — it is a yes/no flag, so it becomes a real boolean state (not text, not discarded).
       const ext = detectType("input.frequency.extended", "no", false);
-      expect(ext.type).toBe("string");
-      expect(ext.parsedValue).toBe("no");
+      expect(ext.type).toBe("boolean");
+      expect(ext.parsedValue).toBe(false);
+      expect(ext.role).toBe("indicator");
       expect(ext.expectedNumeric).toBeFalsy();
+
+      // input.voltage.extended = "yes" (the twin) and ambient.n.present = "yes" → boolean true.
+      expect(detectType("input.voltage.extended", "yes", false).type).toBe("boolean");
+      expect(detectType("input.voltage.extended", "yes", false).parsedValue).toBe(true);
+      expect(detectType("ambient.1.present", "yes", false).parsedValue).toBe(true);
+    });
+
+    it("treats battery.charge.approx as a numeric percent — a bound like <85 is not stored", () => {
+      // A rough approximation is a percent: a clean number is stored as a number…
+      const num = detectType("battery.charge.approx", "85", false);
+      expect(num.type).toBe("number");
+      expect(num.parsedValue).toBe(85);
+      expect(num.unit).toBe("%");
+      // …but a non-numeric bound ("<85") does not belong in a number field → flagged for discard.
+      expect(detectType("battery.charge.approx", "<85", false).expectedNumeric).toBe(true);
     });
 
     it("should NOT parse -Infinity as number", () => {
@@ -219,10 +229,10 @@ describe("type-detector", () => {
       expect(detectType("input.voltage.extended", "no", false).unit).toBeUndefined();
     });
 
-    it("should not assign V for input.voltage.extended=yes", () => {
+    it("should not assign V for input.voltage.extended=yes (it is a boolean)", () => {
       const r = detectType("input.voltage.extended", "yes", false);
       expect(r.unit).toBeUndefined();
-      expect(r.type).toBe("string");
+      expect(r.type).toBe("boolean");
     });
 
     it("should assign Hz for frequency", () => {
@@ -431,14 +441,14 @@ describe("type-detector", () => {
       expect(r.parsedValue).toBe(2);
     });
 
-    it("should handle input.voltage.extended as string", () => {
+    it("should handle input.voltage.extended as a boolean (yes/no)", () => {
       const r = detectType("input.voltage.extended", "no", false);
-      expect(r.type).toBe("string");
+      expect(r.type).toBe("boolean");
     });
 
-    it("should handle outlet.1.switchable as string", () => {
+    it("should handle outlet.1.switchable as a boolean (yes/no)", () => {
       const r = detectType("outlet.1.switchable", "no", false);
-      expect(r.type).toBe("string");
+      expect(r.type).toBe("boolean");
     });
 
     it("should handle outlet.1.status as string", () => {

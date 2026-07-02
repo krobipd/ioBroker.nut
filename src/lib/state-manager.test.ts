@@ -762,8 +762,10 @@ describe("StateManager", () => {
       expect(states.get("ups0.ups.status")?.val).toBe("OL");
       expect(states.get("ups0.ups.vendorid")?.val).toBe("0463");
       expect(states.get("ups0.ups.productid")?.val).toBe("ffff");
-      expect(states.get("ups0.input.voltage-extended")?.val).toBe("no");
       expect(states.get("ups0.outlet.1-status")?.val).toBe("on");
+
+      // Booleans — yes/no fields become real boolean states, not text.
+      expect(states.get("ups0.input.voltage-extended")?.val).toBe(false);
 
       // Writable variable carries write:true
       expect(objects.get("ups0.ups.delay-shutdown")?.common.write).toBe(true);

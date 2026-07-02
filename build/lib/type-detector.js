@@ -38,12 +38,7 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "location",
   "contact",
   "vendorid",
-  "productid",
-  // Opaque despite carrying a numeric-unit substring in the name: battery.charge.approx may be
-  // "<85"; input.voltage.extended / input.frequency.extended are yes/no. Without this the "charge"
-  // / "frequency" substring makes detectUnit see a numeric field and the value gets discarded.
-  "approx",
-  "extended"
+  "productid"
 ]);
 const KNOWN_STRING_PREFIXES = [
   "driver.flag.",
@@ -60,6 +55,17 @@ function detectType(varName, rawValue, isWritable) {
       read: true,
       write: isWritable,
       parsedValue: rawValue
+    };
+  }
+  const bool = parseYesNo(rawValue);
+  if (bool !== void 0) {
+    return {
+      type: "boolean",
+      role: isWritable ? "switch" : "indicator",
+      unit: void 0,
+      read: true,
+      write: isWritable,
+      parsedValue: bool
     };
   }
   const num = (0, import_coerce.parseDecimal)(rawValue);
@@ -82,6 +88,16 @@ function detectType(varName, rawValue, isWritable) {
     parsedValue: rawValue,
     expectedNumeric: detectUnit(varName) !== void 0
   };
+}
+function parseYesNo(rawValue) {
+  const v = rawValue.trim().toLowerCase();
+  if (v === "yes") {
+    return true;
+  }
+  if (v === "no") {
+    return false;
+  }
+  return void 0;
 }
 function isKnownString(varName) {
   const lastDot = varName.lastIndexOf(".");

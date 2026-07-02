@@ -17,11 +17,6 @@ const KNOWN_STRING_SUFFIXES = new Set([
   "contact",
   "vendorid",
   "productid",
-  // Opaque despite carrying a numeric-unit substring in the name: battery.charge.approx may be
-  // "<85"; input.voltage.extended / input.frequency.extended are yes/no. Without this the "charge"
-  // / "frequency" substring makes detectUnit see a numeric field and the value gets discarded.
-  "approx",
-  "extended",
 ]);
 
 /** Known-string exact prefixes — always string. */
@@ -35,7 +30,7 @@ const KNOWN_STRING_PREFIXES = [
 /** Result of type detection for a NUT variable. */
 export interface TypeDetectResult {
   /** ioBroker state type */
-  type: "number" | "string";
+  type: "number" | "string" | "boolean";
   /** ioBroker state role */
   role: string;
   /** Unit string if applicable */
@@ -44,8 +39,8 @@ export interface TypeDetectResult {
   read: true;
   /** Whether the variable is writable via SET VAR */
   write: boolean;
-  /** Parsed value (number or string) */
-  parsedValue: number | string;
+  /** Parsed value (number, string or boolean) */
+  parsedValue: number | string | boolean;
   /**
    * True when the variable name denotes a numeric quantity (carries a unit) but
    * the raw value is not a strict number (garbage / non-finite). The caller
@@ -70,6 +65,22 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
       read: true,
       write: isWritable,
       parsedValue: rawValue,
+    };
+  }
+
+  // A yes/no reading is a real boolean state, not a text dump — even when the variable name
+  // carries a numeric-unit substring (e.g. input.frequency.extended = "no", ambient.n.present =
+  // "yes"). Value-driven so it covers every driver's yes/no variables, not a hand-kept list.
+  // After the known-string check so an opaque text field that happens to read "no" stays a string.
+  const bool = parseYesNo(rawValue);
+  if (bool !== undefined) {
+    return {
+      type: "boolean",
+      role: isWritable ? "switch" : "indicator",
+      unit: undefined,
+      read: true,
+      write: isWritable,
+      parsedValue: bool,
     };
   }
 
@@ -100,6 +111,22 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
     parsedValue: rawValue,
     expectedNumeric: detectUnit(varName) !== undefined,
   };
+}
+
+/**
+ * NUT yes/no fields become real boolean states (the point of the typed rewrite), not text.
+ *
+ * @param rawValue Raw string value from LIST VAR
+ */
+function parseYesNo(rawValue: string): boolean | undefined {
+  const v = rawValue.trim().toLowerCase();
+  if (v === "yes") {
+    return true;
+  }
+  if (v === "no") {
+    return false;
+  }
+  return undefined;
 }
 
 function isKnownString(varName: string): boolean {
