@@ -26,7 +26,7 @@ __export(status_parser_exports, {
 });
 module.exports = __toCommonJS(status_parser_exports);
 const STATUS_CATALOG = [
-  { token: "OL", flag: "online", label: "Online", i18nKey: "flagOnline", role: "indicator" },
+  { token: "OL", flag: "online", label: "On line power", i18nKey: "flagOnline", role: "indicator" },
   { token: "OB", flag: "onBattery", label: "On Battery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
   { token: "LB", flag: "lowBattery", label: "Low Battery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
   { token: "HB", flag: "highBattery", label: "High Battery", i18nKey: "flagHighBattery", role: "indicator" },

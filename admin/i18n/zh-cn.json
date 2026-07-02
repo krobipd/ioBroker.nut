@@ -39,7 +39,7 @@
   "statusDisplay": "状态显示",
   "upsReachable": "可访问",
   "channelUpsInfo": "信息",
-  "flagOnline": "在线",
+  "flagOnline": "市电供电",
   "flagOnBattery": "使用电池",
   "flagLowBattery": "电量低",
   "flagHighBattery": "电量满",

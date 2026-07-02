@@ -291,12 +291,12 @@ describe("status-parser", () => {
   // Display string
   // -----------------------------------------------------------------------
   describe("getDisplayString", () => {
-    it("should convert OL to Online", () => {
-      expect(getDisplayString("OL")).toBe("Online");
+    it("should convert OL to On line power", () => {
+      expect(getDisplayString("OL")).toBe("On line power");
     });
 
-    it("should convert OL CHRG to Online, Charging", () => {
-      expect(getDisplayString("OL CHRG")).toBe("Online, Charging");
+    it("should convert OL CHRG to On line power, Charging", () => {
+      expect(getDisplayString("OL CHRG")).toBe("On line power, Charging");
     });
 
     it("should convert OB LB to On Battery, Low Battery", () => {
@@ -304,7 +304,7 @@ describe("status-parser", () => {
     });
 
     it("should pass through unknown tokens", () => {
-      expect(getDisplayString("OL UNKNOWN")).toBe("Online, UNKNOWN");
+      expect(getDisplayString("OL UNKNOWN")).toBe("On line power, UNKNOWN");
     });
 
     it("should handle empty string", () => {
@@ -312,7 +312,7 @@ describe("status-parser", () => {
     });
 
     it("should handle OL ECO", () => {
-      expect(getDisplayString("OL ECO")).toBe("Online, ECO Mode");
+      expect(getDisplayString("OL ECO")).toBe("On line power, ECO Mode");
     });
 
     it("should display legacy HE as ECO Mode", () => {

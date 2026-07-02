@@ -35,7 +35,7 @@ interface StatusFlagDef {
 // intentionally NOT mapped: per new-drivers.txt clients MAY ignore unidentified tokens, and
 // any such token still appears verbatim in status.raw / status.display.
 const STATUS_CATALOG: StatusFlagDef[] = [
-  { token: "OL", flag: "online", label: "Online", i18nKey: "flagOnline", role: "indicator" },
+  { token: "OL", flag: "online", label: "On line power", i18nKey: "flagOnline", role: "indicator" },
   { token: "OB", flag: "onBattery", label: "On Battery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
   { token: "LB", flag: "lowBattery", label: "Low Battery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
   { token: "HB", flag: "highBattery", label: "High Battery", i18nKey: "flagHighBattery", role: "indicator" },

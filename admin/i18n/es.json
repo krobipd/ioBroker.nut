@@ -39,7 +39,7 @@
   "statusDisplay": "Visualización del estado",
   "upsReachable": "Accesible",
   "channelUpsInfo": "Información",
-  "flagOnline": "En línea",
+  "flagOnline": "Con red eléctrica",
   "flagOnBattery": "En batería",
   "flagLowBattery": "Batería baja",
   "flagHighBattery": "Batería llena",

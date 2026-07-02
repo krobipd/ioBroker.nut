@@ -39,7 +39,7 @@
   "statusDisplay": "Відображення стану",
   "upsReachable": "Доступний",
   "channelUpsInfo": "Інформація",
-  "flagOnline": "Онлайн",
+  "flagOnline": "Від мережі",
   "flagOnBattery": "На батареї",
   "flagLowBattery": "Низький заряд",
   "flagHighBattery": "Повний заряд",
