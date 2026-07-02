@@ -129,6 +129,7 @@ class NutAdapter extends utils.Adapter {
     const config = this.nutConfig();
     const host = (_a = (0, import_coerce.coerceHost)(config.host)) != null ? _a : "";
     const port = (0, import_coerce.coercePort)(config.port);
+    const pollSec = (0, import_coerce.coercePollIntervalSec)(config.pollInterval);
     try {
       this.enrichedUps.clear();
       await this.discover();
@@ -160,13 +161,7 @@ class NutAdapter extends utils.Adapter {
         }
       }
       await this.poll();
-      const pollSec = (0, import_coerce.coercePollIntervalSec)(config.pollInterval);
-      if (this.pollTimer === void 0) {
-        this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
-        this.pollTimer = this.setInterval(() => {
-          void this.poll();
-        }, pollSec * 1e3);
-      }
+      this.armPollTimer(config.pollInterval, pollSec);
       if (!this.subscribed && (config.enableCommands || config.enableSetVar)) {
         await this.subscribeStatesAsync("*");
         this.subscribed = true;
@@ -182,7 +177,21 @@ class NutAdapter extends utils.Adapter {
       }
     } catch (err) {
       this.log.error(`Post-connect setup failed: ${(0, import_coerce.errText)(err)}`);
+      this.armPollTimer(config.pollInterval, pollSec);
     }
+  }
+  /**
+   * Arm the periodic poll timer once. Called on the normal setup path and again from the
+   * post-connect error handler, so a non-connection failure on a live socket still recovers.
+   */
+  armPollTimer(rawInterval, pollSec) {
+    if (this.unloaded || this.pollTimer !== void 0) {
+      return;
+    }
+    this.log.debug(`pollInterval: raw=${JSON.stringify(rawInterval)} resolved=${pollSec}s`);
+    this.pollTimer = this.setInterval(() => {
+      void this.poll();
+    }, pollSec * 1e3);
   }
   /**
    * The persistent connection failed fatally (TLS misconfiguration). The client already stopped
@@ -291,8 +300,8 @@ class NutAdapter extends utils.Adapter {
               try {
                 const ranges = await this.client.listRange(upsName, rw.name);
                 if (ranges.length > 0) {
-                  const min = parseFloat(ranges[0].min);
-                  const max = parseFloat(ranges[0].max);
+                  const min = (0, import_coerce.parseDecimal)(ranges[0].min);
+                  const max = (0, import_coerce.parseDecimal)(ranges[0].max);
                   const patch = {};
                   if (!Number.isNaN(min)) {
                     patch.min = min;

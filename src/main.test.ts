@@ -293,8 +293,17 @@ describe("onReady", () => {
 });
 
 describe("onConnected — idempotent post-connect setup", () => {
+  it("still arms the poll timer if post-connect setup fails on a live socket", async () => {
+    const s = setup();
+    await s.internal.onReady();
+    s.sm.ensureUpsDevice.mockRejectedValue(new Error("DB write failed during discovery"));
+    await s.internal.onConnected();
+    expect(s.internal.pollTimer).toBeDefined();
+    expect(logsOf(s.stub, "error").some(m => m.includes("Post-connect setup failed"))).toBe(true);
+  });
+
   it("happy path: discovers, polls, arms the timer once and logs the started line", async () => {
-    const { internal, stub, client, sm } = await setupConnected();
+    const { stub, client, sm } = await setupConnected();
 
     expect(client.listUps).toHaveBeenCalled();
     expect(sm.ensureUpsDevice).toHaveBeenCalledWith("ups0", "Main UPS");
@@ -420,6 +429,17 @@ describe("classifyError", () => {
 });
 
 describe("poll", () => {
+  it("applies a valid RANGE bound but ignores a non-decimal one (strict parse, not parseFloat)", async () => {
+    const s = await setupConnected({ enableSetVar: true });
+    s.client.listRw.mockResolvedValue([{ name: "ups.delay.shutdown", value: "20" }]);
+    s.client.listEnum.mockResolvedValue([]);
+    s.client.listRange.mockResolvedValue([{ min: "50abc", max: "600" }]);
+    s.internal.enrichedUps.clear();
+    s.sm.enrichStateMetadata.mockClear();
+    await s.internal.poll();
+    expect(s.sm.enrichStateMetadata).toHaveBeenCalledWith(expect.any(String), { max: 600 });
+  });
+
   it("updates variables, device name, status flags and reachable per UPS", async () => {
     const s = await setupConnected();
     s.sm.updateVariables.mockClear();

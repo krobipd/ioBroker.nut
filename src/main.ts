@@ -8,6 +8,7 @@ import {
   coercePort,
   errText,
   localAddressOf,
+  parseDecimal,
 } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
@@ -122,6 +123,7 @@ export class NutAdapter extends utils.Adapter {
     const config = this.nutConfig();
     const host = coerceHost(config.host) ?? "";
     const port = coercePort(config.port);
+    const pollSec = coercePollIntervalSec(config.pollInterval);
 
     try {
       this.enrichedUps.clear(); // fresh connection → re-enrich enum/range metadata
@@ -161,14 +163,7 @@ export class NutAdapter extends utils.Adapter {
       }
 
       await this.poll();
-
-      const pollSec = coercePollIntervalSec(config.pollInterval);
-      if (this.pollTimer === undefined) {
-        this.log.debug(`pollInterval: raw=${JSON.stringify(config.pollInterval)} resolved=${pollSec}s`);
-        this.pollTimer = this.setInterval(() => {
-          void this.poll();
-        }, pollSec * 1000);
-      }
+      this.armPollTimer(config.pollInterval, pollSec);
 
       if (!this.subscribed && (config.enableCommands || config.enableSetVar)) {
         await this.subscribeStatesAsync("*");
@@ -186,7 +181,26 @@ export class NutAdapter extends utils.Adapter {
       }
     } catch (err) {
       this.log.error(`Post-connect setup failed: ${errText(err)}`);
+      // Still arm the poll timer if setup failed on a live socket (e.g. a DB write during discovery
+      // threw): otherwise the adapter stays connected but never polls, with no socket close to
+      // trigger a reconnect. Auth failure returns earlier (client destroyed) and never reaches here,
+      // so it correctly stays idle.
+      this.armPollTimer(config.pollInterval, pollSec);
     }
+  }
+
+  /**
+   * Arm the periodic poll timer once. Called on the normal setup path and again from the
+   * post-connect error handler, so a non-connection failure on a live socket still recovers.
+   */
+  private armPollTimer(rawInterval: unknown, pollSec: number): void {
+    if (this.unloaded || this.pollTimer !== undefined) {
+      return;
+    }
+    this.log.debug(`pollInterval: raw=${JSON.stringify(rawInterval)} resolved=${pollSec}s`);
+    this.pollTimer = this.setInterval(() => {
+      void this.poll();
+    }, pollSec * 1000);
   }
 
   /**
@@ -318,8 +332,8 @@ export class NutAdapter extends utils.Adapter {
               try {
                 const ranges = await this.client.listRange(upsName, rw.name);
                 if (ranges.length > 0) {
-                  const min = parseFloat(ranges[0].min);
-                  const max = parseFloat(ranges[0].max);
+                  const min = parseDecimal(ranges[0].min);
+                  const max = parseDecimal(ranges[0].max);
                   const patch: Partial<Record<"min" | "max", number>> = {};
                   if (!Number.isNaN(min)) {
                     patch.min = min;
