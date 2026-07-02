@@ -352,6 +352,7 @@ class NutAdapter extends utils.Adapter {
     }
   }
   async onStateChange(id, state) {
+    var _a, _b, _c, _d;
     try {
       if (!state || state.ack) {
         return;
@@ -378,7 +379,7 @@ class NutAdapter extends utils.Adapter {
           this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
           return;
         }
-        const cmdName = parts.slice(2).join(".").replace(/-/g, ".");
+        const cmdName = (_b = (_a = this.stateManager) == null ? void 0 : _a.nutNameForState(localId)) != null ? _b : parts.slice(2).join(".").replace(/-/g, ".");
         this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
         try {
           await this.client.instCmd(upsName, cmdName);
@@ -393,7 +394,7 @@ class NutAdapter extends utils.Adapter {
         this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
         return;
       }
-      const varName = `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
+      const varName = (_d = (_c = this.stateManager) == null ? void 0 : _c.nutNameForState(localId)) != null ? _d : `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
       const value = String(state.val);
       this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
       try {

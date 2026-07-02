@@ -157,6 +157,12 @@ export class StateManager {
   private readonly warnedGarbageVars = new Set<string>();
   /** Last device name derived from mfr+model per UPS — lets a transient/wrong fallback self-correct. */
   private readonly fallbackNames = new Map<string, string>();
+  /**
+   * stateId → original NUT variable/command name. The dot→dash id mapping is lossy for names
+   * containing a literal dash (three-phase input.L1-L2.*), so onStateChange reads the real name
+   * back from here instead of reversing the id.
+   */
+  private readonly nutNames = new Map<string, string>();
 
   /**
    * @param adapter The ioBroker adapter instance
@@ -315,6 +321,7 @@ export class StateManager {
       }
 
       const stateId = nutVarToStateId(upsName, v.name);
+      this.nutNames.set(stateId, v.name);
       const states = detectStates(v.name);
       await this.ensureState(stateId, {
         type: detected.type,
@@ -401,6 +408,7 @@ export class StateManager {
 
     for (const cmd of commands) {
       const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
+      this.nutNames.set(stateId, cmd.name);
       const cmdI18nKey = COMMAND_I18N[cmd.name];
       await this.ensureState(stateId, {
         type: "boolean",
@@ -411,6 +419,17 @@ export class StateManager {
         def: false,
       });
     }
+  }
+
+  /**
+   * The original NUT variable/command name for a created state id. onStateChange uses it instead
+   * of reversing the dot→dash id mapping, which is lossy for names carrying a literal dash
+   * (e.g. three-phase input.L1-L2.voltage). Undefined for states not backed by a NUT var/command.
+   *
+   * @param stateId Local state id (e.g. "ups0.input.L1-L2-voltage")
+   */
+  nutNameForState(stateId: string): string | undefined {
+    return this.nutNames.get(stateId);
   }
 
   /**
@@ -434,11 +453,7 @@ export class StateManager {
     for (const deviceId of deviceIds) {
       this.adapter.log.info(`Removing stale UPS device: ${deviceId}`);
       await this.adapter.delObjectAsync(deviceId, { recursive: true });
-      for (const cached of this.createdIds) {
-        if (cached === deviceId || cached.startsWith(`${deviceId}.`)) {
-          this.createdIds.delete(cached);
-        }
-      }
+      this.dropCacheUnder(deviceId);
     }
   }
 
@@ -527,6 +542,11 @@ export class StateManager {
     for (const id of [...this.createdIds]) {
       if (id === prefix || id.startsWith(`${prefix}.`)) {
         this.createdIds.delete(id);
+      }
+    }
+    for (const id of [...this.nutNames.keys()]) {
+      if (id === prefix || id.startsWith(`${prefix}.`)) {
+        this.nutNames.delete(id);
       }
     }
   }

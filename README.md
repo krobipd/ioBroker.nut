@@ -178,6 +178,7 @@ nut.0.
 - The admin "Test connection" button now reports the real outcome — a clear error on failure and the list of discovered UPS devices on success (it previously always showed "Ok").
 - A connection attempt that stalls (wrong host, a firewall dropping traffic, or a stalled TLS handshake) now fails after the command timeout instead of hanging for up to a minute — including the connection test.
 - Device readings are now typed correctly instead of dumped as plain text: yes/no fields become booleans, status/switch/alarm/contact fields carry their value list, more numeric fields get their unit (V/s/%), and opaque identifiers stay text.
+- Writing to a three-phase reading (e.g. `input.L1-L2.voltage`) now sends the correct variable name to the server instead of a mangled one.
 
 ### 0.4.5 (2026-06-21)
 

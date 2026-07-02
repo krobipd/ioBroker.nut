@@ -421,7 +421,7 @@ export class NutAdapter extends utils.Adapter {
           this.log.warn(`Command blocked — enableCommands is disabled: ${localId}`);
           return;
         }
-        const cmdName = parts.slice(2).join(".").replace(/-/g, ".");
+        const cmdName = this.stateManager?.nutNameForState(localId) ?? parts.slice(2).join(".").replace(/-/g, ".");
         this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
         try {
           await this.client.instCmd(upsName, cmdName);
@@ -438,7 +438,8 @@ export class NutAdapter extends utils.Adapter {
         return;
       }
 
-      const varName = `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
+      const varName =
+        this.stateManager?.nutNameForState(localId) ?? `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
       const value = String(state.val);
       this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
       try {

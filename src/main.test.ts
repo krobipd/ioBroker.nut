@@ -170,6 +170,7 @@ interface FakeStateManager {
   cleanupRemovedUps: ReturnType<typeof vi.fn>;
   cleanupLegacyObjects: ReturnType<typeof vi.fn>;
   enrichStateMetadata: ReturnType<typeof vi.fn>;
+  nutNameForState: ReturnType<typeof vi.fn>;
 }
 
 function makeFakeStateManager(): FakeStateManager {
@@ -182,6 +183,7 @@ function makeFakeStateManager(): FakeStateManager {
     cleanupRemovedUps: vi.fn(async () => {}),
     cleanupLegacyObjects: vi.fn(async () => {}),
     enrichStateMetadata: vi.fn(async () => {}),
+    nutNameForState: vi.fn(() => undefined),
   };
 }
 
@@ -591,6 +593,20 @@ describe("onStateChange — command and SET VAR gates", () => {
     await s.internal.onStateChange("nut.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.delay.shutdown", "30");
     expect(s.stub.states.get("nut.0.ups0.ups.delay-shutdown")).toEqual({ val: 30, ack: true });
+  });
+
+  it("SET VAR: uses the stored NUT name so a literal dash survives (three-phase)", async () => {
+    const s = await setupConnected({ enableSetVar: true });
+    s.sm.nutNameForState.mockReturnValue("input.L1-L2.voltage");
+    await s.internal.onStateChange("nut.0.ups0.input.L1-L2-voltage", { val: 247, ack: false });
+    expect(s.client.setVar).toHaveBeenCalledWith("ups0", "input.L1-L2.voltage", "247");
+  });
+
+  it("INSTCMD: uses the stored NUT name rather than reversing the id", async () => {
+    const s = await setupConnected({ enableCommands: true });
+    s.sm.nutNameForState.mockReturnValue("beeper.disable");
+    await s.internal.onStateChange("nut.0.ups0.commands.beeper-mute", { val: true, ack: false });
+    expect(s.client.instCmd).toHaveBeenCalledWith("ups0", "beeper.disable");
   });
 
   it("blocks SET VAR when enableSetVar is off", async () => {

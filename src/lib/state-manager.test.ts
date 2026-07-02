@@ -487,6 +487,20 @@ describe("StateManager", () => {
   // -----------------------------------------------------------------------
   // Command buttons
   // -----------------------------------------------------------------------
+  describe("nutNameForState", () => {
+    it("stores the original NUT name so a dash-context var id reverses losslessly", async () => {
+      const { adapter } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      await sm.updateVariables(
+        "ups0",
+        [{ name: "input.L1-L2.voltage", value: "398.3" }],
+        new Set(["input.L1-L2.voltage"]),
+      );
+      expect(sm.nutNameForState("ups0.input.L1-L2-voltage")).toBe("input.L1-L2.voltage");
+      expect(sm.nutNameForState("ups0.does.not-exist")).toBeUndefined();
+    });
+  });
+
   describe("createCommandButtons", () => {
     it("should create button states with dots→dashes and readable names", async () => {
       const { adapter, objects } = createMockAdapter();

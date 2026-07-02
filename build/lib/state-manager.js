@@ -160,6 +160,12 @@ class StateManager {
   /** Last device name derived from mfr+model per UPS — lets a transient/wrong fallback self-correct. */
   fallbackNames = /* @__PURE__ */ new Map();
   /**
+   * stateId → original NUT variable/command name. The dot→dash id mapping is lossy for names
+   * containing a literal dash (three-phase input.L1-L2.*), so onStateChange reads the real name
+   * back from here instead of reversing the id.
+   */
+  nutNames = /* @__PURE__ */ new Map();
+  /**
    * @param adapter The ioBroker adapter instance
    */
   constructor(adapter) {
@@ -288,6 +294,7 @@ class StateManager {
         continue;
       }
       const stateId = nutVarToStateId(upsName, v.name);
+      this.nutNames.set(stateId, v.name);
       const states = (0, import_type_detector.detectStates)(v.name);
       await this.ensureState(stateId, {
         type: detected.type,
@@ -366,6 +373,7 @@ class StateManager {
     await this.ensureChannel(upsName, "commands");
     for (const cmd of commands) {
       const stateId = `${upsName}.commands.${cmd.name.replace(/\./g, "-")}`;
+      this.nutNames.set(stateId, cmd.name);
       const cmdI18nKey = COMMAND_I18N[cmd.name];
       await this.ensureState(stateId, {
         type: "boolean",
@@ -376,6 +384,16 @@ class StateManager {
         def: false
       });
     }
+  }
+  /**
+   * The original NUT variable/command name for a created state id. onStateChange uses it instead
+   * of reversing the dot→dash id mapping, which is lossy for names carrying a literal dash
+   * (e.g. three-phase input.L1-L2.voltage). Undefined for states not backed by a NUT var/command.
+   *
+   * @param stateId Local state id (e.g. "ups0.input.L1-L2-voltage")
+   */
+  nutNameForState(stateId) {
+    return this.nutNames.get(stateId);
   }
   /**
    * Remove device objects for UPS devices no longer reported by the NUT server.
@@ -396,11 +414,7 @@ class StateManager {
     for (const deviceId of deviceIds) {
       this.adapter.log.info(`Removing stale UPS device: ${deviceId}`);
       await this.adapter.delObjectAsync(deviceId, { recursive: true });
-      for (const cached of this.createdIds) {
-        if (cached === deviceId || cached.startsWith(`${deviceId}.`)) {
-          this.createdIds.delete(cached);
-        }
-      }
+      this.dropCacheUnder(deviceId);
     }
   }
   /**
@@ -476,6 +490,11 @@ class StateManager {
     for (const id of [...this.createdIds]) {
       if (id === prefix || id.startsWith(`${prefix}.`)) {
         this.createdIds.delete(id);
+      }
+    }
+    for (const id of [...this.nutNames.keys()]) {
+      if (id === prefix || id.startsWith(`${prefix}.`)) {
+        this.nutNames.delete(id);
       }
     }
   }
