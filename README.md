@@ -174,20 +174,13 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.5.0 (2026-07-02)
 
-- More robust connection handling: the adapter no longer drops and reconnects the NUT connection unnecessarily on slow servers or after a brief network hiccup.
-- The admin "Test connection" button now reports the real outcome — a clear error on failure and the list of discovered UPS devices on success (it previously always showed "Ok").
-- A connection attempt that stalls (wrong host, a firewall dropping traffic, or a stalled TLS handshake) now fails after the command timeout instead of hanging for up to a minute — including the connection test.
-- Device readings are now typed correctly instead of dumped as plain text: yes/no fields become booleans, status/switch/alarm/contact fields carry their value list, more numeric fields get their unit (V/s/%), and opaque identifiers stay text.
-- The overall status severity now carries readable labels (OK / Info / Warning / Critical / Emergency) instead of a bare 0–4 number.
-- Three-phase and multi-sensor readings (e.g. `input.L1.voltage`, `input.L1-L2.voltage`) now get their proper translated name instead of a raw fallback.
-- The `off` status flag now reads "Off" instead of the misleading "Offline" (English/Chinese) — it means the UPS output is off, not that the connection was lost.
-- The `online` status flag now reads "On line power" (translated per language, e.g. "Netzbetrieb") instead of the ambiguous "Online" — it means the UPS is running on mains power, not that it is network-reachable.
-- Writing to a three-phase reading (e.g. `input.L1-L2.voltage`) now sends the correct variable name to the server instead of a mangled one.
-- The adapter no longer gets stuck connected-but-idle if writing a device object fails during startup — it keeps polling and recovers on its own.
-- While variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring any change you make.
-- After an authentication failure the log now correctly says the adapter is idle (yellow) until the credentials are corrected, instead of implying it keeps running.
+- Device readings now have correct types instead of plain text: yes/no fields become booleans, numeric fields carry their unit, and status, severity and enum fields show a readable label.
+- The admin "Test connection" button now reports the real result — a clear error, or the list of discovered UPS devices — instead of always showing "Ok".
+- More reliable on slow or flaky networks: no needless drop-and-reconnect, a stalled connection now fails fast instead of hanging, and the adapter recovers instead of getting stuck at startup.
+- Clearer status labels: the OFF flag now reads "Off" instead of "Offline", and the on-line flag "On line power" instead of "Online" — so neither is mistaken for a lost network connection.
+- When variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring your changes.
 
 ### 0.4.5 (2026-06-21)
 
@@ -210,10 +203,6 @@ nut.0.
 - UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"
 - Number settings with stray characters (like a port of "34abc") no longer half-apply — they fall back to safe defaults
 - A UPS that disappears from the NUT server and later returns now reports its first problem at full warning level again
-
-### 0.4.1 (2026-06-10)
-
-- Cleaned up the obsolete `info.online` state left behind by the 0.4.0 rename. It stayed in the object tree frozen at its last value; the adapter now removes it automatically on the next start.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

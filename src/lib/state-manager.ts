@@ -370,7 +370,7 @@ export class StateManager {
         read: true,
         write: false,
         name: tName("statusSeverity"),
-        states: { "0": "OK", "1": "Info", "2": "Warning", "3": "Critical", "4": "Emergency" },
+        states: { 0: "OK", 1: "Info", 2: "Warning", 3: "Critical", 4: "Emergency" },
       },
       result.severity,
     );

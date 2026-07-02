@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.4.5",
+    "version": "0.5.0",
     "news": {
+      "0.5.0": {
+        "en": "Correct data types for all readings, a connection test that shows the real result, clearer status labels, and more reliable behaviour on slow or unreliable networks.",
+        "de": "Korrekte Datentypen für alle Messwerte, ein Verbindungstest der das echte Ergebnis anzeigt, klarere Statusbezeichnungen und zuverlässigeres Verhalten in langsamen oder instabilen Netzwerken.",
+        "ru": "Правильные типы данных для всех показаний, проверка соединения показывает реальный результат, более понятные обозначения статусов и надёжная работа в медленных или нестабильных сетях.",
+        "pt": "Tipos de dados corretos para todas as leituras, um teste de ligação que mostra o resultado real, rótulos de estado mais claros e comportamento mais fiável em redes lentas ou instáveis.",
+        "nl": "Correcte gegevenstypen voor alle waarden, een verbindingstest die het echte resultaat toont, duidelijkere statuslabels en betrouwbaarder gedrag op trage of onstabiele netwerken.",
+        "fr": "Types de données corrects pour toutes les mesures, un test de connexion qui affiche le vrai résultat, des libellés d'état plus clairs et un comportement plus fiable sur les réseaux lents ou instables.",
+        "it": "Tipi di dati corretti per tutte le letture, un test di connessione che mostra il risultato reale, etichette di stato più chiare e comportamento più affidabile su reti lente o instabili.",
+        "es": "Tipos de datos correctos para todas las lecturas, una prueba de conexión que muestra el resultado real, etiquetas de estado más claras y un comportamiento más fiable en redes lentas o inestables.",
+        "pl": "Poprawne typy danych dla wszystkich odczytów, test połączenia pokazujący rzeczywisty wynik, czytelniejsze etykiety stanu i bardziej niezawodne działanie w wolnych lub niestabilnych sieciach.",
+        "uk": "Правильні типи даних для всіх показань, перевірка з'єднання показує реальний результат, зрозуміліші позначення станів і надійніша робота в повільних або нестабільних мережах.",
+        "zh-cn": "所有读数均采用正确的数据类型，连接测试显示真实结果，状态标签更清晰，在缓慢或不稳定网络下运行更可靠。"
+      },
       "0.4.5": {
         "en": "With login credentials, a NUT server that has more than one UPS no longer leaves the adapter offline — multi-UPS setups with authentication now connect and poll.",
         "de": "Mit Zugangsdaten lässt ein NUT-Server mit mehr als einer USV den Adapter nicht mehr offline — Multi-USV-Setups mit Authentifizierung verbinden sich jetzt korrekt.",
@@ -80,19 +93,6 @@
         "pl": "Naprawiono wskaźnik połączenia (już nie zielony, gdy serwer jest nieosiągalny). Stan online każdego UPS to teraz reachable, oddzielnie od stanu sieci — zaktualizuj odwołania.",
         "uk": "Виправлено індикатор з'єднання (більше не зелений, коли сервер недоступний). Стан online кожного ДБЖ перейменовано на reachable, окремо від стану мережі — оновіть посилання.",
         "zh-cn": "修复了连接指示器（服务器不可达时不再显示绿色）。每个 UPS 的 online 状态已重命名为 reachable，与市电状态区分开，请更新引用。"
-      },
-      "0.3.0": {
-        "en": "Optional TLS encryption via STARTTLS so credentials are not sent in clear text. New status flags. The adapter now comes back on its own when the NUT server is temporarily unavailable.",
-        "de": "Optionale TLS-Verschlüsselung über STARTTLS, damit Zugangsdaten nicht im Klartext gesendet werden. Neue Status-Flags. Der Adapter kommt jetzt von selbst zurück, wenn der NUT-Server kurz fehlt.",
-        "ru": "Опциональное шифрование TLS через STARTTLS, чтобы учётные данные не передавались открытым текстом. Новые флаги состояния. Адаптер сам восстанавливается, когда сервер NUT временно недоступен.",
-        "pt": "Criptografia TLS opcional via STARTTLS para que as credenciais não sejam enviadas em texto puro. Novos sinalizadores de status. O adaptador volta sozinho quando o servidor NUT fica indisponível.",
-        "nl": "Optionele TLS-versleuteling via STARTTLS, zodat inloggegevens niet in leesbare tekst worden verzonden. Nieuwe statusvlaggen. De adapter komt nu vanzelf terug als de NUT-server tijdelijk weg is.",
-        "fr": "Chiffrement TLS optionnel via STARTTLS pour que les identifiants ne soient plus envoyés en clair. Nouveaux indicateurs d'état. L'adaptateur revient seul quand le serveur NUT est indisponible.",
-        "it": "Crittografia TLS opzionale tramite STARTTLS, così le credenziali non vengono inviate in chiaro. Nuovi flag di stato. L'adattatore torna da solo quando il server NUT non è disponibile.",
-        "es": "Cifrado TLS opcional mediante STARTTLS para que las credenciales no se envíen en texto plano. Nuevos indicadores de estado. El adaptador vuelve solo cuando el servidor NUT no está disponible.",
-        "pl": "Opcjonalne szyfrowanie TLS przez STARTTLS, aby dane logowania nie były wysyłane jawnym tekstem. Nowe flagi stanu. Adapter sam wraca, gdy serwer NUT jest chwilowo niedostępny.",
-        "uk": "Опціональне шифрування TLS через STARTTLS, щоб облікові дані не надсилалися відкритим текстом. Нові прапорці стану. Адаптер сам повертається, коли сервер NUT тимчасово недоступний.",
-        "zh-cn": "可选的 TLS（STARTTLS）加密，凭据不再以明文发送。新增状态标志。当 NUT 服务器暂时不可用时，适配器现在会自行恢复。"
       }
     },
     "titleLang": {

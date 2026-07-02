@@ -221,6 +221,9 @@ export class NutAdapter extends utils.Adapter {
   /**
    * Arm the periodic poll timer once. Called on the normal setup path and again from the
    * post-connect error handler, so a non-connection failure on a live socket still recovers.
+   *
+   * @param rawInterval Raw configured poll interval, logged for diagnostics
+   * @param pollSec Resolved poll interval in seconds
    */
   private armPollTimer(rawInterval: unknown, pollSec: number): void {
     if (this.unloaded || this.pollTimer !== undefined) {

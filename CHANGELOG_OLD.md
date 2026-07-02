@@ -1,4 +1,8 @@
 # Older changes
+## 0.4.1 (2026-06-10)
+
+- Cleaned up the obsolete `info.online` state left behind by the 0.4.0 rename. It stayed in the object tree frozen at its last value; the adapter now removes it automatically on the next start.
+
 ## 0.4.0 (2026-06-10)
 
 - Fixed the connection indicator — it no longer shows green while the connection to the NUT server is actually down.
