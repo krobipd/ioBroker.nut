@@ -13,7 +13,7 @@ import {
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
-import type { AdapterConfig, UpsInfo } from "./lib/types";
+import type { AdapterConfig, NutVariable, UpsInfo } from "./lib/types";
 
 /**
  * NUT adapter — lifecycle, polling, command/SET-VAR dispatch.
@@ -142,7 +142,7 @@ export class NutAdapter extends utils.Adapter {
         } catch (err) {
           this.log.error(`Authentication failed: ${errText(err)} — check NUT server credentials`);
           this.log.info(
-            `NUT adapter running without authentication — fix credentials and use connection test in admin`,
+            `Authentication required — adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`,
           );
           this.client.destroy(); // stop the retry loop; stay alive + yellow
           await this.setStateChangedAsync("info.connection", { val: false, ack: true });
@@ -292,12 +292,17 @@ export class NutAdapter extends utils.Adapter {
     try {
       for (const upsName of this.discoveredUps.keys()) {
         try {
+          // Only query LIST RW when SET VAR is enabled — otherwise the variables would be marked
+          // writable (write: true) in the admin object tree while a write is silently blocked, and
+          // querying is pointless. With SET VAR off every variable stays read-only.
           const [variables, rwVars] = await Promise.all([
             this.client.listVar(upsName),
-            this.client.listRw(upsName).catch((err: unknown) => {
-              this.log.debug(`LIST RW ${upsName} failed (non-critical): ${errText(err)}`);
-              return [];
-            }),
+            this.nutConfig().enableSetVar
+              ? this.client.listRw(upsName).catch((err: unknown) => {
+                  this.log.debug(`LIST RW ${upsName} failed (non-critical): ${errText(err)}`);
+                  return [] as NutVariable[];
+                })
+              : Promise.resolve<NutVariable[]>([]),
           ]);
 
           const rwNames = new Set(rwVars.map(v => v.name));

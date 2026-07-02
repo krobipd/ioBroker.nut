@@ -142,7 +142,7 @@ class NutAdapter extends utils.Adapter {
         } catch (err) {
           this.log.error(`Authentication failed: ${(0, import_coerce.errText)(err)} \u2014 check NUT server credentials`);
           this.log.info(
-            `NUT adapter running without authentication \u2014 fix credentials and use connection test in admin`
+            `Authentication required \u2014 adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`
           );
           this.client.destroy();
           await this.setStateChangedAsync("info.connection", { val: false, ack: true });
@@ -268,10 +268,10 @@ class NutAdapter extends utils.Adapter {
         try {
           const [variables, rwVars] = await Promise.all([
             this.client.listVar(upsName),
-            this.client.listRw(upsName).catch((err) => {
+            this.nutConfig().enableSetVar ? this.client.listRw(upsName).catch((err) => {
               this.log.debug(`LIST RW ${upsName} failed (non-critical): ${(0, import_coerce.errText)(err)}`);
               return [];
-            })
+            }) : Promise.resolve([])
           ]);
           const rwNames = new Set(rwVars.map((v) => v.name));
           await this.stateManager.updateVariables(upsName, variables, rwNames);

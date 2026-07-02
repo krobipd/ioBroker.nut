@@ -182,6 +182,8 @@ nut.0.
 - Three-phase and multi-sensor readings (e.g. `input.L1.voltage`, `input.L1-L2.voltage`) now get their proper translated name instead of a raw fallback.
 - Writing to a three-phase reading (e.g. `input.L1-L2.voltage`) now sends the correct variable name to the server instead of a mangled one.
 - The adapter no longer gets stuck connected-but-idle if writing a device object fails during startup — it keeps polling and recovers on its own.
+- While variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring any change you make.
+- After an authentication failure the log now correctly says the adapter is idle (yellow) until the credentials are corrected, instead of implying it keeps running.
 
 ### 0.4.5 (2026-06-21)
 

@@ -330,7 +330,7 @@ describe("onConnected — idempotent post-connect setup", () => {
     await s.internal.onConnected();
 
     expect(logsOf(s.stub, "error").some(m => m.includes("Authentication failed"))).toBe(true);
-    expect(logsOf(s.stub, "info").some(m => m.includes("running without authentication"))).toBe(true);
+    expect(logsOf(s.stub, "info").some(m => m.includes("adapter is idle"))).toBe(true);
     expect(s.client.destroy).toHaveBeenCalledTimes(1);
     expect(s.stub.states.get("nut.0.info.connection")).toEqual({ val: false, ack: true });
     expect(s.stub.intervals).toHaveLength(0);
@@ -436,6 +436,17 @@ describe("poll", () => {
     expect(s.sm.enrichStateMetadata).toHaveBeenCalledWith(expect.any(String), { max: 600 });
   });
 
+  it("does not query LIST RW or mark variables writable while SET VAR is disabled", async () => {
+    const s = await setupConnected({ enableSetVar: false });
+    s.client.listRw.mockResolvedValue([{ name: "ups.delay.shutdown", value: "20" }]);
+    s.client.listRw.mockClear();
+    s.sm.updateVariables.mockClear();
+    await s.internal.poll();
+    expect(s.client.listRw).not.toHaveBeenCalled();
+    const lastCall = s.sm.updateVariables.mock.calls.at(-1);
+    expect(lastCall?.[2]).toEqual(new Set());
+  });
+
   it("updates variables, device name, status flags and reachable per UPS", async () => {
     const s = await setupConnected();
     s.sm.updateVariables.mockClear();
@@ -475,7 +486,7 @@ describe("poll", () => {
   });
 
   it("LIST RW failure is non-critical — poll continues with no writable vars", async () => {
-    const s = await setupConnected();
+    const s = await setupConnected({ enableSetVar: true });
     s.client.listRw.mockRejectedValue(new Error("RW unsupported"));
     s.sm.updateVariables.mockClear();
     await s.internal.poll();
@@ -509,7 +520,7 @@ describe("poll", () => {
   });
 
   it("enriches enum/range metadata exactly once per connection", async () => {
-    const s = await setupConnected();
+    const s = await setupConnected({ enableSetVar: true });
     s.client.listRw.mockResolvedValue([{ name: "ups.delay.shutdown", value: "20" }]);
     s.client.listEnum.mockResolvedValue(["20", "30"]);
     s.client.listRange.mockResolvedValue([{ min: "10", max: "300" }]);
