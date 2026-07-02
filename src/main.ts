@@ -13,7 +13,7 @@ import {
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
-import type { AdapterConfig, NutVariable, UpsInfo } from "./lib/types";
+import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types";
 
 /**
  * NUT adapter — lifecycle, polling, command/SET-VAR dispatch.
@@ -55,6 +55,16 @@ export class NutAdapter extends utils.Adapter {
     new NutClient(...args);
   private makeStateManager: () => StateManager = () => new StateManager(this);
 
+  // Single source for the {debug,warn,info} logger passed to the NUT client, the test-client
+  // factory and the message router — avoids rebuilding the same wrapper at three call sites.
+  private get nutLogger(): NutLogger {
+    return {
+      debug: (m: string) => this.log.debug(m),
+      warn: (m: string) => this.log.warn(m),
+      info: (m: string) => this.log.info(m),
+    };
+  }
+
   private async onReady(): Promise<void> {
     try {
       await I18n.init(join(this.adapterDir, "admin"), this);
@@ -90,11 +100,7 @@ export class NutAdapter extends utils.Adapter {
             this.clearTimeout(h as ioBroker.Timeout);
           }
         },
-        logger: {
-          debug: (m: string) => this.log.debug(m),
-          warn: (m: string) => this.log.warn(m),
-          info: (m: string) => this.log.info(m),
-        },
+        logger: this.nutLogger,
       });
       this.stateManager = this.makeStateManager();
 
@@ -476,16 +482,9 @@ export class NutAdapter extends utils.Adapter {
   private async onMessage(obj: ioBroker.Message): Promise<void> {
     try {
       await dispatchMessage(obj, {
-        log: {
-          debug: (m: string) => this.log.debug(m),
-          warn: (m: string) => this.log.warn(m),
-        },
+        log: this.nutLogger,
         sendTo: this.sendTo.bind(this),
-        createTestClient: makeTestClientFactory(NutClient, {
-          debug: (m: string) => this.log.debug(m),
-          warn: (m: string) => this.log.warn(m),
-          info: (m: string) => this.log.info(m),
-        }),
+        createTestClient: makeTestClientFactory(NutClient, this.nutLogger),
         onTestClientCreated: client => {
           this.testClients.add(client);
         },

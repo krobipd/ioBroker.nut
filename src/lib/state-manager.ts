@@ -356,48 +356,44 @@ export class StateManager {
       `updateStatusFlags ${upsName}: raw='${rawStatus}' severity=${result.severity} active=[${activeFlags}]`,
     );
 
-    await this.ensureState(`${upsName}.status.raw`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: tName("statusRaw"),
-    });
-    await this.adapter.setStateChangedAsync(`${upsName}.status.raw`, { val: result.raw, ack: true });
+    await this.ensureAndSet(
+      `${upsName}.status.raw`,
+      { type: "string", role: "text", read: true, write: false, name: tName("statusRaw") },
+      result.raw,
+    );
 
-    await this.ensureState(`${upsName}.status.severity`, {
-      type: "number",
-      role: "value",
-      read: true,
-      write: false,
-      name: tName("statusSeverity"),
-      states: { "0": "OK", "1": "Info", "2": "Warning", "3": "Critical", "4": "Emergency" },
-    });
-    await this.adapter.setStateChangedAsync(`${upsName}.status.severity`, { val: result.severity, ack: true });
-
-    await this.ensureState(`${upsName}.status.display`, {
-      type: "string",
-      role: "text",
-      read: true,
-      write: false,
-      name: tName("statusDisplay"),
-    });
-    await this.adapter.setStateChangedAsync(`${upsName}.status.display`, {
-      val: getDisplayString(rawStatus),
-      ack: true,
-    });
-
-    for (const flagKey of ALL_FLAG_KEYS) {
-      const stateId = `${upsName}.status.${flagKey}`;
-      const meta = FLAG_META[flagKey];
-      await this.ensureState(stateId, {
-        type: "boolean",
-        role: meta?.role ?? "indicator",
+    await this.ensureAndSet(
+      `${upsName}.status.severity`,
+      {
+        type: "number",
+        role: "value",
         read: true,
         write: false,
-        name: meta ? tName(meta.i18nKey) : flagKey,
-      });
-      await this.adapter.setStateChangedAsync(stateId, { val: result.flags[flagKey], ack: true });
+        name: tName("statusSeverity"),
+        states: { "0": "OK", "1": "Info", "2": "Warning", "3": "Critical", "4": "Emergency" },
+      },
+      result.severity,
+    );
+
+    await this.ensureAndSet(
+      `${upsName}.status.display`,
+      { type: "string", role: "text", read: true, write: false, name: tName("statusDisplay") },
+      getDisplayString(rawStatus),
+    );
+
+    for (const flagKey of ALL_FLAG_KEYS) {
+      const meta = FLAG_META[flagKey];
+      await this.ensureAndSet(
+        `${upsName}.status.${flagKey}`,
+        {
+          type: "boolean",
+          role: meta?.role ?? "indicator",
+          read: true,
+          write: false,
+          name: meta ? tName(meta.i18nKey) : flagKey,
+        },
+        result.flags[flagKey],
+      );
     }
   }
 
@@ -600,6 +596,23 @@ export class StateManager {
       { preserve: { common: ["name"] } },
     );
     this.createdIds.add(id);
+  }
+
+  /**
+   * Ensure a state exists (once) and write its current value — the create-then-set pair used for
+   * every status/flag datapoint.
+   *
+   * @param id State id
+   * @param common Object definition forwarded to ensureState
+   * @param val Value to write (acknowledged)
+   */
+  private async ensureAndSet(
+    id: string,
+    common: Parameters<StateManager["ensureState"]>[1],
+    val: ioBroker.StateValue,
+  ): Promise<void> {
+    await this.ensureState(id, common);
+    await this.adapter.setStateChangedAsync(id, { val, ack: true });
   }
 
   /**

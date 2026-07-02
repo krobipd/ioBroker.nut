@@ -69,6 +69,15 @@ class NutAdapter extends utils.Adapter {
   // onConnected and poll can run without sockets or a js-controller.
   makeClient = (...args) => new import_nut_client.NutClient(...args);
   makeStateManager = () => new import_state_manager.StateManager(this);
+  // Single source for the {debug,warn,info} logger passed to the NUT client, the test-client
+  // factory and the message router — avoids rebuilding the same wrapper at three call sites.
+  get nutLogger() {
+    return {
+      debug: (m) => this.log.debug(m),
+      warn: (m) => this.log.warn(m),
+      info: (m) => this.log.info(m)
+    };
+  }
   async onReady() {
     try {
       await import_adapter_core.I18n.init((0, import_node_path.join)(this.adapterDir, "admin"), this);
@@ -99,11 +108,7 @@ class NutAdapter extends utils.Adapter {
             this.clearTimeout(h);
           }
         },
-        logger: {
-          debug: (m) => this.log.debug(m),
-          warn: (m) => this.log.warn(m),
-          info: (m) => this.log.info(m)
-        }
+        logger: this.nutLogger
       });
       this.stateManager = this.makeStateManager();
       this.client.setOnConnect(() => {
@@ -420,16 +425,9 @@ class NutAdapter extends utils.Adapter {
   async onMessage(obj) {
     try {
       await (0, import_message_router.dispatchMessage)(obj, {
-        log: {
-          debug: (m) => this.log.debug(m),
-          warn: (m) => this.log.warn(m)
-        },
+        log: this.nutLogger,
         sendTo: this.sendTo.bind(this),
-        createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, {
-          debug: (m) => this.log.debug(m),
-          warn: (m) => this.log.warn(m),
-          info: (m) => this.log.info(m)
-        }),
+        createTestClient: (0, import_message_router.makeTestClientFactory)(import_nut_client.NutClient, this.nutLogger),
         onTestClientCreated: (client) => {
           this.testClients.add(client);
         },
