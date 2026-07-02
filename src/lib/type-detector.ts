@@ -17,6 +17,11 @@ const KNOWN_STRING_SUFFIXES = new Set([
   "contact",
   "vendorid",
   "productid",
+  // Opaque identifiers per the NUT catalog — keep as strings (leading zeros etc. must survive).
+  "part",
+  "address",
+  "color",
+  "groupid",
 ]);
 
 /** Known-string exact prefixes — always string. */
@@ -153,7 +158,19 @@ function isKnownString(varName: string): boolean {
 
 // Only called for numeric variables (string vars never carry a unit).
 function detectUnit(varName: string): string | undefined {
+  // Percent-of-nominal ranges carry "frequency" in the name but are a percentage.
+  if (/\.frequency\..+\.range$/.test(varName)) {
+    return "%";
+  }
+  // Minutes (checked before the generic seconds rules that also match ".delay").
+  if (varName === "battery.energysave.delay") {
+    return "min";
+  }
   if (varName.includes("voltage")) {
+    return "V";
+  }
+  // Transfer/bypass voltage set-points carry no "voltage" token in the name.
+  if (/^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis") {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -168,13 +185,26 @@ function detectUnit(varName: string): string | undefined {
   if (varName.includes("humidity")) {
     return "%";
   }
-  if (varName.endsWith(".load") || varName.endsWith(".efficiency") || varName.endsWith(".percent")) {
+  if (
+    varName.endsWith(".load") ||
+    varName.endsWith(".load.high") ||
+    varName.endsWith(".efficiency") ||
+    varName.endsWith(".percent")
+  ) {
     return "%";
   }
   if (varName.includes("temperature")) {
     return "°C";
   }
-  if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
+  if (
+    varName.includes("runtime") ||
+    varName.includes(".delay.") ||
+    varName.endsWith(".delay") ||
+    varName.includes(".timer.") ||
+    varName.endsWith(".uptime") ||
+    varName.endsWith(".test.interval") ||
+    varName.endsWith(".latency")
+  ) {
     return "s";
   }
   if (varName.endsWith(".realpower") || varName.endsWith(".realpower.nominal")) {
@@ -185,6 +215,9 @@ function detectUnit(varName: string): string | undefined {
   }
   if (varName.includes("capacity")) {
     return "Ah";
+  }
+  if (varName === "input.phase.shift") {
+    return "°";
   }
   return undefined;
 }
@@ -239,14 +272,31 @@ const KNOWN_ENUM_STATES: Record<string, Record<string, string>> = {
 
 const OUTLET_ON_OFF: Record<string, string> = { on: "on", off: "off" };
 
-// good / warning-low / warning-high / critical-low / critical-high — for *.voltage.status,
-// *.frequency.status (incl. three-phase variants like input.L1.voltage.status).
-const VOLTAGE_FREQUENCY_STATUS: Record<string, string> = {
+// good / warning-low / warning-high / critical-low / critical-high — threshold status enum for
+// *.voltage.status, *.current.status, ambient.*.{temperature,humidity}.status (incl. three-phase
+// variants like input.L1.voltage.status).
+const THRESHOLD_STATUS: Record<string, string> = {
   good: "good",
   "warning-low": "warning-low",
   "warning-high": "warning-high",
   "critical-low": "critical-low",
   "critical-high": "critical-high",
+};
+
+// Frequency status additionally reports "out-of-range".
+const FREQUENCY_STATUS: Record<string, string> = { ...THRESHOLD_STATUS, "out-of-range": "out-of-range" };
+
+// Two-state toggles reported as a word (ups.watchdog.status, ups.shutdown,
+// input.transfer.bypass.{forced,overload,outlimits}, input.bypass.switchable,
+// ambient.*.{temperature,humidity}.alarm) — an enum, not bare text.
+const ENABLED_DISABLED: Record<string, string> = { enabled: "enabled", disabled: "disabled" };
+
+// Dry-contact sensor status: raw open/closed, or active/inactive relative to its configuration.
+const CONTACTS_STATUS: Record<string, string> = {
+  open: "open",
+  closed: "closed",
+  active: "active",
+  inactive: "inactive",
 };
 
 /**
@@ -258,11 +308,30 @@ export function detectStates(varName: string): Record<string, string> | undefine
   if (KNOWN_ENUM_STATES[varName]) {
     return KNOWN_ENUM_STATES[varName];
   }
-  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
+  // on/off switches — individual outlets and outlet groups.
+  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName) || /^outlet\.group(\.\d+)?\.status$/.test(varName)) {
     return OUTLET_ON_OFF;
   }
-  if (/\.(voltage|frequency)\.status$/.test(varName)) {
-    return VOLTAGE_FREQUENCY_STATUS;
+  // Threshold status enums (frequency additionally reports out-of-range).
+  if (/\.frequency\.status$/.test(varName)) {
+    return FREQUENCY_STATUS;
+  }
+  if (/\.(voltage|current|temperature|humidity)\.status$/.test(varName)) {
+    return THRESHOLD_STATUS;
+  }
+  // Two-state enabled/disabled toggles that would otherwise fall through to bare text.
+  if (
+    varName === "ups.watchdog.status" ||
+    varName === "ups.shutdown" ||
+    varName === "input.bypass.switchable" ||
+    /^input\.transfer\.bypass\.(forced|overload|outlimits)$/.test(varName) ||
+    /^ambient(\.\d+)?\.(temperature|humidity)\.alarm$/.test(varName)
+  ) {
+    return ENABLED_DISABLED;
+  }
+  // Dry-contact sensor status.
+  if (/^ambient(\.\d+)?\.contacts\.\d+\.status$/.test(varName)) {
+    return CONTACTS_STATUS;
   }
   return undefined;
 }

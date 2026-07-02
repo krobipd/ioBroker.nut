@@ -38,7 +38,12 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "location",
   "contact",
   "vendorid",
-  "productid"
+  "productid",
+  // Opaque identifiers per the NUT catalog — keep as strings (leading zeros etc. must survive).
+  "part",
+  "address",
+  "color",
+  "groupid"
 ]);
 const KNOWN_STRING_PREFIXES = [
   "driver.flag.",
@@ -118,7 +123,16 @@ function isKnownString(varName) {
   return false;
 }
 function detectUnit(varName) {
+  if (/\.frequency\..+\.range$/.test(varName)) {
+    return "%";
+  }
+  if (varName === "battery.energysave.delay") {
+    return "min";
+  }
   if (varName.includes("voltage")) {
+    return "V";
+  }
+  if (/^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis") {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -133,13 +147,13 @@ function detectUnit(varName) {
   if (varName.includes("humidity")) {
     return "%";
   }
-  if (varName.endsWith(".load") || varName.endsWith(".efficiency") || varName.endsWith(".percent")) {
+  if (varName.endsWith(".load") || varName.endsWith(".load.high") || varName.endsWith(".efficiency") || varName.endsWith(".percent")) {
     return "%";
   }
   if (varName.includes("temperature")) {
     return "\xB0C";
   }
-  if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
+  if (varName.includes("runtime") || varName.includes(".delay.") || varName.endsWith(".delay") || varName.includes(".timer.") || varName.endsWith(".uptime") || varName.endsWith(".test.interval") || varName.endsWith(".latency")) {
     return "s";
   }
   if (varName.endsWith(".realpower") || varName.endsWith(".realpower.nominal")) {
@@ -150,6 +164,9 @@ function detectUnit(varName) {
   }
   if (varName.includes("capacity")) {
     return "Ah";
+  }
+  if (varName === "input.phase.shift") {
+    return "\xB0";
   }
   return void 0;
 }
@@ -194,22 +211,39 @@ const KNOWN_ENUM_STATES = {
   }
 };
 const OUTLET_ON_OFF = { on: "on", off: "off" };
-const VOLTAGE_FREQUENCY_STATUS = {
+const THRESHOLD_STATUS = {
   good: "good",
   "warning-low": "warning-low",
   "warning-high": "warning-high",
   "critical-low": "critical-low",
   "critical-high": "critical-high"
 };
+const FREQUENCY_STATUS = { ...THRESHOLD_STATUS, "out-of-range": "out-of-range" };
+const ENABLED_DISABLED = { enabled: "enabled", disabled: "disabled" };
+const CONTACTS_STATUS = {
+  open: "open",
+  closed: "closed",
+  active: "active",
+  inactive: "inactive"
+};
 function detectStates(varName) {
   if (KNOWN_ENUM_STATES[varName]) {
     return KNOWN_ENUM_STATES[varName];
   }
-  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName)) {
+  if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName) || /^outlet\.group(\.\d+)?\.status$/.test(varName)) {
     return OUTLET_ON_OFF;
   }
-  if (/\.(voltage|frequency)\.status$/.test(varName)) {
-    return VOLTAGE_FREQUENCY_STATUS;
+  if (/\.frequency\.status$/.test(varName)) {
+    return FREQUENCY_STATUS;
+  }
+  if (/\.(voltage|current|temperature|humidity)\.status$/.test(varName)) {
+    return THRESHOLD_STATUS;
+  }
+  if (varName === "ups.watchdog.status" || varName === "ups.shutdown" || varName === "input.bypass.switchable" || /^input\.transfer\.bypass\.(forced|overload|outlimits)$/.test(varName) || /^ambient(\.\d+)?\.(temperature|humidity)\.alarm$/.test(varName)) {
+    return ENABLED_DISABLED;
+  }
+  if (/^ambient(\.\d+)?\.contacts\.\d+\.status$/.test(varName)) {
+    return CONTACTS_STATUS;
   }
   return void 0;
 }

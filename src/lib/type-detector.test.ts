@@ -535,6 +535,117 @@ describe("type-detector", () => {
     });
   });
 
+  // -----------------------------------------------------------------------
+  // Catalog coverage — every representative nut-2.8.5 variable maps to its
+  // correct datapoint (type / unit / common.states) in one verified pass.
+  // Bare text is only correct for genuinely opaque fields.
+  // -----------------------------------------------------------------------
+  describe("nut-2.8.5 catalog coverage", () => {
+    const THR = ["good", "warning-low", "warning-high", "critical-low", "critical-high"];
+    const FREQ = [...THR, "out-of-range"];
+    const ONOFF = ["on", "off"];
+    const ENDIS = ["enabled", "disabled"];
+    const CONTACTS = ["open", "closed", "active", "inactive"];
+    const CHARGER = ["charging", "discharging", "floating", "resting"];
+    const BEEPER = ["enabled", "disabled", "muted"];
+
+    interface Row {
+      name: string;
+      value: string;
+      rw?: boolean;
+      type: "number" | "string" | "boolean";
+      unit?: string;
+      states?: string[];
+    }
+    const CATALOG: Row[] = [
+      // Numbers + units
+      { name: "battery.charge", value: "100", type: "number", unit: "%" },
+      { name: "battery.voltage", value: "24.8", type: "number", unit: "V" },
+      { name: "battery.runtime", value: "1080", type: "number", unit: "s" },
+      { name: "battery.capacity", value: "7.2", type: "number", unit: "Ah" },
+      { name: "battery.temperature", value: "50", type: "number", unit: "°C" },
+      { name: "battery.energysave.delay", value: "3", type: "number", unit: "min" },
+      { name: "input.voltage", value: "121", type: "number", unit: "V" },
+      { name: "input.frequency", value: "50", type: "number", unit: "Hz" },
+      { name: "input.current", value: "4.25", type: "number", unit: "A" },
+      { name: "input.transfer.low", value: "91", rw: true, type: "number", unit: "V" },
+      { name: "input.transfer.high", value: "132", rw: true, type: "number", unit: "V" },
+      { name: "input.transfer.boost.low", value: "190", type: "number", unit: "V" },
+      { name: "input.transfer.low.min", value: "85", type: "number", unit: "V" },
+      { name: "input.transfer.hysteresis", value: "10", type: "number", unit: "V" },
+      { name: "input.transfer.frequency.bypass.range", value: "10", type: "number", unit: "%" },
+      { name: "input.transfer.delay", value: "60", type: "number", unit: "s" },
+      { name: "input.phase.shift", value: "181", type: "number", unit: "°" },
+      { name: "output.inverter.latency", value: "0.01", type: "number", unit: "s" },
+      { name: "ups.power", value: "500", type: "number", unit: "VA" },
+      { name: "ups.realpower", value: "300", type: "number", unit: "W" },
+      { name: "ups.load", value: "23", type: "number", unit: "%" },
+      { name: "ups.load.high", value: "100", type: "number", unit: "%" },
+      { name: "ups.temperature", value: "42", type: "number", unit: "°C" },
+      { name: "ups.delay.shutdown", value: "20", rw: true, type: "number", unit: "s" },
+      { name: "ups.test.interval", value: "1209600", type: "number", unit: "s" },
+      { name: "ups.efficiency", value: "95", type: "number", unit: "%" },
+      { name: "device.uptime", value: "1782", type: "number", unit: "s" },
+      { name: "ambient.1.temperature", value: "25", type: "number", unit: "°C" },
+      { name: "ambient.1.humidity", value: "38", type: "number", unit: "%" },
+      { name: "outlet.1.current", value: "0.19", type: "number", unit: "A" },
+      { name: "outlet.1.voltage", value: "247", type: "number", unit: "V" },
+      { name: "outlet.1.realpower", value: "28", type: "number", unit: "W" },
+      { name: "output.powerfactor", value: "0.85", type: "number" },
+      // Booleans (yes/no)
+      { name: "input.voltage.extended", value: "no", type: "boolean" },
+      { name: "input.frequency.extended", value: "no", type: "boolean" },
+      { name: "outlet.switchable", value: "yes", type: "boolean" },
+      { name: "outlet.1.switchable", value: "yes", type: "boolean" },
+      { name: "ambient.1.present", value: "yes", type: "boolean" },
+      { name: "battery.protection", value: "yes", type: "boolean" },
+      { name: "ups.start.auto", value: "yes", type: "boolean" },
+      // Enums (string + common.states)
+      { name: "input.voltage.status", value: "critical-low", type: "string", states: THR },
+      { name: "input.current.status", value: "critical-high", type: "string", states: THR },
+      { name: "input.frequency.status", value: "out-of-range", type: "string", states: FREQ },
+      { name: "outlet.1.voltage.status", value: "good", type: "string", states: THR },
+      { name: "ambient.1.temperature.status", value: "warning-low", type: "string", states: THR },
+      { name: "ambient.1.humidity.status", value: "warning-low", type: "string", states: THR },
+      { name: "outlet.1.status", value: "on", type: "string", states: ONOFF },
+      { name: "outlet.1.switch", value: "on", rw: true, type: "string", states: ONOFF },
+      { name: "outlet.group.1.status", value: "on", type: "string", states: ONOFF },
+      { name: "battery.charger.status", value: "charging", type: "string", states: CHARGER },
+      { name: "ups.beeper.status", value: "enabled", type: "string", states: BEEPER },
+      { name: "ups.watchdog.status", value: "disabled", type: "string", states: ENDIS },
+      { name: "ups.shutdown", value: "enabled", type: "string", states: ENDIS },
+      { name: "ambient.1.temperature.alarm", value: "enabled", type: "string", states: ENDIS },
+      { name: "input.transfer.bypass.forced", value: "enabled", type: "string", states: ENDIS },
+      { name: "ambient.1.contacts.1.status", value: "open", type: "string", states: CONTACTS },
+      // Opaque strings (correct as text, no states)
+      { name: "device.model", value: "SMART-UPS 700", type: "string" },
+      { name: "device.serial", value: "WS9643050926", type: "string" },
+      { name: "device.part", value: "0123456789", type: "string" },
+      { name: "ambient.1.address", value: "1", type: "string" },
+      { name: "input.feed.color", value: "3831236", type: "string" },
+      { name: "outlet.1.groupid", value: "1", type: "string" },
+      { name: "ups.status", value: "OL", type: "string" },
+      { name: "ups.alarm", value: "OVERHEAT", type: "string" },
+      { name: "input.sensitivity", value: "H", type: "string" },
+      { name: "input.transfer.reason", value: "T", type: "string" },
+      { name: "ups.vendorid", value: "0463", type: "string" },
+      { name: "battery.type", value: "PbAc", type: "string" },
+    ];
+
+    it.each(CATALOG)("$name ($value) → $type", ({ name, value, rw, type, unit, states }) => {
+      const d = detectType(name, value, rw ?? false);
+      expect(d.type).toBe(type);
+      expect(d.unit).toBe(unit);
+      const detected = detectStates(name);
+      if (states) {
+        expect(detected).toBeDefined();
+        expect(Object.keys(detected as Record<string, string>)).toEqual(states);
+      } else {
+        expect(detected).toBeUndefined();
+      }
+    });
+  });
+
   describe("voltage/frequency status enums (M)", () => {
     it("input.voltage.status → good/warning/critical enum", () => {
       expect(detectStates("input.voltage.status")).toEqual({
