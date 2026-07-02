@@ -326,6 +326,33 @@ describe("NutClient", () => {
     });
   });
 
+  describe("connect-phase timeout", () => {
+    it("times out the connect/STARTTLS phase instead of hanging for the OS timeout", { timeout: 10000 }, async () => {
+      // Server accepts TCP and answers STARTTLS with OK, then never upgrades to TLS — the
+      // client's tls.connect() would otherwise hang until the OS connect timeout (~1-2 min).
+      const server = net.createServer(sock => {
+        sock.setEncoding("utf8");
+        sock.on("data", (d: string) => {
+          if (d.includes("STARTTLS")) sock.write("OK STARTTLS\n");
+          // …then nothing: no TLS handshake follows.
+        });
+        sock.on("error", () => {});
+      });
+      const port = await new Promise<number>(r =>
+        server.listen(0, "127.0.0.1", () => r((server.address() as net.AddressInfo).port)),
+      );
+      try {
+        const client = new NutClient("127.0.0.1", port, { useTls: true, commandTimeout: 300 });
+        const start = Date.now();
+        await expect(client.connect()).rejects.toThrow(/timed out/i);
+        expect(Date.now() - start).toBeLessThan(3000);
+        client.destroy();
+      } finally {
+        await new Promise<void>(r => server.close(() => r()));
+      }
+    });
+  });
+
   // -----------------------------------------------------------------------
   // LIST UPS
   // -----------------------------------------------------------------------

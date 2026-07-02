@@ -204,6 +204,35 @@ export class NutClient {
         return;
       }
 
+      // Bound the connect phase (TCP connect + optional STARTTLS handshake). net/tls have no
+      // built-in deadline here, and the per-command timeout only applies once connected, so a
+      // blackholed SYN or a stalled TLS handshake would otherwise hang for the OS timeout
+      // (~1-2 min) — freezing reconnect attempts and the admin connection test.
+      let settled = false;
+      const deadline = this.setTimer(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        const sock = this.socket;
+        this.socket = null;
+        this.connected = false;
+        sock?.destroy();
+        reject(new Error(`Connect to NUT server ${this.host}:${this.port} timed out`));
+      }, this.commandTimeout);
+      const settle = (err?: Error): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        this.clearTimer(deadline);
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      };
+
       const opts: net.NetConnectOpts = { host: this.host, port: this.port };
       if (this.localAddress) {
         opts.localAddress = this.localAddress;
@@ -215,15 +244,17 @@ export class NutClient {
         this.buffer = "";
         this.log?.debug(`Connected to NUT server ${this.host}:${this.port}`);
         if (this.useTls) {
-          this.startTls().then(resolve).catch(reject);
+          this.startTls()
+            .then(() => settle())
+            .catch(settle);
         } else {
-          resolve();
+          settle();
         }
       });
       this.socket = socket;
       // Detect a dead peer (NAT/firewall idle-drop leaves a half-open socket otherwise).
       socket.setKeepAlive(true, 30000);
-      this.wireSocket(socket, reject);
+      this.wireSocket(socket, settle);
     });
   }
 

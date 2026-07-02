@@ -176,6 +176,7 @@ nut.0.
 
 - More robust connection handling: the adapter no longer drops and reconnects the NUT connection unnecessarily on slow servers or after a brief network hiccup.
 - The admin "Test connection" button now reports the real outcome — a clear error on failure and the list of discovered UPS devices on success (it previously always showed "Ok").
+- A connection attempt that stalls (wrong host, a firewall dropping traffic, or a stalled TLS handshake) now fails after the command timeout instead of hanging for up to a minute — including the connection test.
 
 ### 0.4.5 (2026-06-21)
 
