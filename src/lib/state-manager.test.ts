@@ -501,6 +501,28 @@ describe("StateManager", () => {
     });
   });
 
+  describe("three-phase / multi-sensor name translation (DP-7)", () => {
+    it("collapses a single-phase L-context var to the translated base name", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      await sm.updateVariables("ups0", [{ name: "input.L1.voltage", value: "230" }], new Set());
+      expect(objects.get("ups0.input.L1-voltage")?.common.name).toEqual({
+        en: "input.voltage",
+        de: "input.voltage_de",
+      });
+    });
+
+    it("collapses a line-to-line phase pair to the translated base name", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      await sm.updateVariables("ups0", [{ name: "input.L1-L2.voltage", value: "398" }], new Set());
+      expect(objects.get("ups0.input.L1-L2-voltage")?.common.name).toEqual({
+        en: "input.voltage",
+        de: "input.voltage_de",
+      });
+    });
+  });
+
   describe("createCommandButtons", () => {
     it("should create button states with dots→dashes and readable names", async () => {
       const { adapter, objects } = createMockAdapter();
@@ -913,7 +935,7 @@ describe("StateManager", () => {
     });
 
     it("should not remove info or known UPS objects", async () => {
-      const { adapter, objects, deletedIds } = createMockAdapter();
+      const { adapter, deletedIds } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");

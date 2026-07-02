@@ -115,7 +115,9 @@ function varTranslation(nutVarName: string): LocalizedName | undefined {
   if (TRANSLATED_VARIABLES.has(nutVarName as I18nKey)) {
     return tName(nutVarName as I18nKey);
   }
-  const generic = nutVarName.replace(/\.\d+\./, ".");
+  // Collapse a per-instance or phase segment (ambient.2., input.L1., input.L1-L2., input.N.) to
+  // the base name so three-phase and multi-sensor variables reuse the translated base label.
+  const generic = nutVarName.replace(/\.(\d+|L\d(-(L\d|N))?|N)\./, ".");
   if (generic !== nutVarName && TRANSLATED_VARIABLES.has(generic as I18nKey)) {
     return tName(generic as I18nKey);
   }
@@ -368,6 +370,7 @@ export class StateManager {
       read: true,
       write: false,
       name: tName("statusSeverity"),
+      states: { "0": "OK", "1": "Info", "2": "Warning", "3": "Critical", "4": "Emergency" },
     });
     await this.adapter.setStateChangedAsync(`${upsName}.status.severity`, { val: result.severity, ack: true });
 

@@ -132,7 +132,7 @@ function varTranslation(nutVarName) {
   if (TRANSLATED_VARIABLES.has(nutVarName)) {
     return (0, import_i18n.tName)(nutVarName);
   }
-  const generic = nutVarName.replace(/\.\d+\./, ".");
+  const generic = nutVarName.replace(/\.(\d+|L\d(-(L\d|N))?|N)\./, ".");
   if (generic !== nutVarName && TRANSLATED_VARIABLES.has(generic)) {
     return (0, import_i18n.tName)(generic);
   }
@@ -336,7 +336,8 @@ class StateManager {
       role: "value",
       read: true,
       write: false,
-      name: (0, import_i18n.tName)("statusSeverity")
+      name: (0, import_i18n.tName)("statusSeverity"),
+      states: { "0": "OK", "1": "Info", "2": "Warning", "3": "Critical", "4": "Emergency" }
     });
     await this.adapter.setStateChangedAsync(`${upsName}.status.severity`, { val: result.severity, ack: true });
     await this.ensureState(`${upsName}.status.display`, {
