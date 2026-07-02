@@ -240,7 +240,7 @@ class NutClient {
       var _a;
       const wasConnected = this.connected;
       this.connected = false;
-      this.rejectActive(new Error("Connection closed"));
+      this.rejectAll(new Error("Connection closed"));
       if (wasConnected && !this.destroyed && this.persistent) {
         (_a = this.log) == null ? void 0 : _a.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
         this.scheduleReconnect();
@@ -309,7 +309,17 @@ class NutClient {
   }
   /** Reject all pending and queued commands. */
   cancelAll() {
-    const err = new Error("Client cancelled");
+    this.rejectAll(new Error("Client cancelled"));
+  }
+  /**
+   * Reject the active command AND every queued command (clearing their timers), then reset the
+   * multi-line parse state. Used by cancelAll (destroy/resync) and by the socket-close handler —
+   * a queued entry left behind with a live timer would fire later and tear down a
+   * subsequently-reconnected socket.
+   *
+   * @param err Rejection reason handed to every pending command
+   */
+  rejectAll(err) {
     if (this.active) {
       this.clearTimer(this.active.timer);
       this.active.reject(err);
@@ -476,11 +486,7 @@ class NutClient {
         reject(new Error("Not connected"));
         return;
       }
-      const timer = this.setTimer(() => {
-        reject(new NutTimeoutError(command));
-        this.resyncAfterTimeout(command);
-      }, this.commandTimeout);
-      const entry = { command, resolve, reject, timer, multiLine };
+      const entry = { command, resolve, reject, timer: null, multiLine };
       this.queue.push(entry);
       if (!this.active) {
         this.processQueue();
@@ -496,8 +502,6 @@ class NutClient {
     var _a, _b;
     if (((_a = this.active) == null ? void 0 : _a.command) === command) {
       this.active = null;
-    } else {
-      this.queue = this.queue.filter((e) => e.command !== command);
     }
     this.connected = false;
     this.cancelAll();
@@ -509,14 +513,19 @@ class NutClient {
     if (this.active || this.queue.length === 0) {
       return;
     }
-    this.active = this.queue.shift();
-    (_a = this.log) == null ? void 0 : _a.debug(`>> ${this.active.command}`);
-    if (this.active.multiLine) {
+    const entry = this.queue.shift();
+    this.active = entry;
+    entry.timer = this.setTimer(() => {
+      entry.reject(new NutTimeoutError(entry.command));
+      this.resyncAfterTimeout(entry.command);
+    }, this.commandTimeout);
+    (_a = this.log) == null ? void 0 : _a.debug(`>> ${entry.command}`);
+    if (entry.multiLine) {
       this.multiLineBuffer = [];
-      const query = this.active.command.replace(/^LIST\s+/, "");
+      const query = entry.command.replace(/^LIST\s+/, "");
       this.multiLineExpectedEnd = `END LIST ${query}`;
     }
-    (_b = this.socket) == null ? void 0 : _b.write(`${this.active.command}
+    (_b = this.socket) == null ? void 0 : _b.write(`${entry.command}
 `);
   }
   onData(data) {
@@ -567,15 +576,6 @@ class NutClient {
     this.active = null;
     entry.resolve([line]);
     this.processQueue();
-  }
-  rejectActive(err) {
-    if (this.active) {
-      this.clearTimer(this.active.timer);
-      this.active.reject(err);
-      this.active = null;
-    }
-    this.multiLineBuffer = [];
-    this.multiLineExpectedEnd = "";
   }
   scheduleReconnect() {
     var _a;

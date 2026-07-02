@@ -890,6 +890,51 @@ describe("NutClient", () => {
         await mock.stop();
       }
     });
+    it("does not time out a queued command for the time it waits behind an active one", { timeout: 10000 }, async () => {
+      // Every response is delayed by DELAY ms. Two commands go out via Promise.all (as poll()
+      // does): LIST VAR is active from t=0 (done ~DELAY); LIST RW waits in the queue and only
+      // becomes active at ~DELAY (done ~2·DELAY). With the timeout armed at ENQUEUE it fires at
+      // commandTimeout from t=0 and kills LIST RW even though it barely had any *active* time.
+      const DELAY = 200;
+      const server = net.createServer(sock => {
+        sock.setEncoding("utf8");
+        let buf = "";
+        sock.on("data", (d: string) => {
+          buf += d;
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const line of lines) {
+            const cmd = line.trim();
+            setTimeout(() => {
+              if (cmd.startsWith("LIST VAR")) {
+                sock.write('BEGIN LIST VAR ups0\nVAR ups0 battery.charge "100"\nEND LIST VAR ups0\n');
+              } else if (cmd.startsWith("LIST RW")) {
+                sock.write("BEGIN LIST RW ups0\nEND LIST RW ups0\n");
+              } else {
+                sock.write("ERR UNKNOWN-COMMAND\n");
+              }
+            }, DELAY);
+          }
+        });
+        sock.on("error", () => {});
+      });
+      const port = await new Promise<number>(r =>
+        server.listen(0, "127.0.0.1", () => r((server.address() as net.AddressInfo).port)),
+      );
+      try {
+        const client = new NutClient("127.0.0.1", port, { commandTimeout: 300 });
+        await client.connect();
+        // LIST RW needs > commandTimeout of wall-clock (queue-wait + run) but < commandTimeout
+        // of *active* time. It must NOT be timed out and drop the connection.
+        const [vars, rw] = await Promise.all([client.listVar("ups0"), client.listRw("ups0")]);
+        expect(vars.length).toBeGreaterThan(0);
+        expect(Array.isArray(rw)).toBe(true);
+        expect(client.isConnected).toBe(true);
+        client.destroy();
+      } finally {
+        await new Promise<void>(r => server.close(() => r()));
+      }
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -935,6 +980,36 @@ describe("NutClient", () => {
 
         await expect(p).rejects.toThrow("Client cancelled");
         expect(client.isConnected).toBe(false);
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Socket close drains the whole queue (not just the active command)
+  // -----------------------------------------------------------------------
+  describe("socket close", () => {
+    it("rejects queued commands too when the connection drops (no orphaned queue entry)", { timeout: 10000 }, async () => {
+      const mock = createMockNutServer(() => null); // never responds → commands stay pending
+      const port = await mock.start();
+      try {
+        // High commandTimeout so the only way a queued command can settle is the close-drain,
+        // not its own timer firing.
+        const client = new NutClient("127.0.0.1", port, { commandTimeout: 10000 });
+        await client.connect();
+
+        const active = client.listUps(); // becomes active (mock hangs)
+        const queued = client.listVar("ups0"); // waits in the queue behind it
+
+        // Drop the connection from underneath both commands.
+        // @ts-expect-error accessing private socket for a deterministic disconnect
+        client.socket!.destroy();
+
+        await expect(active).rejects.toThrow(); // active — handled even before the fix
+        await expect(queued).rejects.toThrow(); // queued — was orphaned (never settled) before the fix
+
+        client.destroy();
       } finally {
         await mock.stop();
       }

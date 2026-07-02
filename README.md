@@ -172,6 +172,10 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- More robust connection handling: the adapter no longer drops and reconnects the NUT connection unnecessarily on slow servers or after a brief network hiccup.
+
 ### 0.4.5 (2026-06-21)
 
 - With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.

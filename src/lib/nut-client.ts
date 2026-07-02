@@ -245,7 +245,9 @@ export class NutClient {
     socket.on("close", () => {
       const wasConnected = this.connected;
       this.connected = false;
-      this.rejectActive(new Error("Connection closed"));
+      // Drain the WHOLE queue, not just the active command: a queued entry left behind would keep
+      // a live command timer that fires later and tears down a subsequently-reconnected socket.
+      this.rejectAll(new Error("Connection closed"));
       // Only the persistent runtime connection auto-reconnects on a drop; a one-shot
       // connect() (e.g. the connection test) must not.
       if (wasConnected && !this.destroyed && this.persistent) {
@@ -322,7 +324,18 @@ export class NutClient {
 
   /** Reject all pending and queued commands. */
   cancelAll(): void {
-    const err = new Error("Client cancelled");
+    this.rejectAll(new Error("Client cancelled"));
+  }
+
+  /**
+   * Reject the active command AND every queued command (clearing their timers), then reset the
+   * multi-line parse state. Used by cancelAll (destroy/resync) and by the socket-close handler —
+   * a queued entry left behind with a live timer would fire later and tear down a
+   * subsequently-reconnected socket.
+   *
+   * @param err Rejection reason handed to every pending command
+   */
+  private rejectAll(err: Error): void {
     if (this.active) {
       this.clearTimer(this.active.timer);
       this.active.reject(err);
@@ -505,14 +518,10 @@ export class NutClient {
         return;
       }
 
-      const timer = this.setTimer(() => {
-        reject(new NutTimeoutError(command));
-        // A timed-out command desyncs the stream (NUT has no request IDs — a late reply would
-        // be mis-attributed to the next command). Drop the connection and reconnect to resync.
-        this.resyncAfterTimeout(command);
-      }, this.commandTimeout);
-
-      const entry: QueueEntry = { command, resolve, reject, timer, multiLine };
+      // The command timeout is armed when the command becomes ACTIVE (processQueue), not here:
+      // otherwise the time a command waits in the queue behind a slower one eats into its budget,
+      // and a queued command can spuriously time out — dropping an otherwise-healthy connection.
+      const entry: QueueEntry = { command, resolve, reject, timer: null, multiLine };
       this.queue.push(entry);
 
       if (!this.active) {
@@ -527,14 +536,15 @@ export class NutClient {
    * @param command The command that timed out
    */
   private resyncAfterTimeout(command: string): void {
+    // Only the active command carries a live timer (armed in processQueue), so a fired timeout
+    // always refers to the active command — already rejected in its timer callback. Null it so
+    // the cancelAll() below doesn't reject it a second time.
     if (this.active?.command === command) {
       this.active = null;
-    } else {
-      this.queue = this.queue.filter(e => e.command !== command);
     }
-    // We've decided to drop the socket — reflect it synchronously so callers see the desync
-    // immediately, and schedule the reconnect here. The async 'close' handler then sees
-    // wasConnected=false and won't double-schedule.
+    // Drop the socket — reflect it synchronously so callers see the desync immediately and the
+    // async 'close' handler sees wasConnected=false (no double-schedule). cancelAll() drains the
+    // rest of the queue; scheduleReconnect() brings the connection back on a clean stream.
     this.connected = false;
     this.cancelAll();
     this.socket?.destroy();
@@ -546,16 +556,28 @@ export class NutClient {
       return;
     }
 
-    this.active = this.queue.shift()!;
-    this.log?.debug(`>> ${this.active.command}`);
+    const entry = this.queue.shift()!;
+    this.active = entry;
 
-    if (this.active.multiLine) {
+    // Arm the command timeout now that the command is active (see sendCommand): the full budget
+    // applies to active time only, never to queue-wait. A fired timer therefore always refers to
+    // the active command.
+    entry.timer = this.setTimer(() => {
+      entry.reject(new NutTimeoutError(entry.command));
+      // A timed-out command desyncs the stream (NUT has no request IDs — a late reply would be
+      // mis-attributed to the next command). Drop the connection and reconnect to resync.
+      this.resyncAfterTimeout(entry.command);
+    }, this.commandTimeout);
+
+    this.log?.debug(`>> ${entry.command}`);
+
+    if (entry.multiLine) {
       this.multiLineBuffer = [];
-      const query = this.active.command.replace(/^LIST\s+/, "");
+      const query = entry.command.replace(/^LIST\s+/, "");
       this.multiLineExpectedEnd = `END LIST ${query}`;
     }
 
-    this.socket?.write(`${this.active.command}\n`);
+    this.socket?.write(`${entry.command}\n`);
   }
 
   private onData(data: string): void {
@@ -612,16 +634,6 @@ export class NutClient {
     this.active = null;
     entry.resolve([line]);
     this.processQueue();
-  }
-
-  private rejectActive(err: Error): void {
-    if (this.active) {
-      this.clearTimer(this.active.timer);
-      this.active.reject(err);
-      this.active = null;
-    }
-    this.multiLineBuffer = [];
-    this.multiLineExpectedEnd = "";
   }
 
   private scheduleReconnect(): void {
