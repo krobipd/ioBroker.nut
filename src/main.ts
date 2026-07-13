@@ -13,6 +13,7 @@ import {
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, StateManager } from "./lib/state-manager";
+import { detectType } from "./lib/type-detector";
 import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types";
 
 /**
@@ -420,17 +421,24 @@ export class NutAdapter extends utils.Adapter {
     }
     for (const rw of rwVars) {
       const stateId = nutVarToStateId(upsName, rw.name);
-      try {
-        const enumVals = await this.client.listEnum(upsName, rw.name);
-        if (enumVals.length > 0) {
-          const states: Record<string, string> = {};
-          for (const v of enumVals) {
-            states[v] = v;
+      // A writable yes/no var is a boolean state (detectType → boolean only via parseYesNo). Its
+      // LIST ENUM yes/no must not become common.states — a string-keyed {yes,no} map is meaningless
+      // on a boolean — so skip the enum round-trip entirely for booleans. RANGE stays (harmless: a
+      // boolean has none). Multi-value string/number enums are unaffected.
+      const isBoolean = detectType(rw.name, rw.value, true).type === "boolean";
+      if (!isBoolean) {
+        try {
+          const enumVals = await this.client.listEnum(upsName, rw.name);
+          if (enumVals.length > 0) {
+            const states: Record<string, string> = {};
+            for (const v of enumVals) {
+              states[v] = v;
+            }
+            await this.stateManager.enrichStateMetadata(stateId, { states });
           }
-          await this.stateManager.enrichStateMetadata(stateId, { states });
+        } catch (err: unknown) {
+          this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${errText(err)})`);
         }
-      } catch (err: unknown) {
-        this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${errText(err)})`);
       }
       try {
         const ranges = await this.client.listRange(upsName, rw.name);
@@ -504,7 +512,11 @@ export class NutAdapter extends utils.Adapter {
 
       const varName =
         this.stateManager?.nutNameForState(localId) ?? `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
-      const value = String(state.val);
+      // A writable yes/no variable (ups.start.auto/.battery/.reboot, battery.protection) is stored
+      // as a boolean state (detectType → boolean only via parseYesNo, so boolean ⟺ the NUT var
+      // accepts yes/no). Translate it back to the token NUT expects — String(true) = "true" would
+      // be rejected with INVALID-VALUE/SET-FAILED. Numbers/enum strings write verbatim.
+      const value = typeof state.val === "boolean" ? (state.val ? "yes" : "no") : String(state.val);
       this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
       try {
         await this.client.setVar(upsName, varName, value);

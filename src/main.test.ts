@@ -539,6 +539,23 @@ describe("poll", () => {
     expect(s.sm.enrichStateMetadata.mock.calls.length).toBe(callsAfterFirst);
   });
 
+  it("does not put yes/no enum states on a boolean writable var (they are booleans, not enums)", async () => {
+    // A writable yes/no var (ups.start.auto) is a boolean state; its LIST ENUM yes/no must not be
+    // pushed as common.states — a string-keyed {yes,no} map is meaningless on a boolean.
+    const s = await setupConnected({ enableSetVar: true });
+    s.client.listRw.mockResolvedValue([{ name: "ups.start.auto", value: "yes" }]);
+    s.client.listEnum.mockResolvedValue(["yes", "no"]);
+    s.client.listRange.mockResolvedValue([]);
+    s.internal.enrichedUps.clear();
+    s.sm.enrichStateMetadata.mockClear();
+
+    await s.internal.poll();
+    expect(s.sm.enrichStateMetadata).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ states: expect.anything() }),
+    );
+  });
+
   it("gates info.connection on the client connection, not on the loop having run", async () => {
     const s = await setupConnected();
     s.client.isConnected = false; // server dropped; per-UPS errors are swallowed in the loop
@@ -627,6 +644,21 @@ describe("onStateChange — command and SET VAR gates", () => {
     s.sm.nutNameForState.mockReturnValue("input.L1-L2.voltage");
     await s.internal.onStateChange("nut.0.ups0.input.L1-L2-voltage", { val: 247, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "input.L1-L2.voltage", "247");
+  });
+
+  it("SET VAR: writes a yes/no boolean back as 'yes'/'no', not 'true'/'false'", async () => {
+    // ups.start.auto/.battery/.reboot are RW yes/no variables on many drivers (mge-hid, delta,
+    // eaton, voltronic) → detectType makes them boolean switches. Writing must translate the
+    // boolean to the yes/no token NUT expects; String(true) = "true" would be rejected.
+    const s = await setupConnected({ enableSetVar: true });
+    s.sm.nutNameForState.mockReturnValue("ups.start.auto");
+
+    await s.internal.onStateChange("nut.0.ups0.ups.start-auto", { val: false, ack: false });
+    expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.start.auto", "no");
+
+    s.client.setVar.mockClear();
+    await s.internal.onStateChange("nut.0.ups0.ups.start-auto", { val: true, ack: false });
+    expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.start.auto", "yes");
   });
 
   it("INSTCMD: uses the stored NUT name rather than reversing the id", async () => {

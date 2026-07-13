@@ -38,6 +38,7 @@ var import_coerce = require("./lib/coerce");
 var import_message_router = require("./lib/message-router");
 var import_nut_client = require("./lib/nut-client");
 var import_state_manager = require("./lib/state-manager");
+var import_type_detector = require("./lib/type-detector");
 class NutAdapter extends utils.Adapter {
   client = null;
   stateManager = null;
@@ -374,17 +375,20 @@ class NutAdapter extends utils.Adapter {
     }
     for (const rw of rwVars) {
       const stateId = (0, import_state_manager.nutVarToStateId)(upsName, rw.name);
-      try {
-        const enumVals = await this.client.listEnum(upsName, rw.name);
-        if (enumVals.length > 0) {
-          const states = {};
-          for (const v of enumVals) {
-            states[v] = v;
+      const isBoolean = (0, import_type_detector.detectType)(rw.name, rw.value, true).type === "boolean";
+      if (!isBoolean) {
+        try {
+          const enumVals = await this.client.listEnum(upsName, rw.name);
+          if (enumVals.length > 0) {
+            const states = {};
+            for (const v of enumVals) {
+              states[v] = v;
+            }
+            await this.stateManager.enrichStateMetadata(stateId, { states });
           }
-          await this.stateManager.enrichStateMetadata(stateId, { states });
+        } catch (err) {
+          this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
         }
-      } catch (err) {
-        this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
       }
       try {
         const ranges = await this.client.listRange(upsName, rw.name);
@@ -450,7 +454,7 @@ class NutAdapter extends utils.Adapter {
         return;
       }
       const varName = (_d = (_c = this.stateManager) == null ? void 0 : _c.nutNameForState(localId)) != null ? _d : `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
-      const value = String(state.val);
+      const value = typeof state.val === "boolean" ? state.val ? "yes" : "no" : String(state.val);
       this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
       try {
         await this.client.setVar(upsName, varName, value);
