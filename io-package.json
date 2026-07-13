@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "news": {
-      "NEXT": {
+      "0.5.1": {
         "en": "Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.",
         "de": "Schaltbare Ja/Nein-USV-Einstellungen (z. B. automatischer Neustart nach Netzrückkehr) lassen sich jetzt wirklich aus ioBroker ändern — vorher lehnte der NUT-Server das Umschalten still ab.",
         "ru": "Переключаемые настройки ИБП типа да/нет (например, автозапуск после возврата питания) теперь действительно можно менять из ioBroker — раньше сервер NUT молча отклонял переключение.",

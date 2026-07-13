@@ -174,7 +174,7 @@ nut.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.5.1 (2026-07-13)
 
 - Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.
 
@@ -201,12 +201,6 @@ nut.0.
 
 - Raised the minimum ioBroker js-controller to 7.2.2, matching the current stable release.
 - Internal code and test cleanup — no change to how the adapter behaves.
-
-### 0.4.2 (2026-06-12)
-
-- UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"
-- Number settings with stray characters (like a port of "34abc") no longer half-apply — they fall back to safe defaults
-- A UPS that disappears from the NUT server and later returns now reports its first problem at full warning level again
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

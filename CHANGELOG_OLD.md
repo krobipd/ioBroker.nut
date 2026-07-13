@@ -1,4 +1,10 @@
 # Older changes
+## 0.4.2 (2026-06-12)
+
+- UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"
+- Number settings with stray characters (like a port of "34abc") no longer half-apply — they fall back to safe defaults
+- A UPS that disappears from the NUT server and later returns now reports its first problem at full warning level again
+
 ## 0.4.1 (2026-06-10)
 
 - Cleaned up the obsolete `info.online` state left behind by the 0.4.0 rename. It stayed in the object tree frozen at its last value; the adapter now removes it automatically on the next start.
