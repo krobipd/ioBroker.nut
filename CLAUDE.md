@@ -57,9 +57,8 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 
 ## NUT-Protokoll Referenz
 
-- Protokoll-Spec: `Ressourcen/nut/nut-protocol-reference.md`
-- **Autoritative Quelle (Standard-Verifikation): `Ressourcen/nut/nut-2.8.5/`** — echte NUT-Release-Quelle. `docs/new-drivers.txt` = dokumentierte `status_set`-Werte; `docs/nut-names.txt` = Instant-Commands. Flag-/Command-Katalog treiber-agnostisch hiergegen verifiziert (NICHT gegen krobis Eaton). `grep -rhoE 'status_set\("[^"]+"' drivers/` für den realen Token-Satz
-- Krobi Live-Daten: `Ressourcen/nut/krobi-eaton-live-data.md` (51 Variablen, Eaton PRO 1600) — nur Test-Sample, NICHT als Standard-Referenz
+- **Autoritative Quelle (Standard-Verifikation): NUT 2.8.5 Release-Quelle.** `docs/new-drivers.txt` = dokumentierte `status_set`-Werte; `docs/nut-names.txt` = Instant-Commands. Flag-/Command-Katalog treiber-agnostisch hiergegen verifiziert (NICHT gegen ein einzelnes Gerät). `grep -rhoE 'status_set\("[^"]+"' drivers/` für den realen Token-Satz
+- Live-Sample zum Gegenprüfen: ein reales Eaton PRO 1600 (51 Variablen) — nur Test-Sample, NICHT als Standard-Referenz
 - Port: 3493/TCP, ASCII-Zeilenprotokoll
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`

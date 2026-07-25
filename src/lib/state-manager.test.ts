@@ -699,7 +699,7 @@ describe("StateManager", () => {
       // expose these 54; the adapter is dynamic and creates states for whatever a driver
       // reports. Variables this device does NOT have (three-phase, ambient/EMP sensors,
       // outlet groups, other vendors' vars) are covered by the next test. Captured live from
-      // Ressourcen/nut/krobi-eaton-live-data.md: battery 4, device 4, driver 10, input 5,
+      // a real Eaton PRO 1600: battery 4, device 4, driver 10, input 5,
       // outlet 11, output 4, ups 16 = 54.
       const vars = [
         // battery (4)
@@ -821,7 +821,7 @@ describe("StateManager", () => {
       const { adapter, objects, states } = createMockAdapter();
       const sm = new StateManager(adapter);
 
-      // Real NUT 2.8.5 standard variables (Ressourcen/nut/nut-2.8.5/docs/nut-names.txt) that
+      // Real NUT 2.8.5 standard variables (docs/nut-names.txt) that
       // the single Eaton sample never reports — the adapter must create them just the same.
       const vars = [
         // three-phase, incl. phase-pair names that ALREADY contain a dash

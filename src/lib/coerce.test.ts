@@ -264,7 +264,7 @@ describe("coerce", () => {
     });
 
     it("returns a concrete interface address, trimmed", () => {
-      expect(localAddressOf("10.47.88.2")).toBe("10.47.88.2");
+      expect(localAddressOf("10.0.0.2")).toBe("10.0.0.2");
       expect(localAddressOf("  192.168.1.5  ")).toBe("192.168.1.5");
     });
   });
