@@ -65,6 +65,10 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 
 ## Tests (471 unit + 57 package = 528)
 
+## Versionshistorie
+
+Aktuelle Version: `io-package.json`. **User-facing Changelog:** `README.md` + `io-package.json:common.news` (11 Sprachen, handgeschrieben). **Interne Entwicklungs-Historie** (Findings, Root-Causes, verworfene Wege): `.claude/dev-history.md` — lokal, nicht git-getrackt, bewusst aus dieser Datei ausgelagert um sie schlank zu halten.
+
 ## Befehle
 
 ```bash
