@@ -19,7 +19,7 @@
   "label_enableSetVar": "Schrijfbare variabelen inschakelen",
   "help_enableSetVar": "Sta het wijzigen van schrijfbare UPS-variabelen (SET VAR) toe — vereist authenticatie",
   "supportHeader": "Ondersteuning",
-  "aboutInfo": "ioBroker.nut bewaakt UPS-apparaten via het Network UPS Tools (NUT) protocol. Alle UPS-apparaten verbonden met een NUT-server worden automatisch ontdekt.",
+  "aboutInfo": "ioBroker.nut2 bewaakt UPS-apparaten via het Network UPS Tools (NUT) protocol. Alle UPS-apparaten verbonden met een NUT-server worden automatisch ontdekt.",
   "donateKofi": "Ondersteunen op Ko-fi",
   "donatePaypal": "Doneren via PayPal",
   "channelInfo": "Adapterinformatie",

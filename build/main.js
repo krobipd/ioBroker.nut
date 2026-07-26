@@ -55,7 +55,7 @@ class NutAdapter extends utils.Adapter {
   everConnected = false;
   /** @param options Adapter options forwarded to the ioBroker base class. */
   constructor(options = {}) {
-    super({ ...options, name: "nut" });
+    super({ ...options, name: "nut2" });
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));

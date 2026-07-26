@@ -1,4 +1,4 @@
-# CLAUDE.md — ioBroker.nut
+# CLAUDE.md — ioBroker.nut2
 
 > Gemeinsame ioBroker-Wissensbasis: `../CLAUDE.md` (lokal, nicht im Git). Standards dort, Projekt-Spezifisches hier.
 
@@ -7,8 +7,8 @@
 **ioBroker NUT Monitor** — Überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Persistente TCP-Verbindung, Multi-UPS per Instanz, dynamische State-Erstellung.
 
 - **Version + Changelog:** current version in `io-package.json`; full internal dev history moved to `.claude/dev-history.md` (local, not auto-loaded). User-facing changelog: `README.md` + `io-package.json` news.
-- **GitHub:** https://github.com/krobipd/ioBroker.nut
-- **npm:** https://www.npmjs.com/package/iobroker.nut
+- **GitHub:** https://github.com/krobipd/ioBroker.nut2
+- **npm:** https://www.npmjs.com/package/iobroker.nut2
 - **Repository PR:** noch nicht eingereicht
 - **Runtime-Deps:** nur `@iobroker/adapter-core` (TCP via Node.js built-in `net`)
 - **Test-Setup:** Tests unter `src/**/*.test.ts` direkt via **vitest**. `test/package.js` + `test/integration.js` bleiben mocha (`@iobroker/testing` ist mocha-only).
@@ -47,7 +47,7 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 6. **Commands hinter Safety-Gate** — `enableCommands` Checkbox verhindert versehentliches `load.off`. SET VAR ebenfalls gated
 7. **Network-Interface-Selector** — govee/hassemu-Pattern, wichtig für Multi-Homed-Server
 8. **Dot-Depth-Sortierung** — Variables nach Punkttiefe sortiert, damit Parent-States vor Children existieren (battery.charge vor battery.charge.low)
-9. **Dots→Dashes nach Channel** — `battery.charge.low` → stateId `ups0.battery.charge-low`. Erster Dot = Channel-Trenner, restliche Dots werden Dashes (kompatibel zum alten Apollon77-Adapter)
+9. **Dots→Dashes nach Channel** — `battery.charge.low` → stateId `ups0.battery.charge-low`. Erster Dot = Channel-Trenner, restliche Dots werden Dashes — hält die State-IDs flach und eindeutig, ohne Scheinhierarchie unter dem Kanal
 10. **Auth-Failure = stay alive, yellow, no connections** — bei konfiguriertem username+password und ACCESS-DENIED: `client.destroy()` trennt TCP komplett (kein Reconnect, kein Polling, kein Datentransfer), Adapter bleibt am Leben mit `info.connection = false` (gelb in Admin). sendTo-Button (Verbindung testen) funktioniert weiter — User kann Credentials korrigieren und testen bevor er speichert. checkConnection prüft `USERNAME`/`PASSWORD` (die echte Credential-Prüfung); **kein `LOGIN`** (v0.4.5) — NUT erlaubt nur ein LOGIN pro Verbindung und es ist upsmon-Shutdown-only; ein per-USV-LOGIN-Loop machte Multi-USV-Server mit Auth gelb (`ALREADY-LOGGED-IN`)
 11. **Per-UPS info.reachable** — `indicator.reachable` Boolean mit `statusStates.onlineId` auf Device-Objekt (beszel-Pattern). v0.4.0 von `info.online` umbenannt — die Namens-Kollision mit dem `status.online`/OL-Flag (am Netz) verwirrte: `reachable` = „antwortet die USV / Daten frisch"
 12. **Legacy-Cleanup** — `cleanupLegacyObjects()` löscht Root-Level-Orphans (alter Adapter) und v0.1.0-Dot-Style-Objekte in einem Pass

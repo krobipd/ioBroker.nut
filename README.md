@@ -1,8 +1,8 @@
-# <img src="https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg" width="48" align="top" /> ioBroker.nut
+# <img src="https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut2@main/admin/nut2.svg" width="48" align="top" /> ioBroker.nut2
 
-**Release:** [![npm version](https://img.shields.io/npm/v/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut) ![stable](https://iobroker.live/badges/nut-stable.svg) ![Installations](https://iobroker.live/badges/nut-installed.svg) [![npm downloads](https://img.shields.io/npm/dt/iobroker.nut)](https://www.npmjs.com/package/iobroker.nut)
+**Release:** [![npm version](https://img.shields.io/npm/v/iobroker.nut2)](https://www.npmjs.com/package/iobroker.nut2) ![stable](https://iobroker.live/badges/nut2-stable.svg) ![Installations](https://iobroker.live/badges/nut2-installed.svg) [![npm downloads](https://img.shields.io/npm/dt/iobroker.nut2)](https://www.npmjs.com/package/iobroker.nut2)
 
-**Build:** [![Test and Release](https://github.com/krobipd/ioBroker.nut/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/krobipd/ioBroker.nut/actions/workflows/test-and-release.yml) ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+**Build:** [![Test and Release](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml) ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **Support:** [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/krobipd) [![PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/krobipd)
 
@@ -69,7 +69,7 @@ Both command features require a NUT user with appropriate permissions configured
 States are organized by NUT domain. The exact set of states depends on what your UPS driver reports.
 
 ```
-nut.0.
+nut2.0.
 ├── info.connection                    — Connection to NUT server (bool)
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
@@ -206,16 +206,14 @@ nut.0.
 
 ## Credits
 
-**Original Author:** Apollon77 ([@Apollon77](https://github.com/Apollon77))
-
-**Rewrite:** krobi
+NUT support in ioBroker goes back to [Apollon77](https://github.com/Apollon77) — his `iobroker.nut` adapter brought the Network UPS Tools protocol to the platform in 2016 and served it until 2025. This adapter is an independent rewrite and shares no code with it.
 
 ---
 
 ## Support
 
 - [ioBroker Forum](https://forum.iobroker.net/)
-- [GitHub Issues](https://github.com/krobipd/ioBroker.nut/issues)
+- [GitHub Issues](https://github.com/krobipd/ioBroker.nut2/issues)
 
 ### Support Development
 
@@ -230,7 +228,6 @@ This adapter is free and open source. If you find it useful, consider buying me 
 
 MIT License
 
-Copyright (c) 2016-2025 Ingo Fischer <ingo@fischer-ka.de>  
 Copyright (c) 2026 krobi <krobi@power-dreams.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

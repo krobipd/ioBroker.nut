@@ -19,7 +19,7 @@
   "label_enableSetVar": "Enable writable variables",
   "help_enableSetVar": "Allow changing writable UPS variables (SET VAR) — requires authentication",
   "supportHeader": "Support",
-  "aboutInfo": "ioBroker.nut monitors UPS devices via the Network UPS Tools (NUT) protocol. All UPS devices connected to a NUT server are automatically discovered.",
+  "aboutInfo": "ioBroker.nut2 monitors UPS devices via the Network UPS Tools (NUT) protocol. All UPS devices connected to a NUT server are automatically discovered.",
   "donateKofi": "Support on Ko-fi",
   "donatePaypal": "Donate via PayPal",
   "channelInfo": "Adapter information",

@@ -19,7 +19,7 @@
   "label_enableSetVar": "Activar variables editables",
   "help_enableSetVar": "Permitir modificar variables editables del SAI (SET VAR) — requiere autenticación",
   "supportHeader": "Soporte",
-  "aboutInfo": "ioBroker.nut monitoriza dispositivos SAI a través del protocolo Network UPS Tools (NUT). Todos los dispositivos SAI conectados a un servidor NUT se descubren automáticamente.",
+  "aboutInfo": "ioBroker.nut2 monitoriza dispositivos SAI a través del protocolo Network UPS Tools (NUT). Todos los dispositivos SAI conectados a un servidor NUT se descubren automáticamente.",
   "donateKofi": "Apoyar en Ko-fi",
   "donatePaypal": "Donar vía PayPal",
   "channelInfo": "Información del adaptador",

@@ -19,7 +19,7 @@
   "label_enableSetVar": "Увімкнути записувані змінні",
   "help_enableSetVar": "Дозволити зміну записуваних змінних ДБЖ (SET VAR) — потрібна автентифікація",
   "supportHeader": "Підтримка",
-  "aboutInfo": "ioBroker.nut відстежує ДБЖ через протокол Network UPS Tools (NUT). Усі ДБЖ, підключені до NUT-сервера, виявляються автоматично.",
+  "aboutInfo": "ioBroker.nut2 відстежує ДБЖ через протокол Network UPS Tools (NUT). Усі ДБЖ, підключені до NUT-сервера, виявляються автоматично.",
   "donateKofi": "Підтримати на Ko-fi",
   "donatePaypal": "Пожертвувати через PayPal",
   "channelInfo": "Інформація про адаптер",

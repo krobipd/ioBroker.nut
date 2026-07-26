@@ -19,7 +19,7 @@
   "label_enableSetVar": "Włącz zmienne zapisywalne",
   "help_enableSetVar": "Zezwalaj na zmianę zmiennych zapisywalnych UPS (SET VAR) — wymaga uwierzytelnienia",
   "supportHeader": "Wsparcie",
-  "aboutInfo": "ioBroker.nut monitoruje urządzenia UPS za pomocą protokołu Network UPS Tools (NUT). Wszystkie urządzenia UPS podłączone do serwera NUT są wykrywane automatycznie.",
+  "aboutInfo": "ioBroker.nut2 monitoruje urządzenia UPS za pomocą protokołu Network UPS Tools (NUT). Wszystkie urządzenia UPS podłączone do serwera NUT są wykrywane automatycznie.",
   "donateKofi": "Wesprzyj na Ko-fi",
   "donatePaypal": "Przekaż darowiznę przez PayPal",
   "channelInfo": "Informacje o adapterze",

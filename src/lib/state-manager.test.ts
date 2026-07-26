@@ -36,7 +36,7 @@ function createMockAdapter(): {
   const logs: string[] = [];
 
   const adapter = {
-    namespace: "nut.0",
+    namespace: "nut2.0",
     log: {
       info: (msg: string) => logs.push(`INFO: ${msg}`),
       debug: (msg: string) => logs.push(`DEBUG: ${msg}`),
@@ -77,7 +77,7 @@ function createMockAdapter(): {
     getAdapterObjectsAsync: async () => {
       const result: Record<string, MockObj> = {};
       for (const [id, obj] of objects) {
-        result[`nut.0.${id}`] = obj;
+        result[`nut2.0.${id}`] = obj;
       }
       return result;
     },
@@ -134,7 +134,7 @@ describe("StateManager", () => {
       await sm.ensureUpsDevice("ups0", "Main UPS");
 
       const common = objects.get("ups0")?.common as any;
-      expect(common?.statusStates?.onlineId).toBe("nut.0.ups0.info.reachable");
+      expect(common?.statusStates?.onlineId).toBe("nut2.0.ups0.info.reachable");
     });
 
     it("preserves the existing device name on re-discover (user names win — mcm1957 line)", async () => {

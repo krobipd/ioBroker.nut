@@ -1,6 +1,6 @@
 {
   "common": {
-    "name": "nut",
+    "name": "nut2",
     "version": "0.5.1",
     "news": {
       "0.5.1": {
@@ -122,7 +122,6 @@
       "zh-cn": "通过NUT（Network UPS Tools）监控不间断电源"
     },
     "authors": [
-      "Apollon77 <ingo@fischer-ka.de>",
       "krobi <krobi@power-dreams.com>"
     ],
     "licenseInformation": {
@@ -130,9 +129,9 @@
       "type": "free"
     },
     "platform": "Javascript/Node.js",
-    "icon": "nut.svg",
-    "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut@main/admin/nut.svg",
-    "readme": "https://github.com/krobipd/ioBroker.nut/blob/main/README.md",
+    "icon": "nut2.svg",
+    "extIcon": "https://cdn.jsdelivr.net/gh/krobipd/ioBroker.nut2@main/admin/nut2.svg",
+    "readme": "https://github.com/krobipd/ioBroker.nut2/blob/main/README.md",
     "enabled": true,
     "tier": 3,
     "loglevel": "info",

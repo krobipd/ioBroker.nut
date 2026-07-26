@@ -19,7 +19,7 @@
   "label_enableSetVar": "Beschreibbare Variablen aktivieren",
   "help_enableSetVar": "Beschreibbare USV-Variablen ändern (SET VAR) — erfordert Authentifizierung",
   "supportHeader": "Unterstützung",
-  "aboutInfo": "ioBroker.nut überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Alle USV-Geräte eines NUT-Servers werden automatisch erkannt.",
+  "aboutInfo": "ioBroker.nut2 überwacht USV-Geräte über das Network UPS Tools (NUT) Protokoll. Alle USV-Geräte eines NUT-Servers werden automatisch erkannt.",
   "donateKofi": "Unterstützen auf Ko-fi",
   "donatePaypal": "Spenden via PayPal",
   "channelInfo": "Adapter-Informationen",

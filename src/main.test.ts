@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@iobroker/adapter-core", () => {
   class StubAdapter {
-    namespace = "nut.0";
+    namespace = "nut2.0";
     adapterDir = "/stub-adapter-dir";
     config: Record<string, unknown> = {};
     states = new Map<string, { val: unknown; ack: boolean }>();
@@ -275,7 +275,7 @@ describe("onReady", () => {
   it("sets info.connection=false at startup", async () => {
     const { internal, stub } = setup();
     await internal.onReady();
-    expect(stub.states.get("nut.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
   });
 
   it("catches unexpected errors (onReady failed log, no throw)", async () => {
@@ -307,7 +307,7 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(stub.intervals).toHaveLength(1);
     expect(stub.intervals[0].ms).toBe(15000);
     expect(logsOf(stub, "info").some(m => m.includes("NUT adapter started — 1 UPS(es) on 10.0.0.3:3493"))).toBe(true);
-    expect(stub.states.get("nut.0.info.connection")).toEqual({ val: true, ack: true });
+    expect(stub.states.get("nut2.0.info.connection")).toEqual({ val: true, ack: true });
   });
 
   it("does not arm a second poll timer on reconnect (idempotent re-entry)", async () => {
@@ -332,7 +332,7 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(s.stub, "error").some(m => m.includes("Authentication failed"))).toBe(true);
     expect(logsOf(s.stub, "info").some(m => m.includes("adapter is idle"))).toBe(true);
     expect(s.client.destroy).toHaveBeenCalledTimes(1);
-    expect(s.stub.states.get("nut.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
     expect(s.stub.intervals).toHaveLength(0);
   });
 
@@ -458,8 +458,8 @@ describe("poll", () => {
       new Set(),
     );
     expect(s.sm.updateStatusFlags).toHaveBeenCalledWith("ups0", "OL", undefined);
-    expect(s.stub.states.get("nut.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
-    expect(s.stub.states.get("nut.0.info.connection")).toEqual({ val: true, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: true, ack: true });
   });
 
   it("passes battery.charger.status through to the status flags", async () => {
@@ -499,7 +499,7 @@ describe("poll", () => {
     s.client.listVar.mockRejectedValue(new Error("UPS gone"));
 
     await s.internal.poll();
-    expect(s.stub.states.get("nut.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
     expect(logsOf(s.stub, "warn").filter(m => m.includes("Failed to poll UPS 'ups0'"))).toHaveLength(1);
 
     await s.internal.poll();
@@ -509,7 +509,7 @@ describe("poll", () => {
     s.client.listVar.mockResolvedValue([{ name: "ups.status", value: "OL" }]);
     await s.internal.poll();
     expect(logsOf(s.stub, "info").some(m => m.includes("UPS 'ups0' recovered"))).toBe(true);
-    expect(s.stub.states.get("nut.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
   });
 
   it("DATA-STALE gets its own friendly warning (states kept)", async () => {
@@ -561,7 +561,7 @@ describe("poll", () => {
     s.client.isConnected = false; // server dropped; per-UPS errors are swallowed in the loop
     s.client.listVar.mockRejectedValue(new Error("conn lost"));
     await s.internal.poll();
-    expect(s.stub.states.get("nut.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
   });
 
   it("whole-poll failure: classify, warn once for NETWORK, restore info on recovery", async () => {
@@ -603,23 +603,23 @@ describe("poll", () => {
 describe("onStateChange — command and SET VAR gates", () => {
   it("ignores acked/null states and unknown UPS ids", async () => {
     const s = await setupConnected({ enableCommands: true, enableSetVar: true });
-    await s.internal.onStateChange("nut.0.ups0.commands.beeper-enable", { val: true, ack: true });
-    await s.internal.onStateChange("nut.0.ups0.commands.beeper-enable", null);
-    await s.internal.onStateChange("nut.0.ghost.commands.beeper-enable", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.commands.beeper-enable", { val: true, ack: true });
+    await s.internal.onStateChange("nut2.0.ups0.commands.beeper-enable", null);
+    await s.internal.onStateChange("nut2.0.ghost.commands.beeper-enable", { val: true, ack: false });
     expect(s.client.instCmd).not.toHaveBeenCalled();
   });
 
   it("executes a command (dashes→dots), resets the button and logs", async () => {
     const s = await setupConnected({ enableCommands: true });
-    await s.internal.onStateChange("nut.0.ups0.commands.test-battery-start", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.commands.test-battery-start", { val: true, ack: false });
     expect(s.client.instCmd).toHaveBeenCalledWith("ups0", "test.battery.start");
-    expect(s.stub.states.get("nut.0.ups0.commands.test-battery-start")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.commands.test-battery-start")).toEqual({ val: false, ack: true });
     expect(logsOf(s.stub, "info").some(m => m.includes("Command executed: test.battery.start"))).toBe(true);
   });
 
   it("blocks commands when enableCommands is off", async () => {
     const s = await setupConnected({ enableCommands: false });
-    await s.internal.onStateChange("nut.0.ups0.commands.load-off", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.commands.load-off", { val: true, ack: false });
     expect(s.client.instCmd).not.toHaveBeenCalled();
     expect(logsOf(s.stub, "warn").some(m => m.includes("Command blocked"))).toBe(true);
   });
@@ -627,22 +627,22 @@ describe("onStateChange — command and SET VAR gates", () => {
   it("a failing command logs an error and STILL resets the button", async () => {
     const s = await setupConnected({ enableCommands: true });
     s.client.instCmd.mockRejectedValue(new NutError("INSTCMD-FAILED"));
-    await s.internal.onStateChange("nut.0.ups0.commands.load-off", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.commands.load-off", { val: true, ack: false });
     expect(logsOf(s.stub, "error").some(m => m.includes("Command failed: load.off"))).toBe(true);
-    expect(s.stub.states.get("nut.0.ups0.commands.load-off")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.commands.load-off")).toEqual({ val: false, ack: true });
   });
 
   it("SET VAR: reconstructs the variable name (dashes→dots) and acks on success", async () => {
     const s = await setupConnected({ enableSetVar: true });
-    await s.internal.onStateChange("nut.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.delay.shutdown", "30");
-    expect(s.stub.states.get("nut.0.ups0.ups.delay-shutdown")).toEqual({ val: 30, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.ups.delay-shutdown")).toEqual({ val: 30, ack: true });
   });
 
   it("SET VAR: uses the stored NUT name so a literal dash survives (three-phase)", async () => {
     const s = await setupConnected({ enableSetVar: true });
     s.sm.nutNameForState.mockReturnValue("input.L1-L2.voltage");
-    await s.internal.onStateChange("nut.0.ups0.input.L1-L2-voltage", { val: 247, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.input.L1-L2-voltage", { val: 247, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "input.L1-L2.voltage", "247");
   });
 
@@ -653,24 +653,24 @@ describe("onStateChange — command and SET VAR gates", () => {
     const s = await setupConnected({ enableSetVar: true });
     s.sm.nutNameForState.mockReturnValue("ups.start.auto");
 
-    await s.internal.onStateChange("nut.0.ups0.ups.start-auto", { val: false, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.start-auto", { val: false, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.start.auto", "no");
 
     s.client.setVar.mockClear();
-    await s.internal.onStateChange("nut.0.ups0.ups.start-auto", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.start-auto", { val: true, ack: false });
     expect(s.client.setVar).toHaveBeenCalledWith("ups0", "ups.start.auto", "yes");
   });
 
   it("INSTCMD: uses the stored NUT name rather than reversing the id", async () => {
     const s = await setupConnected({ enableCommands: true });
     s.sm.nutNameForState.mockReturnValue("beeper.disable");
-    await s.internal.onStateChange("nut.0.ups0.commands.beeper-mute", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.commands.beeper-mute", { val: true, ack: false });
     expect(s.client.instCmd).toHaveBeenCalledWith("ups0", "beeper.disable");
   });
 
   it("blocks SET VAR when enableSetVar is off", async () => {
     const s = await setupConnected({ enableSetVar: false });
-    await s.internal.onStateChange("nut.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
     expect(s.client.setVar).not.toHaveBeenCalled();
     expect(logsOf(s.stub, "warn").some(m => m.includes("SET VAR blocked"))).toBe(true);
   });
@@ -678,14 +678,14 @@ describe("onStateChange — command and SET VAR gates", () => {
   it("a failing SET VAR logs an error and does NOT ack", async () => {
     const s = await setupConnected({ enableSetVar: true });
     s.client.setVar.mockRejectedValue(new NutError("SET-FAILED"));
-    await s.internal.onStateChange("nut.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.delay-shutdown", { val: 30, ack: false });
     expect(logsOf(s.stub, "error").some(m => m.includes("SET VAR failed"))).toBe(true);
-    expect(s.stub.states.has("nut.0.ups0.ups.delay-shutdown")).toBe(false);
+    expect(s.stub.states.has("nut2.0.ups0.ups.delay-shutdown")).toBe(false);
   });
 
   it("ignores writes with an unexpected id structure", async () => {
     const s = await setupConnected({ enableSetVar: true });
-    await s.internal.onStateChange("nut.0.shallow", { val: 1, ack: false });
+    await s.internal.onStateChange("nut2.0.shallow", { val: 1, ack: false });
     expect(s.client.setVar).not.toHaveBeenCalled();
   });
 });
@@ -704,7 +704,7 @@ describe("onUnload", () => {
     expect(s.client.destroy).not.toHaveBeenCalled();
     expect(testClient.destroy).toHaveBeenCalledTimes(1);
     expect(s.internal.testClients.size).toBe(0);
-    expect(s.stub.states.get("nut.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
   });
 
   it("hard-destroys when not authenticated", async () => {

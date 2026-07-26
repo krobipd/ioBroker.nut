@@ -19,7 +19,7 @@
   "label_enableSetVar": "Включить записываемые переменные",
   "help_enableSetVar": "Разрешить изменение записываемых переменных ИБП (SET VAR) — требуется аутентификация",
   "supportHeader": "Поддержка",
-  "aboutInfo": "ioBroker.nut отслеживает ИБП через протокол Network UPS Tools (NUT). Все ИБП, подключённые к NUT-серверу, обнаруживаются автоматически.",
+  "aboutInfo": "ioBroker.nut2 отслеживает ИБП через протокол Network UPS Tools (NUT). Все ИБП, подключённые к NUT-серверу, обнаруживаются автоматически.",
   "donateKofi": "Поддержать на Ko-fi",
   "donatePaypal": "Пожертвовать через PayPal",
   "channelInfo": "Информация об адаптере",

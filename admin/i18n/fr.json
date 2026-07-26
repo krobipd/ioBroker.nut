@@ -19,7 +19,7 @@
   "label_enableSetVar": "Activer les variables modifiables",
   "help_enableSetVar": "Autoriser la modification des variables de l'onduleur (SET VAR) — nécessite une authentification",
   "supportHeader": "Support",
-  "aboutInfo": "ioBroker.nut surveille les onduleurs via le protocole Network UPS Tools (NUT). Tous les onduleurs connectés à un serveur NUT sont découverts automatiquement.",
+  "aboutInfo": "ioBroker.nut2 surveille les onduleurs via le protocole Network UPS Tools (NUT). Tous les onduleurs connectés à un serveur NUT sont découverts automatiquement.",
   "donateKofi": "Soutenir sur Ko-fi",
   "donatePaypal": "Faire un don via PayPal",
   "channelInfo": "Informations sur l'adaptateur",

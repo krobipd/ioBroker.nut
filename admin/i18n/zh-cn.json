@@ -19,7 +19,7 @@
   "label_enableSetVar": "启用可写变量",
   "help_enableSetVar": "允许更改 UPS 可写变量 (SET VAR)——需要身份验证",
   "supportHeader": "支持",
-  "aboutInfo": "ioBroker.nut 通过 Network UPS Tools (NUT) 协议监控 UPS 设备。连接到 NUT 服务器的所有 UPS 设备会被自动发现。",
+  "aboutInfo": "ioBroker.nut2 通过 Network UPS Tools (NUT) 协议监控 UPS 设备。连接到 NUT 服务器的所有 UPS 设备会被自动发现。",
   "donateKofi": "在 Ko-fi 上支持",
   "donatePaypal": "通过 PayPal 捐赠",
   "channelInfo": "适配器信息",
