@@ -7,7 +7,7 @@
   "label_networkInterface": "Netwerkinterface",
   "tooltip_networkInterface": "Selecteer een specifieke netwerkinterface voor uitgaande verbindingen (optioneel)",
   "label_pollInterval": "Poll-interval (s)",
-  "help_pollInterval": "Hoe vaak de NUT-server wordt bevraagd (5–300 seconden)",
+  "help_pollInterval": "Hoe vaak de NUT-server wordt bevraagd (2–300 seconden)",
   "label_username": "Gebruikersnaam",
   "help_username": "NUT-gebruikersnaam (optioneel — vereist voor commando's en schrijfbare variabelen)",
   "label_password": "Wachtwoord",

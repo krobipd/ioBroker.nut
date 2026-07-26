@@ -94,8 +94,13 @@ export function coercePort(raw: unknown): number {
 }
 
 /**
- * Coerce poll interval to seconds, clamped to [5, 300], default 15.
+ * Coerce poll interval to seconds, clamped to [2, 300], default 15.
  * Matches admin/jsonConfig min/max.
+ *
+ * The lower bound is where NUT itself stops producing new data: ups.conf's
+ * `pollinterval` — how often the driver refreshes the UPS status — defaults to
+ * 2 seconds, and `pollfreq` (the full variable set, usbhid-ups/snmp-ups/nutdrv_qx)
+ * to 30. Polling faster than the driver only re-reads unchanged values.
  *
  * @param raw Raw pollInterval from admin config (seconds)
  */
@@ -104,7 +109,7 @@ export function coercePollIntervalSec(raw: unknown): number {
   if (!Number.isFinite(n)) {
     return 15;
   }
-  return Math.max(5, Math.min(300, Math.floor(n)));
+  return Math.max(2, Math.min(300, Math.floor(n)));
 }
 
 /**

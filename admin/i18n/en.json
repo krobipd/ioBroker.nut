@@ -7,7 +7,7 @@
   "label_networkInterface": "Network interface",
   "tooltip_networkInterface": "Select a specific network interface for outgoing connections (optional)",
   "label_pollInterval": "Poll interval (s)",
-  "help_pollInterval": "How often to query the NUT server (5–300 seconds)",
+  "help_pollInterval": "How often to query the NUT server (2–300 seconds)",
   "label_username": "Username",
   "help_username": "NUT username (optional — required for commands and writable variables)",
   "label_password": "Password",

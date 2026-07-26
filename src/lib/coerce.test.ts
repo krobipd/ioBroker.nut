@@ -162,10 +162,15 @@ describe("coerce", () => {
       expect(coercePollIntervalSec("1e2")).toBe(15);
     });
 
-    it("should clamp to minimum 5", () => {
-      expect(coercePollIntervalSec(1)).toBe(5);
-      expect(coercePollIntervalSec(0)).toBe(5);
-      expect(coercePollIntervalSec(-10)).toBe(5);
+    it("should clamp to minimum 2 (NUT driver pollinterval default)", () => {
+      expect(coercePollIntervalSec(1)).toBe(2);
+      expect(coercePollIntervalSec(0)).toBe(2);
+      expect(coercePollIntervalSec(-10)).toBe(2);
+    });
+
+    it("accepts the new lower bound unchanged", () => {
+      expect(coercePollIntervalSec(2)).toBe(2);
+      expect(coercePollIntervalSec(3)).toBe(3);
     });
 
     it("should clamp to maximum 300", () => {

@@ -3,6 +3,19 @@
     "name": "nut2",
     "version": "0.5.1",
     "news": {
+      "NEXT": {
+        "en": "The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.",
+        "de": "Das Abfrageintervall lässt sich jetzt bis auf 2 Sekunden senken — schneller liefert der NUT-Treiber selbst keine neuen Werte.",
+        "ru": "Интервал опроса теперь можно уменьшить до 2 секунд — быстрее сам драйвер NUT новых значений не выдаёт.",
+        "pt": "O intervalo de consulta pode agora descer até 2 segundos — abaixo disso o próprio controlador NUT não tem novos valores.",
+        "nl": "Het poll-interval kan nu tot 2 seconden omlaag — sneller levert het NUT-stuurprogramma zelf geen nieuwe waarden.",
+        "fr": "L'intervalle d'interrogation peut maintenant descendre à 2 secondes — en dessous, le pilote NUT n'a pas de nouvelles valeurs.",
+        "it": "L'intervallo di interrogazione può ora scendere a 2 secondi — sotto questa soglia il driver NUT non ha nuovi valori.",
+        "es": "El intervalo de consulta ahora puede bajar a 2 segundos — por debajo, el propio controlador NUT no tiene valores nuevos.",
+        "pl": "Interwał odpytywania można teraz obniżyć do 2 sekund — poniżej sterownik NUT sam nie ma nowych wartości.",
+        "uk": "Інтервал опитування тепер можна зменшити до 2 секунд — швидше сам драйвер NUT нових значень не видає.",
+        "zh-cn": "轮询间隔现在最低可设为 2 秒 — 低于该值时 NUT 驱动本身也没有新的读数。"
+      },
       "0.5.1": {
         "en": "Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.",
         "de": "Schaltbare Ja/Nein-USV-Einstellungen (z. B. automatischer Neustart nach Netzrückkehr) lassen sich jetzt wirklich aus ioBroker ändern — vorher lehnte der NUT-Server das Umschalten still ab.",
@@ -80,19 +93,6 @@
         "pl": "Nazwy urządzeń korzystają teraz z producenta + modelu, gdy serwer NUT nie podaje opisu; ściślejsze parsowanie liczb w ustawieniach; powracające UPS-y znów poprawnie ostrzegają",
         "uk": "Імена пристроїв тепер використовують виробника + модель, якщо сервер NUT не дає опису; суворіший розбір чисел у налаштуваннях; ДБЖ, що повертаються, знову коректно попереджають",
         "zh-cn": "当 NUT 服务器没有可用描述时，设备名称现在使用制造商+型号；设置中的数字解析更严格；重新出现的 UPS 会再次正确发出警告"
-      },
-      "0.4.1": {
-        "en": "The leftover online state from the 0.4.0 rename is now cleaned up — it had stayed behind frozen at its last value and is removed automatically on the next adapter start.",
-        "de": "Der nach dem 0.4.0-Rename übrig gebliebene online-State wird jetzt aufgeräumt — er hing eingefroren auf dem letzten Wert und wird beim nächsten Adapter-Start automatisch entfernt.",
-        "ru": "Оставшееся после переименования в 0.4.0 состояние online теперь очищается — оно зависало на последнем значении и удаляется автоматически при следующем запуске адаптера.",
-        "pt": "O estado online deixado pela renomeação da 0.4.0 é agora removido — ficava preso no último valor e é eliminado automaticamente no próximo arranque do adaptador.",
-        "nl": "De na de 0.4.0-hernoeming achtergebleven online-state wordt nu opgeruimd — die bleef bevroren op de laatste waarde en wordt bij de volgende adapterstart automatisch verwijderd.",
-        "fr": "L'état online laissé par le renommage de la 0.4.0 est maintenant nettoyé — il restait figé sur sa dernière valeur et est supprimé automatiquement au prochain démarrage de l'adaptateur.",
-        "it": "Lo stato online rimasto dopo la rinomina della 0.4.0 ora viene rimosso — restava bloccato sull'ultimo valore e viene eliminato automaticamente al prossimo avvio dell'adattatore.",
-        "es": "El estado online que quedó tras el cambio de nombre de la 0.4.0 ahora se limpia — se quedaba congelado en su último valor y se elimina automáticamente al reiniciar el adaptador.",
-        "pl": "Pozostały po zmianie nazwy w 0.4.0 stan online jest teraz usuwany — pozostawał zamrożony na ostatniej wartości i znika automatycznie przy następnym starcie adaptera.",
-        "uk": "Залишений після перейменування в 0.4.0 стан online тепер очищується — він залишався замороженим на останньому значенні та видаляється при наступному запуску адаптера.",
-        "zh-cn": "0.4.0 重命名后遗留的 online 状态现在会被清理——它一直冻结在最后的值，并在适配器下次启动时自动删除。"
       }
     },
     "titleLang": {

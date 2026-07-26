@@ -7,7 +7,7 @@
   "label_networkInterface": "网络接口",
   "tooltip_networkInterface": "选择用于传出连接的特定网络接口（可选）",
   "label_pollInterval": "轮询间隔（秒）",
-  "help_pollInterval": "查询 NUT 服务器的频率（5–300 秒）",
+  "help_pollInterval": "查询 NUT 服务器的频率（2–300 秒）",
   "label_username": "用户名",
   "help_username": "NUT 用户名（可选——发送命令和修改可写变量时需要）",
   "label_password": "密码",

@@ -7,7 +7,7 @@
   "label_networkInterface": "Interfejs sieciowy",
   "tooltip_networkInterface": "Wybierz konkretny interfejs sieciowy dla połączeń wychodzących (opcjonalnie)",
   "label_pollInterval": "Interwał odpytywania (s)",
-  "help_pollInterval": "Częstotliwość odpytywania serwera NUT (5–300 sekund)",
+  "help_pollInterval": "Częstotliwość odpytywania serwera NUT (2–300 sekund)",
   "label_username": "Nazwa użytkownika",
   "help_username": "Nazwa użytkownika NUT (opcjonalnie — wymagana do poleceń i zmiennych zapisywalnych)",
   "label_password": "Hasło",

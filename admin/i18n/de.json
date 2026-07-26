@@ -7,7 +7,7 @@
   "label_networkInterface": "Netzwerkschnittstelle",
   "tooltip_networkInterface": "Bestimmte Netzwerkschnittstelle für ausgehende Verbindungen wählen (optional)",
   "label_pollInterval": "Abfrageintervall (s)",
-  "help_pollInterval": "Wie oft der NUT-Server abgefragt wird (5–300 Sekunden)",
+  "help_pollInterval": "Wie oft der NUT-Server abgefragt wird (2–300 Sekunden)",
   "label_username": "Benutzername",
   "help_username": "NUT-Benutzername (optional — erforderlich für Befehle und beschreibbare Variablen)",
   "label_password": "Passwort",

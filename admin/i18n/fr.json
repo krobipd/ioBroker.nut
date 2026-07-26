@@ -7,7 +7,7 @@
   "label_networkInterface": "Interface réseau",
   "tooltip_networkInterface": "Sélectionner une interface réseau spécifique pour les connexions sortantes (optionnel)",
   "label_pollInterval": "Intervalle d'interrogation (s)",
-  "help_pollInterval": "Fréquence d'interrogation du serveur NUT (5–300 secondes)",
+  "help_pollInterval": "Fréquence d'interrogation du serveur NUT (2–300 secondes)",
   "label_username": "Nom d'utilisateur",
   "help_username": "Nom d'utilisateur NUT (optionnel — requis pour les commandes et les variables modifiables)",
   "label_password": "Mot de passe",

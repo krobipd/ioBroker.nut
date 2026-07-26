@@ -33,7 +33,7 @@
           "type": "number",
           "label": "label_pollInterval",
           "help": "help_pollInterval",
-          "min": 5,
+          "min": 2,
           "max": 300,
           "default": 15,
           "xs": 12,

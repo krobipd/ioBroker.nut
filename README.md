@@ -42,7 +42,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 | **NUT Server Host**   | Hostname or IP address of the NUT server                               | —       |
 | **Port**              | NUT server port                                                        | `3493`  |
 | **Network Interface** | Bind outgoing connections to a specific local IP (optional)            | all     |
-| **Poll Interval (s)** | How often to query the NUT server (5–300)                              | `15`    |
+| **Poll Interval (s)** | How often to query the NUT server (2–300)                              | `15`    |
 | **Username**          | NUT username (optional — required for commands and writable variables) | —       |
 | **Password**          | NUT password                                                           | —       |
 | **Use TLS (STARTTLS)** | Encrypt the connection via STARTTLS                                   | off     |
@@ -174,6 +174,10 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.
+
 ### 0.5.1 (2026-07-13)
 
 - Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.
