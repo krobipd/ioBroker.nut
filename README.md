@@ -174,6 +174,10 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- The version history shown in the adapter manager now lists only versions that actually exist for this adapter.
+
 ### 0.5.2 (2026-07-26)
 
 - The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.

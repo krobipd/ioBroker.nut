@@ -3,6 +3,19 @@
     "name": "nut2",
     "version": "0.5.2",
     "news": {
+      "NEXT": {
+        "en": "The version history shown in the adapter manager now lists only versions that actually exist for this adapter.",
+        "de": "Die Versionshistorie im Adapter-Manager zeigt jetzt nur noch Versionen, die es für diesen Adapter wirklich gibt.",
+        "ru": "История версий в менеджере адаптеров теперь показывает только реально существующие версии этого адаптера.",
+        "pt": "O histórico de versões no gestor de adaptadores mostra agora apenas versões que existem realmente.",
+        "nl": "De versiegeschiedenis in de adapterbeheerder toont nu alleen versies die echt bestaan.",
+        "fr": "L'historique des versions dans le gestionnaire d'adaptateurs n'affiche plus que les versions réellement existantes.",
+        "it": "La cronologia delle versioni nel gestore adattatori mostra ora solo le versioni realmente esistenti.",
+        "es": "El historial de versiones en el gestor de adaptadores ahora muestra solo versiones que existen realmente.",
+        "pl": "Historia wersji w menedżerze adapterów pokazuje teraz tylko wersje, które faktycznie istnieją.",
+        "uk": "Історія версій у менеджері адаптерів тепер показує лише версії, які справді існують.",
+        "zh-cn": "适配器管理器中的版本历史现在只显示该适配器实际存在的版本。"
+      },
       "0.5.2": {
         "en": "The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.",
         "de": "Das Abfrageintervall lässt sich jetzt bis auf 2 Sekunden senken — schneller liefert der NUT-Treiber selbst keine neuen Werte.",
@@ -15,84 +28,6 @@
         "pl": "Interwał odpytywania można teraz obniżyć do 2 sekund — poniżej sterownik NUT sam nie ma nowych wartości.",
         "uk": "Інтервал опитування тепер можна зменшити до 2 секунд — швидше сам драйвер NUT нових значень не видає.",
         "zh-cn": "轮询间隔现在最低可设为 2 秒 — 低于该值时 NUT 驱动本身也没有新的读数。"
-      },
-      "0.5.1": {
-        "en": "Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.",
-        "de": "Schaltbare Ja/Nein-USV-Einstellungen (z. B. automatischer Neustart nach Netzrückkehr) lassen sich jetzt wirklich aus ioBroker ändern — vorher lehnte der NUT-Server das Umschalten still ab.",
-        "ru": "Переключаемые настройки ИБП типа да/нет (например, автозапуск после возврата питания) теперь действительно можно менять из ioBroker — раньше сервер NUT молча отклонял переключение.",
-        "pt": "As definições de UPS do tipo sim/não (ex. reinício automático após o regresso da energia) já podem mesmo ser alteradas a partir do ioBroker — antes o servidor NUT rejeitava a mudança em silêncio.",
-        "nl": "Schakelbare ja/nee-UPS-instellingen (zoals automatische herstart na stroomterugkeer) kunnen nu echt vanuit ioBroker worden gewijzigd — voorheen negeerde de NUT-server dat omschakelen.",
-        "fr": "Les réglages onduleur oui/non (ex. redémarrage auto au retour du secteur) peuvent enfin être modifiés depuis ioBroker — avant, le serveur NUT rejetait le changement en silence.",
-        "it": "Le impostazioni UPS di tipo sì/no (es. riavvio automatico al ritorno della corrente) ora possono davvero essere modificate da ioBroker — prima il server NUT rifiutava il cambio in silenzio.",
-        "es": "Los ajustes del SAI de tipo sí/no (p. ej. reinicio automático al volver la corriente) ahora sí se pueden cambiar desde ioBroker — antes el servidor NUT rechazaba el cambio en silencio.",
-        "pl": "Przełączalne ustawienia UPS typu tak/nie (np. automatyczny restart po powrocie zasilania) można teraz naprawdę zmieniać z ioBroker — wcześniej serwer NUT po cichu odrzucał przełączenie.",
-        "uk": "Перемикані налаштування ДБЖ типу так/ні (наприклад, автозапуск після повернення живлення) тепер справді можна змінювати з ioBroker — раніше сервер NUT мовчки відхиляв перемикання.",
-        "zh-cn": "可切换的是/否类 UPS 设置（如市电恢复后自动重启）现在真的可以从 ioBroker 更改了——以前切换会被 NUT 服务器悄悄拒绝。"
-      },
-      "0.5.0": {
-        "en": "Correct data types for all readings, a connection test that shows the real result, clearer status labels, and more reliable behaviour on slow or unreliable networks.",
-        "de": "Korrekte Datentypen für alle Messwerte, ein Verbindungstest der das echte Ergebnis anzeigt, klarere Statusbezeichnungen und zuverlässigeres Verhalten in langsamen oder instabilen Netzwerken.",
-        "ru": "Правильные типы данных для всех показаний, проверка соединения показывает реальный результат, более понятные обозначения статусов и надёжная работа в медленных или нестабильных сетях.",
-        "pt": "Tipos de dados corretos para todas as leituras, um teste de ligação que mostra o resultado real, rótulos de estado mais claros e comportamento mais fiável em redes lentas ou instáveis.",
-        "nl": "Correcte gegevenstypen voor alle waarden, een verbindingstest die het echte resultaat toont, duidelijkere statuslabels en betrouwbaarder gedrag op trage of onstabiele netwerken.",
-        "fr": "Types de données corrects pour toutes les mesures, un test de connexion qui affiche le vrai résultat, des libellés d'état plus clairs et un comportement plus fiable sur les réseaux lents ou instables.",
-        "it": "Tipi di dati corretti per tutte le letture, un test di connessione che mostra il risultato reale, etichette di stato più chiare e comportamento più affidabile su reti lente o instabili.",
-        "es": "Tipos de datos correctos para todas las lecturas, una prueba de conexión que muestra el resultado real, etiquetas de estado más claras y un comportamiento más fiable en redes lentas o inestables.",
-        "pl": "Poprawne typy danych dla wszystkich odczytów, test połączenia pokazujący rzeczywisty wynik, czytelniejsze etykiety stanu i bardziej niezawodne działanie w wolnych lub niestabilnych sieciach.",
-        "uk": "Правильні типи даних для всіх показань, перевірка з'єднання показує реальний результат, зрозуміліші позначення станів і надійніша робота в повільних або нестабільних мережах.",
-        "zh-cn": "所有读数均采用正确的数据类型，连接测试显示真实结果，状态标签更清晰，在缓慢或不稳定网络下运行更可靠。"
-      },
-      "0.4.5": {
-        "en": "With login credentials, a NUT server that has more than one UPS no longer leaves the adapter offline — multi-UPS setups with authentication now connect and poll.",
-        "de": "Mit Zugangsdaten lässt ein NUT-Server mit mehr als einer USV den Adapter nicht mehr offline — Multi-USV-Setups mit Authentifizierung verbinden sich jetzt korrekt.",
-        "ru": "С учётными данными NUT-сервер с несколькими ИБП больше не оставляет адаптер офлайн — конфигурации с несколькими ИБП и аутентификацией теперь работают.",
-        "pt": "Com credenciais, um servidor NUT com mais de um UPS já não deixa o adaptador offline — configurações multi-UPS com autenticação agora ligam-se corretamente.",
-        "nl": "Met inloggegevens laat een NUT-server met meerdere UPS'en de adapter niet meer offline — multi-UPS-opstellingen met authenticatie werken nu correct.",
-        "fr": "Avec des identifiants, un serveur NUT comportant plusieurs onduleurs ne laisse plus l'adaptateur hors ligne — les configurations multi-onduleurs avec authentification fonctionnent.",
-        "it": "Con le credenziali, un server NUT con più di un UPS non lascia più l'adattatore offline — le configurazioni multi-UPS con autenticazione ora si connettono.",
-        "es": "Con credenciales, un servidor NUT con más de un SAI ya no deja el adaptador sin conexión — las configuraciones multi-SAI con autenticación ahora funcionan.",
-        "pl": "Z poświadczeniami serwer NUT z więcej niż jednym UPS-em nie pozostawia już adaptera offline — konfiguracje wielu UPS-ów z uwierzytelnianiem teraz działają.",
-        "uk": "З обліковими даними сервер NUT із кількома ДБЖ більше не залишає адаптер офлайн — конфігурації з кількома ДБЖ та автентифікацією тепер працюють.",
-        "zh-cn": "配置了登录凭据后，带有多个 UPS 的 NUT 服务器不再让适配器离线——带身份验证的多 UPS 配置现在可以正常连接。"
-      },
-      "0.4.4": {
-        "en": "More robust handling of unusual UPS readings and device names, plus a new option to use all network interfaces.",
-        "de": "Robusterer Umgang mit ungewöhnlichen USV-Werten und Gerätenamen, plus eine neue Option für alle Netzwerk-Schnittstellen.",
-        "ru": "Более надёжная обработка необычных значений ИБП и имён устройств, а также новая опция для всех сетевых интерфейсов.",
-        "pt": "Tratamento mais robusto de leituras incomuns do UPS e nomes de dispositivos, além de uma nova opção para todas as interfaces de rede.",
-        "nl": "Robuustere verwerking van ongebruikelijke UPS-waarden en apparaatnamen, plus een nieuwe optie voor alle netwerkinterfaces.",
-        "fr": "Gestion plus robuste des valeurs d'onduleur inhabituelles et des noms d'appareils, ainsi qu'une nouvelle option pour toutes les interfaces réseau.",
-        "it": "Gestione più robusta di valori UPS insoliti e nomi dei dispositivi, più una nuova opzione per tutte le interfacce di rete.",
-        "es": "Manejo más robusto de lecturas inusuales del SAI y nombres de dispositivos, además de una nueva opción para todas las interfaces de red.",
-        "pl": "Bardziej odporna obsługa nietypowych odczytów UPS i nazw urządzeń oraz nowa opcja dla wszystkich interfejsów sieciowych.",
-        "uk": "Надійніша обробка незвичних значень ДБЖ та імен пристроїв, а також нова опція для всіх мережевих інтерфейсів.",
-        "zh-cn": "更稳健地处理异常的 UPS 读数和设备名称，并新增使用所有网络接口的选项。"
-      },
-      "0.4.3": {
-        "en": "Requires ioBroker js-controller 7.2.2 (the current stable release). Internal code and test cleanup — no change to adapter behaviour.",
-        "de": "Benötigt ioBroker js-controller 7.2.2 (aktuelle Stable). Interne Code- und Test-Bereinigung — keine Änderung am Verhalten des Adapters.",
-        "ru": "Требуется ioBroker js-controller 7.2.2 (текущий стабильный выпуск). Внутренняя очистка кода и тестов — без изменений в поведении адаптера.",
-        "pt": "Requer o ioBroker js-controller 7.2.2 (versão estável atual). Limpeza interna de código e testes — sem alterações no comportamento do adaptador.",
-        "nl": "Vereist ioBroker js-controller 7.2.2 (huidige stable). Interne code- en testopschoning — geen wijziging in het gedrag van de adapter.",
-        "fr": "Nécessite ioBroker js-controller 7.2.2 (version stable actuelle). Nettoyage interne du code et des tests — aucun changement de comportement.",
-        "it": "Richiede ioBroker js-controller 7.2.2 (stable attuale). Pulizia interna di codice e test — nessuna modifica al comportamento dell'adattatore.",
-        "es": "Requiere ioBroker js-controller 7.2.2 (estable actual). Limpieza interna de código y pruebas — sin cambios en el comportamiento del adaptador.",
-        "pl": "Wymaga ioBroker js-controller 7.2.2 (aktualna wersja stabilna). Wewnętrzne porządki w kodzie i testach — bez zmian w działaniu adaptera.",
-        "uk": "Потрібен ioBroker js-controller 7.2.2 (поточний стабільний). Внутрішнє очищення коду й тестів — без змін у поведінці адаптера.",
-        "zh-cn": "需要 ioBroker js-controller 7.2.2（当前稳定版）。内部代码与测试清理——适配器行为无变化。"
-      },
-      "0.4.2": {
-        "en": "Device names now fall back to manufacturer + model when the NUT server has no usable description; stricter number parsing for settings; returning UPS devices warn properly again",
-        "de": "Gerätenamen nutzen jetzt Hersteller + Modell, wenn der NUT-Server keine brauchbare Beschreibung liefert; strikteres Zahlen-Parsing in den Einstellungen; zurückkehrende USVen warnen wieder korrekt",
-        "ru": "Имена устройств теперь формируются из производителя и модели, если сервер NUT не даёт описания; более строгий разбор чисел в настройках; вернувшиеся ИБП снова корректно предупреждают",
-        "pt": "Os nomes dos dispositivos usam agora fabricante + modelo quando o servidor NUT não fornece descrição utilizável; análise de números mais rigorosa; UPS que regressam voltam a avisar corretamente",
-        "nl": "Apparaatnamen gebruiken nu fabrikant + model wanneer de NUT-server geen bruikbare beschrijving levert; striktere getalverwerking in instellingen; terugkerende UPS'en waarschuwen weer correct",
-        "fr": "Les noms d'appareils utilisent fabricant + modèle si le serveur NUT ne fournit pas de description ; analyse des nombres plus stricte ; les onduleurs qui reviennent avertissent à nouveau",
-        "it": "I nomi dei dispositivi usano produttore + modello se il server NUT non fornisce una descrizione; analisi dei numeri più rigorosa; gli UPS che ritornano avvisano di nuovo correttamente",
-        "es": "Los nombres de dispositivos usan fabricante + modelo si el servidor NUT no ofrece descripción; análisis de números más estricto; los SAI que regresan vuelven a avisar correctamente",
-        "pl": "Nazwy urządzeń korzystają teraz z producenta + modelu, gdy serwer NUT nie podaje opisu; ściślejsze parsowanie liczb w ustawieniach; powracające UPS-y znów poprawnie ostrzegają",
-        "uk": "Імена пристроїв тепер використовують виробника + модель, якщо сервер NUT не дає опису; суворіший розбір чисел у налаштуваннях; ДБЖ, що повертаються, знову коректно попереджають",
-        "zh-cn": "当 NUT 服务器没有可用描述时，设备名称现在使用制造商+型号；设置中的数字解析更严格；重新出现的 UPS 会再次正确发出警告"
       }
     },
     "titleLang": {
