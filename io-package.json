@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "news": {
-      "NEXT": {
+      "0.5.3": {
         "en": "The version history shown in the adapter manager now lists only versions that actually exist for this adapter.",
         "de": "Die Versionshistorie im Adapter-Manager zeigt jetzt nur noch Versionen, die es für diesen Adapter wirklich gibt.",
         "ru": "История версий в менеджере адаптеров теперь показывает только реально существующие версии этого адаптера.",

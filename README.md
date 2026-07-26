@@ -174,7 +174,7 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.5.3 (2026-07-26)
 
 - The version history shown in the adapter manager now lists only versions that actually exist for this adapter.
 
@@ -197,13 +197,6 @@ nut2.0.
 ### 0.4.5 (2026-06-21)
 
 - With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.
-
-### 0.4.4 (2026-06-21)
-
-- The network interface setting now offers an "all interfaces" choice and uses it by default, so the adapter binds correctly on multi-homed servers without manual configuration.
-- A reading from the NUT server that is not a clean number is no longer stored as a wrong number — non-numeric text stays text, and a numeric field with garbage is skipped and warned once.
-- The device name now corrects itself once manufacturer and model become available after the first reading, instead of staying stuck on an earlier placeholder name.
-- A UPS variable whose name contains no dot, such as a bare ALARM, is now created as a proper data point instead of an invalid object.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
