@@ -63,7 +63,7 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (469 unit + 57 package = 526)
+## Tests (471 unit + 57 package = 528)
 
 ## Befehle
 
