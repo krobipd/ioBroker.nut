@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "news": {
-      "NEXT": {
+      "0.5.2": {
         "en": "The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.",
         "de": "Das Abfrageintervall lässt sich jetzt bis auf 2 Sekunden senken — schneller liefert der NUT-Treiber selbst keine neuen Werte.",
         "ru": "Интервал опроса теперь можно уменьшить до 2 секунд — быстрее сам драйвер NUT новых значений не выдаёт.",

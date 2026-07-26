@@ -1,4 +1,9 @@
 # Older changes
+## 0.4.3 (2026-06-18)
+
+- Raised the minimum ioBroker js-controller to 7.2.2, matching the current stable release.
+- Internal code and test cleanup — no change to how the adapter behaves.
+
 ## 0.4.2 (2026-06-12)
 
 - UPS devices whose NUT server provides no usable description now get a proper name built from manufacturer and model instead of staying at "Description unavailable"

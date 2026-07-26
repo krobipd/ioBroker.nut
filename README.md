@@ -174,7 +174,7 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.5.2 (2026-07-26)
 
 - The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.
 
@@ -200,11 +200,6 @@ nut2.0.
 - A reading from the NUT server that is not a clean number is no longer stored as a wrong number — non-numeric text stays text, and a numeric field with garbage is skipped and warned once.
 - The device name now corrects itself once manufacturer and model become available after the first reading, instead of staying stuck on an earlier placeholder name.
 - A UPS variable whose name contains no dot, such as a bare ALARM, is now created as a proper data point instead of an invalid object.
-
-### 0.4.3 (2026-06-18)
-
-- Raised the minimum ioBroker js-controller to 7.2.2, matching the current stable release.
-- Internal code and test cleanup — no change to how the adapter behaves.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
