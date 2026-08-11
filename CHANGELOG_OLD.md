@@ -1,4 +1,8 @@
 # Older changes
+## 0.4.5 (2026-06-21)
+
+- With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.
+
 ## 0.4.4 (2026-06-21)
 
 - The network interface setting now offers an "all interfaces" choice and uses it by default, so the adapter binds correctly on multi-homed servers without manual configuration.

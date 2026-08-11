@@ -43,6 +43,7 @@ class NutAdapter extends utils.Adapter {
   client = null;
   stateManager = null;
   pollTimer = void 0;
+  pollIntervalMs = 0;
   isPolling = false;
   lastErrorCode = "";
   failedUps = /* @__PURE__ */ new Set();
@@ -202,13 +203,13 @@ class NutAdapter extends utils.Adapter {
     if (!this.authenticated || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
       return;
     }
-    for (const ups of this.discoveredUps.keys()) {
+    for (const [upsId, ups] of this.discoveredUps) {
       try {
-        const commands = await this.client.listCmd(ups);
-        await this.stateManager.createCommandButtons(ups, commands);
-        this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+        const commands = await this.client.listCmd(ups.name);
+        await this.stateManager.createCommandButtons(upsId, commands);
+        this.log.debug(`Created ${commands.length} command buttons for ${ups.name}`);
       } catch (err) {
-        this.log.debug(`Failed to list commands for ${ups}: ${(0, import_coerce.errText)(err)}`);
+        this.log.debug(`Failed to list commands for ${ups.name}: ${(0, import_coerce.errText)(err)}`);
       }
     }
   }
@@ -224,9 +225,22 @@ class NutAdapter extends utils.Adapter {
       return;
     }
     this.log.debug(`pollInterval: raw=${JSON.stringify(rawInterval)} resolved=${pollSec}s`);
-    this.pollTimer = this.setInterval(() => {
-      void this.poll();
-    }, pollSec * 1e3);
+    this.pollIntervalMs = pollSec * 1e3;
+    this.scheduleNextPoll();
+  }
+  /**
+   * Schedule the next poll one interval after the previous one FINISHES (a setTimeout chain rather
+   * than a fixed setInterval), so a slow poll can never overlap the next tick. pollTimer stays
+   * defined between ticks, keeping the armPollTimer idempotency guard and the error-handler
+   * recovery re-entry intact; a poll running during onUnload sees unloaded and does not re-arm.
+   */
+  scheduleNextPoll() {
+    if (this.unloaded) {
+      return;
+    }
+    this.pollTimer = this.setTimeout(() => {
+      void this.poll().finally(() => this.scheduleNextPoll());
+    }, this.pollIntervalMs);
   }
   /**
    * The persistent connection failed fatally (TLS misconfiguration). The client already stopped
@@ -246,6 +260,26 @@ class NutAdapter extends utils.Adapter {
     void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {
     });
   }
+  /**
+   * Make a sanitized UPS name unique among the currently discovered UPSes. Two different NUT names
+   * can collapse to the same sanitized object ID (e.g. "u.p" and "u p" → "u_p"); disambiguate
+   * deterministically (…-2, …-3) and warn so the collision is visible in the admin.
+   *
+   * @param baseId Sanitized candidate object ID
+   * @param rawName Original NUT name, for the warning
+   */
+  uniqueUpsId(baseId, rawName) {
+    if (!this.discoveredUps.has(baseId)) {
+      return baseId;
+    }
+    let n = 2;
+    while (this.discoveredUps.has(`${baseId}-${n}`)) {
+      n++;
+    }
+    const unique = `${baseId}-${n}`;
+    this.log.warn(`UPS name '${rawName}' collides with another after sanitization \u2192 using object ID '${unique}'`);
+    return unique;
+  }
   async discover() {
     if (!this.client || !this.stateManager) {
       return;
@@ -254,8 +288,9 @@ class NutAdapter extends utils.Adapter {
     this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map((u) => u.name).join(", ")}`);
     this.discoveredUps.clear();
     for (const ups of upsList) {
-      this.discoveredUps.set(ups.name, ups);
-      await this.stateManager.ensureUpsDevice(ups.name, ups.description);
+      const upsId = this.uniqueUpsId((0, import_state_manager.sanitizeUpsName)(ups.name), ups.name);
+      this.discoveredUps.set(upsId, ups);
+      await this.stateManager.ensureUpsDevice(upsId, ups.description);
     }
     const knownNames = new Set(this.discoveredUps.keys());
     await this.stateManager.cleanupRemovedUps(knownNames);
@@ -288,7 +323,7 @@ class NutAdapter extends utils.Adapter {
     return code || "UNKNOWN";
   }
   async poll() {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     if (this.isPolling) {
       this.log.debug("Skipping poll \u2014 previous poll still running");
       return;
@@ -299,47 +334,47 @@ class NutAdapter extends utils.Adapter {
     this.log.debug(`poll: starting (lastErrorCode='${this.lastErrorCode}', upsCount=${this.discoveredUps.size})`);
     this.isPolling = true;
     try {
-      for (const upsName of this.discoveredUps.keys()) {
+      for (const [upsId, ups] of this.discoveredUps) {
+        const nutName = ups.name;
         try {
           const [variables, rwVars] = await Promise.all([
-            this.client.listVar(upsName),
-            this.nutConfig().enableSetVar ? this.client.listRw(upsName).catch((err) => {
-              this.log.debug(`LIST RW ${upsName} failed (non-critical): ${(0, import_coerce.errText)(err)}`);
+            this.client.listVar(nutName),
+            this.nutConfig().enableSetVar ? this.client.listRw(nutName).catch((err) => {
+              this.log.debug(`LIST RW ${nutName} failed (non-critical): ${(0, import_coerce.errText)(err)}`);
               return [];
             }) : Promise.resolve([])
           ]);
           const rwNames = new Set(rwVars.map((v) => v.name));
-          await this.stateManager.updateVariables(upsName, variables, rwNames);
-          const upsDesc = this.discoveredUps.get(upsName);
-          await this.stateManager.updateDeviceName(upsName, (_a = upsDesc == null ? void 0 : upsDesc.description) != null ? _a : "", variables);
+          await this.stateManager.updateVariables(upsId, variables, rwNames);
+          await this.stateManager.updateDeviceName(upsId, ups.description, variables);
           const statusVar = variables.find((v) => v.name === "ups.status");
           if (statusVar) {
-            const chargerStatus = (_b = variables.find((v) => v.name === "battery.charger.status")) == null ? void 0 : _b.value;
-            await this.stateManager.updateStatusFlags(upsName, statusVar.value, chargerStatus);
+            const chargerStatus = (_a = variables.find((v) => v.name === "battery.charger.status")) == null ? void 0 : _a.value;
+            await this.stateManager.updateStatusFlags(upsId, statusVar.value, chargerStatus);
           }
-          await this.enrichWritableVars(upsName, rwVars);
-          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: true, ack: true });
-          if (this.failedUps.has(upsName)) {
-            this.log.info(`UPS '${upsName}' recovered`);
-            this.failedUps.delete(upsName);
+          await this.enrichWritableVars(upsId, nutName, rwVars);
+          await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: true, ack: true });
+          if (this.failedUps.has(upsId)) {
+            this.log.info(`UPS '${nutName}' recovered`);
+            this.failedUps.delete(upsId);
           }
         } catch (err) {
-          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: false, ack: true });
-          const msg = `Failed to poll UPS '${upsName}': ${(0, import_coerce.errText)(err)}`;
-          if (this.failedUps.has(upsName)) {
+          await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: false, ack: true });
+          const msg = `Failed to poll UPS '${nutName}': ${(0, import_coerce.errText)(err)}`;
+          if (this.failedUps.has(upsId)) {
             this.log.debug(msg);
           } else {
             const isDataStale = err instanceof import_nut_client.NutError && err.code === "DATA-STALE";
             if (isDataStale) {
-              this.log.warn(`UPS '${upsName}': driver reports stale data \u2014 keeping existing states`);
+              this.log.warn(`UPS '${nutName}': driver reports stale data \u2014 keeping existing states`);
             } else {
               this.log.warn(msg);
             }
-            this.failedUps.add(upsName);
+            this.failedUps.add(upsId);
           }
         }
       }
-      await this.setStateChangedAsync("info.connection", { val: (_d = (_c = this.client) == null ? void 0 : _c.isConnected) != null ? _d : false, ack: true });
+      await this.setStateChangedAsync("info.connection", { val: (_c = (_b = this.client) == null ? void 0 : _b.isConnected) != null ? _c : false, ack: true });
       if (this.lastErrorCode) {
         this.log.info("Connection restored");
         this.lastErrorCode = "";
@@ -366,19 +401,20 @@ class NutAdapter extends utils.Adapter {
    * per connection (guarded by enrichedUps). Each query is best-effort — a driver that does not
    * support LIST ENUM/RANGE just logs at debug.
    *
-   * @param upsName UPS identifier
+   * @param upsId Sanitized UPS object-ID segment (for state IDs)
+   * @param nutName Real NUT name (for LIST ENUM/RANGE protocol calls)
    * @param rwVars Writable variables from LIST RW
    */
-  async enrichWritableVars(upsName, rwVars) {
-    if (!this.client || !this.stateManager || this.enrichedUps.has(upsName) || rwVars.length === 0) {
+  async enrichWritableVars(upsId, nutName, rwVars) {
+    if (!this.client || !this.stateManager || this.enrichedUps.has(upsId) || rwVars.length === 0) {
       return;
     }
     for (const rw of rwVars) {
-      const stateId = (0, import_state_manager.nutVarToStateId)(upsName, rw.name);
+      const stateId = (0, import_state_manager.nutVarToStateId)(upsId, rw.name);
       const isBoolean = (0, import_type_detector.detectType)(rw.name, rw.value, true).type === "boolean";
       if (!isBoolean) {
         try {
-          const enumVals = await this.client.listEnum(upsName, rw.name);
+          const enumVals = await this.client.listEnum(nutName, rw.name);
           if (enumVals.length > 0) {
             const states = {};
             for (const v of enumVals) {
@@ -387,11 +423,11 @@ class NutAdapter extends utils.Adapter {
             await this.stateManager.enrichStateMetadata(stateId, { states });
           }
         } catch (err) {
-          this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
+          this.log.debug(`LIST ENUM ${nutName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
         }
       }
       try {
-        const ranges = await this.client.listRange(upsName, rw.name);
+        const ranges = await this.client.listRange(nutName, rw.name);
         if (ranges.length > 0) {
           const min = (0, import_coerce.parseDecimal)(ranges[0].min);
           const max = (0, import_coerce.parseDecimal)(ranges[0].max);
@@ -405,10 +441,10 @@ class NutAdapter extends utils.Adapter {
           await this.stateManager.enrichStateMetadata(stateId, patch);
         }
       } catch (err) {
-        this.log.debug(`LIST RANGE ${upsName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
+        this.log.debug(`LIST RANGE ${nutName} ${rw.name}: not supported (${(0, import_coerce.errText)(err)})`);
       }
     }
-    this.enrichedUps.add(upsName);
+    this.enrichedUps.add(upsId);
   }
   async onStateChange(id, state) {
     var _a, _b, _c, _d;
@@ -428,23 +464,25 @@ class NutAdapter extends utils.Adapter {
         this.log.debug(`onStateChange: unexpected id structure '${localId}', ignoring`);
         return;
       }
-      const upsName = parts[0];
-      if (!this.discoveredUps.has(upsName)) {
-        this.log.debug(`onStateChange: unknown UPS '${upsName}', ignoring`);
+      const upsId = parts[0];
+      const ups = this.discoveredUps.get(upsId);
+      if (!ups) {
+        this.log.debug(`onStateChange: unknown UPS '${upsId}', ignoring`);
         return;
       }
+      const nutName = ups.name;
       if (parts[1] === "commands") {
         if (!config.enableCommands) {
           this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
           return;
         }
         const cmdName = (_b = (_a = this.stateManager) == null ? void 0 : _a.nutNameForState(localId)) != null ? _b : parts.slice(2).join(".").replace(/-/g, ".");
-        this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
+        this.log.debug(`INSTCMD ${nutName} ${cmdName}`);
         try {
-          await this.client.instCmd(upsName, cmdName);
-          this.log.info(`Command executed: ${cmdName} on ${upsName}`);
+          await this.client.instCmd(nutName, cmdName);
+          this.log.info(`Command executed: ${cmdName} on ${nutName}`);
         } catch (err) {
-          this.log.error(`Command failed: ${cmdName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+          this.log.error(`Command failed: ${cmdName} on ${nutName} \u2014 ${(0, import_coerce.errText)(err)}`);
         }
         await this.setState(id, { val: false, ack: true });
         return;
@@ -455,13 +493,13 @@ class NutAdapter extends utils.Adapter {
       }
       const varName = (_d = (_c = this.stateManager) == null ? void 0 : _c.nutNameForState(localId)) != null ? _d : `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
       const value = typeof state.val === "boolean" ? state.val ? "yes" : "no" : String(state.val);
-      this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
+      this.log.debug(`SET VAR ${nutName} ${varName} "${value}"`);
       try {
-        await this.client.setVar(upsName, varName, value);
+        await this.client.setVar(nutName, varName, value);
         await this.setState(id, { val: state.val, ack: true });
-        this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
+        this.log.info(`Variable set: ${varName} = "${value}" on ${nutName}`);
       } catch (err) {
-        this.log.error(`SET VAR failed: ${varName} on ${upsName} \u2014 ${(0, import_coerce.errText)(err)}`);
+        this.log.error(`SET VAR failed: ${varName} on ${nutName} \u2014 ${(0, import_coerce.errText)(err)}`);
       }
     } catch (err) {
       this.log.error(`onStateChange failed: ${(0, import_coerce.errText)(err)}`);
@@ -489,7 +527,7 @@ class NutAdapter extends utils.Adapter {
     try {
       this.unloaded = true;
       if (this.pollTimer) {
-        this.clearInterval(this.pollTimer);
+        this.clearTimeout(this.pollTimer);
         this.pollTimer = void 0;
       }
       if (this.authenticated) {

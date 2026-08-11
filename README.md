@@ -174,6 +174,12 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.6.0 (2026-08-11)
+
+- UPS readings now carry their correct data type instead of plain text, so numeric values, yes/no fields and status values can be charted, compared and used directly in scripts.
+- Security fix: the NUT username and password no longer appear in the ioBroker log, where they could previously show up in plain text while commands were exchanged.
+- A UPS whose name contains a space, dot or other special character now appears correctly in the object tree instead of a broken or missing device entry.
+
 ### 0.5.3 (2026-07-26)
 
 - The version history shown in the adapter manager now lists only versions that actually exist for this adapter.
@@ -193,10 +199,6 @@ nut2.0.
 - More reliable on slow or flaky networks: no needless drop-and-reconnect, a stalled connection now fails fast instead of hanging, and the adapter recovers instead of getting stuck at startup.
 - Clearer status labels: the OFF flag now reads "Off" instead of "Offline", and the on-line flag "On line power" instead of "Online" — so neither is mistaken for a lost network connection.
 - When variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring your changes.
-
-### 0.4.5 (2026-06-21)
-
-- With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

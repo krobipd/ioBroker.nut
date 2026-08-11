@@ -543,7 +543,7 @@ class NutClient {
       entry.reject(new NutTimeoutError(entry.command));
       this.resyncAfterTimeout(entry.command);
     }, this.commandTimeout);
-    (_a = this.log) == null ? void 0 : _a.debug(`>> ${entry.command}`);
+    (_a = this.log) == null ? void 0 : _a.debug(`>> ${redactForLog(entry.command)}`);
     if (entry.multiLine) {
       this.multiLineBuffer = [];
       const query = entry.command.replace(/^LIST\s+/, "");
@@ -622,6 +622,15 @@ function unescapeNut(s) {
 }
 function escapeNut(s) {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+function redactForLog(command) {
+  if (command.startsWith("PASSWORD ")) {
+    return "PASSWORD ***";
+  }
+  if (command.startsWith("USERNAME ")) {
+    return "USERNAME ***";
+  }
+  return command;
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

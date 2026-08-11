@@ -20,7 +20,8 @@ var state_manager_exports = {};
 __export(state_manager_exports, {
   StateManager: () => StateManager,
   nutVarToReadableName: () => nutVarToReadableName,
-  nutVarToStateId: () => nutVarToStateId
+  nutVarToStateId: () => nutVarToStateId,
+  sanitizeUpsName: () => sanitizeUpsName
 });
 module.exports = __toCommonJS(state_manager_exports);
 var import_i18n = require("./i18n");
@@ -137,6 +138,9 @@ function varTranslation(nutVarName) {
     return (0, import_i18n.tName)(generic);
   }
   return void 0;
+}
+function sanitizeUpsName(name) {
+  return name.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 function nutVarToStateId(upsName, nutVarName) {
   const firstDot = nutVarName.indexOf(".");
@@ -565,6 +569,7 @@ class StateManager {
 0 && (module.exports = {
   StateManager,
   nutVarToReadableName,
-  nutVarToStateId
+  nutVarToStateId,
+  sanitizeUpsName
 });
 //# sourceMappingURL=state-manager.js.map

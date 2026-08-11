@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.5.3",
+    "version": "0.6.0",
     "news": {
+      "0.6.0": {
+        "en": "More UPS readings now appear with their correct ioBroker type instead of plain text, so numeric values, yes/no switches and status fields can be used directly in charts and scripts.",
+        "de": "Mehr USV-Werte erscheinen jetzt mit ihrem korrekten ioBroker-Typ statt als reiner Text, sodass Zahlenwerte, Ja/Nein-Schalter und Statusfelder direkt in Diagrammen und Skripten nutzbar sind.",
+        "ru": "Больше показаний ИБП теперь имеют правильный тип ioBroker вместо простого текста, поэтому числа, переключатели да/нет и поля состояния можно использовать прямо в графиках и скриптах.",
+        "pt": "Mais leituras do UPS aparecem agora com o tipo ioBroker correto em vez de texto simples, pelo que valores numéricos, interruptores sim/não e campos de estado podem ser usados em gráficos e scripts.",
+        "nl": "Meer UPS-metingen verschijnen nu met hun juiste ioBroker-type in plaats van tekst, zodat getallen, ja/nee-schakelaars en statusvelden direct in grafieken en scripts bruikbaar zijn.",
+        "fr": "Plus de mesures de l'onduleur ont leur bon type ioBroker au lieu de texte, si bien que valeurs numériques, interrupteurs oui/non et champs d'état sont utilisables dans graphiques et scripts.",
+        "it": "Più letture dell'UPS appaiono ora con il tipo ioBroker corretto invece del testo, così valori numerici, interruttori sì/no e campi di stato sono usabili direttamente in grafici e script.",
+        "es": "Más lecturas del SAI aparecen ahora con su tipo ioBroker correcto en vez de texto, por lo que valores numéricos, interruptores sí/no y campos de estado se pueden usar en gráficos y scripts.",
+        "pl": "Więcej odczytów UPS pojawia się teraz z poprawnym typem ioBroker zamiast tekstu, więc wartości liczbowe, przełączniki tak/nie i pola stanu można używać w wykresach i skryptach.",
+        "uk": "Більше показань ДБЖ тепер мають правильний тип ioBroker замість тексту, тож числа, перемикачі так/ні та поля стану можна використовувати прямо в графіках і скриптах.",
+        "zh-cn": "更多 UPS 读数现在以正确的 ioBroker 类型显示，而非纯文本，因此数值、是/否开关和状态字段可直接用于图表和脚本。"
+      },
       "0.5.3": {
         "en": "The version history shown in the adapter manager now lists only versions that actually exist for this adapter.",
         "de": "Die Versionshistorie im Adapter-Manager zeigt jetzt nur noch Versionen, die es für diesen Adapter wirklich gibt.",

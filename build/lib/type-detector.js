@@ -45,13 +45,21 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "color",
   "groupid"
 ]);
-const KNOWN_STRING_PREFIXES = [
-  "driver.flag.",
-  "driver.parameter.port",
-  "driver.parameter.synchronous",
-  "driver.version."
-];
+const KNOWN_STRING_PREFIXES = ["driver.parameter.port", "driver.parameter.synchronous", "driver.version."];
 function detectType(varName, rawValue, isWritable) {
+  if (varName.startsWith("driver.flag.")) {
+    const flag = parseFlagValue(rawValue);
+    if (flag !== void 0) {
+      return {
+        type: "boolean",
+        role: "indicator",
+        unit: void 0,
+        read: true,
+        write: false,
+        parsedValue: flag
+      };
+    }
+  }
   if (isKnownString(varName)) {
     return {
       type: "string",
@@ -104,6 +112,16 @@ function parseYesNo(rawValue) {
   }
   return void 0;
 }
+function parseFlagValue(rawValue) {
+  const v = rawValue.trim().toLowerCase();
+  if (v === "enabled" || v === "on" || v === "yes" || v === "true" || v === "1") {
+    return true;
+  }
+  if (v === "disabled" || v === "off" || v === "no" || v === "false" || v === "0") {
+    return false;
+  }
+  return void 0;
+}
 function isKnownString(varName) {
   const lastDot = varName.lastIndexOf(".");
   if (lastDot >= 0) {
@@ -122,6 +140,9 @@ function isKnownString(varName) {
   }
   return false;
 }
+function isTransferVoltage(varName) {
+  return /^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis";
+}
 function detectUnit(varName) {
   if (/\.frequency\..+\.range$/.test(varName)) {
     return "%";
@@ -129,10 +150,7 @@ function detectUnit(varName) {
   if (varName === "battery.energysave.delay") {
     return "min";
   }
-  if (varName.includes("voltage")) {
-    return "V";
-  }
-  if (/^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis") {
+  if (varName.includes("voltage") || isTransferVoltage(varName)) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -180,7 +198,7 @@ function detectRole(varName, type, isWritable) {
   if (varName === "battery.charge") {
     return "value.battery";
   }
-  if (varName.includes("voltage")) {
+  if (varName.includes("voltage") || isTransferVoltage(varName)) {
     return isWritable ? "level" : "value.voltage";
   }
   if (varName.includes("temperature")) {
@@ -190,7 +208,10 @@ function detectRole(varName, type, isWritable) {
     return "value.current";
   }
   if (varName.includes("power") && !varName.includes("powerfactor")) {
-    return isWritable ? "level" : "value.power";
+    if (isWritable) {
+      return "level";
+    }
+    return varName.includes("realpower") ? "value.power.active" : "value.power";
   }
   if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
     return isWritable ? "level" : "value.interval";
@@ -208,6 +229,14 @@ const KNOWN_ENUM_STATES = {
     enabled: "enabled",
     disabled: "disabled",
     muted: "muted"
+  },
+  // Device type is a fixed enumeration per the NUT catalogue (nut-names.txt: device.type).
+  "device.type": {
+    ups: "ups",
+    pdu: "pdu",
+    scd: "scd",
+    psu: "psu",
+    ats: "ats"
   }
 };
 const OUTLET_ON_OFF = { on: "on", off: "off" };
@@ -233,10 +262,10 @@ function detectStates(varName) {
   if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName) || /^outlet\.group(\.\d+)?\.status$/.test(varName)) {
     return OUTLET_ON_OFF;
   }
-  if (/\.frequency\.status$/.test(varName)) {
+  if (/(^|\.)frequency\.status$/.test(varName)) {
     return FREQUENCY_STATUS;
   }
-  if (/\.(voltage|current|temperature|humidity)\.status$/.test(varName)) {
+  if (/(^|\.)(voltage|current|temperature|humidity)\.status$/.test(varName)) {
     return THRESHOLD_STATUS;
   }
   if (varName === "ups.watchdog.status" || varName === "ups.shutdown" || varName === "input.bypass.switchable" || /^input\.transfer\.bypass\.(forced|overload|outlimits)$/.test(varName) || /^ambient(\.\d+)?\.(temperature|humidity)\.alarm$/.test(varName)) {
