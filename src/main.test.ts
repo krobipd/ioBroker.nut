@@ -100,6 +100,7 @@ interface StubSurface {
   logs: { level: string; msg: string }[];
   subscriptions: string[];
   intervals: { cb: () => void; ms: number }[];
+  timeouts: { cb: () => void; ms: number; cleared: boolean }[];
 }
 
 interface FakeClient {
@@ -304,16 +305,28 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(client.listUps).toHaveBeenCalled();
     expect(sm.ensureUpsDevice).toHaveBeenCalledWith("ups0", "Main UPS");
     expect(sm.updateVariables).toHaveBeenCalled();
-    expect(stub.intervals).toHaveLength(1);
-    expect(stub.intervals[0].ms).toBe(15000);
+    expect(stub.intervals).toHaveLength(0);
+    expect(stub.timeouts).toHaveLength(1);
+    expect(stub.timeouts[0].ms).toBe(15000);
     expect(logsOf(stub, "info").some(m => m.includes("NUT adapter started — 1 UPS(es) on 10.0.0.3:3493"))).toBe(true);
     expect(stub.states.get("nut2.0.info.connection")).toEqual({ val: true, ack: true });
+  });
+
+  it("chains the next poll from the previous poll's completion (setTimeout, not setInterval)", async () => {
+    const s = await setupConnected();
+    expect(s.stub.intervals).toHaveLength(0);
+    expect(s.stub.timeouts).toHaveLength(1);
+    // Firing the timer runs a poll; only after it finishes is the next timer scheduled.
+    s.stub.timeouts[0].cb();
+    await new Promise(resolve => setImmediate(resolve));
+    expect(s.stub.timeouts.length).toBeGreaterThanOrEqual(2);
+    expect(s.stub.timeouts[s.stub.timeouts.length - 1].ms).toBe(15000);
   });
 
   it("does not arm a second poll timer on reconnect (idempotent re-entry)", async () => {
     const { internal, stub } = await setupConnected();
     await internal.onConnected();
-    expect(stub.intervals).toHaveLength(1);
+    expect(stub.timeouts).toHaveLength(1);
     expect(logsOf(stub, "info").some(m => m.includes("Reconnected to NUT server"))).toBe(true);
   });
 
@@ -333,7 +346,7 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(s.stub, "info").some(m => m.includes("adapter is idle"))).toBe(true);
     expect(s.client.destroy).toHaveBeenCalledTimes(1);
     expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
-    expect(s.stub.intervals).toHaveLength(0);
+    expect(s.stub.timeouts).toHaveLength(0);
   });
 
   it("creates command buttons only when authenticated AND enableCommands", async () => {

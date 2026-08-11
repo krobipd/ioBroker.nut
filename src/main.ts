@@ -23,7 +23,8 @@ import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types
 export class NutAdapter extends utils.Adapter {
   private client: NutClient | null = null;
   private stateManager: StateManager | null = null;
-  private pollTimer: ioBroker.Interval | undefined = undefined;
+  private pollTimer: ioBroker.Timeout | undefined = undefined;
+  private pollIntervalMs = 0;
   private isPolling = false;
   private lastErrorCode = "";
   private failedUps = new Set<string>();
@@ -231,9 +232,23 @@ export class NutAdapter extends utils.Adapter {
       return;
     }
     this.log.debug(`pollInterval: raw=${JSON.stringify(rawInterval)} resolved=${pollSec}s`);
-    this.pollTimer = this.setInterval(() => {
-      void this.poll();
-    }, pollSec * 1000);
+    this.pollIntervalMs = pollSec * 1000;
+    this.scheduleNextPoll();
+  }
+
+  /**
+   * Schedule the next poll one interval after the previous one FINISHES (a setTimeout chain rather
+   * than a fixed setInterval), so a slow poll can never overlap the next tick. pollTimer stays
+   * defined between ticks, keeping the armPollTimer idempotency guard and the error-handler
+   * recovery re-entry intact; a poll running during onUnload sees unloaded and does not re-arm.
+   */
+  private scheduleNextPoll(): void {
+    if (this.unloaded) {
+      return;
+    }
+    this.pollTimer = this.setTimeout(() => {
+      void this.poll().finally(() => this.scheduleNextPoll());
+    }, this.pollIntervalMs);
   }
 
   /**
@@ -582,7 +597,7 @@ export class NutAdapter extends utils.Adapter {
     try {
       this.unloaded = true;
       if (this.pollTimer) {
-        this.clearInterval(this.pollTimer);
+        this.clearTimeout(this.pollTimer);
         this.pollTimer = undefined;
       }
       // The client owns its reconnect timer (managed via this.setTimeout) — destroy()/shutdown()
