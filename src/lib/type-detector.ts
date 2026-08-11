@@ -25,12 +25,7 @@ const KNOWN_STRING_SUFFIXES = new Set([
 ]);
 
 /** Known-string exact prefixes — always string. */
-const KNOWN_STRING_PREFIXES = [
-  "driver.flag.",
-  "driver.parameter.port",
-  "driver.parameter.synchronous",
-  "driver.version.",
-];
+const KNOWN_STRING_PREFIXES = ["driver.parameter.port", "driver.parameter.synchronous", "driver.version."];
 
 /** Result of type detection for a NUT variable. */
 export interface TypeDetectResult {
@@ -62,6 +57,25 @@ export interface TypeDetectResult {
  * @param isWritable Whether the variable appears in LIST RW
  */
 export function detectType(varName: string, rawValue: string, isWritable: boolean): TypeDetectResult {
+  // driver.flag.* is a NUT-core on/off flag (nut-names.txt: "Flag xxx"), reported by drivers as
+  // enabled/disabled or 0/1. Model it as a real boolean instead of dead text. Kept read-only: the
+  // only writable one (allow_killpower, ST_FLAG_NUMBER) is a dangerous kill-power switch whose SET
+  // wire token (1/0) differs from the boolean write path's yes/no — read-only avoids both a silent
+  // SET failure and an accidental toggle. An unrecognised value falls through to opaque string.
+  if (varName.startsWith("driver.flag.")) {
+    const flag = parseFlagValue(rawValue);
+    if (flag !== undefined) {
+      return {
+        type: "boolean",
+        role: "indicator",
+        unit: undefined,
+        read: true,
+        write: false,
+        parsedValue: flag,
+      };
+    }
+  }
+
   if (isKnownString(varName)) {
     return {
       type: "string",
@@ -134,6 +148,24 @@ function parseYesNo(rawValue: string): boolean | undefined {
   return undefined;
 }
 
+/**
+ * driver.flag.* surfaces as a NUT-core on/off flag whose textual form varies by driver
+ * (enabled | disabled | 0 | 1). Map it to boolean; anything else is not a flag we recognise.
+ * Scoped to driver.flag.* so bare 0/1 stays numeric for every other variable.
+ *
+ * @param rawValue Raw string value from LIST VAR
+ */
+function parseFlagValue(rawValue: string): boolean | undefined {
+  const v = rawValue.trim().toLowerCase();
+  if (v === "enabled" || v === "on" || v === "yes" || v === "true" || v === "1") {
+    return true;
+  }
+  if (v === "disabled" || v === "off" || v === "no" || v === "false" || v === "0") {
+    return false;
+  }
+  return undefined;
+}
+
 function isKnownString(varName: string): boolean {
   const lastDot = varName.lastIndexOf(".");
   if (lastDot >= 0) {
@@ -156,6 +188,12 @@ function isKnownString(varName: string): boolean {
   return false;
 }
 
+// Transfer/bypass voltage set-points (input.transfer.{low,high,min,max}, input.transfer.hysteresis)
+// carry no "voltage" token in the name but are volts — used for both unit and role detection.
+function isTransferVoltage(varName: string): boolean {
+  return /^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis";
+}
+
 // Only called for numeric variables (string vars never carry a unit).
 function detectUnit(varName: string): string | undefined {
   // Percent-of-nominal ranges carry "frequency" in the name but are a percentage.
@@ -166,11 +204,7 @@ function detectUnit(varName: string): string | undefined {
   if (varName === "battery.energysave.delay") {
     return "min";
   }
-  if (varName.includes("voltage")) {
-    return "V";
-  }
-  // Transfer/bypass voltage set-points carry no "voltage" token in the name.
-  if (/^input\.transfer\.(.*\.)?(low|high|min|max)$/.test(varName) || varName === "input.transfer.hysteresis") {
+  if (varName.includes("voltage") || isTransferVoltage(varName)) {
     return "V";
   }
   if (varName.includes("frequency")) {
@@ -236,7 +270,7 @@ function detectRole(varName: string, type: "number" | "string", isWritable: bool
   if (varName === "battery.charge") {
     return "value.battery";
   }
-  if (varName.includes("voltage")) {
+  if (varName.includes("voltage") || isTransferVoltage(varName)) {
     return isWritable ? "level" : "value.voltage";
   }
   if (varName.includes("temperature")) {
@@ -247,7 +281,12 @@ function detectRole(varName: string, type: "number" | "string", isWritable: bool
   }
   // "powerfactor" contains "power" but is a 0..1 factor, not a power value.
   if (varName.includes("power") && !varName.includes("powerfactor")) {
-    return isWritable ? "level" : "value.power";
+    if (isWritable) {
+      return "level";
+    }
+    // realpower is real/active power (W); ups.power is apparent power (VA) — ioBroker has no
+    // value.power.apparent role, so apparent stays value.power.
+    return varName.includes("realpower") ? "value.power.active" : "value.power";
   }
   if (varName.includes("runtime") || varName.includes(".delay.") || varName.includes(".timer.")) {
     return isWritable ? "level" : "value.interval";
@@ -267,6 +306,14 @@ const KNOWN_ENUM_STATES: Record<string, Record<string, string>> = {
     enabled: "enabled",
     disabled: "disabled",
     muted: "muted",
+  },
+  // Device type is a fixed enumeration per the NUT catalogue (nut-names.txt: device.type).
+  "device.type": {
+    ups: "ups",
+    pdu: "pdu",
+    scd: "scd",
+    psu: "psu",
+    ats: "ats",
   },
 };
 
@@ -312,11 +359,13 @@ export function detectStates(varName: string): Record<string, string> | undefine
   if (/^outlet(\.\d+)?\.(switch|status)$/.test(varName) || /^outlet\.group(\.\d+)?\.status$/.test(varName)) {
     return OUTLET_ON_OFF;
   }
-  // Threshold status enums (frequency additionally reports out-of-range).
-  if (/\.frequency\.status$/.test(varName)) {
+  // Threshold status enums (frequency additionally reports out-of-range). The (^|\.) anchor also
+  // catches the top-level forms (voltage.status, current.status, frequency.status) the NUT catalogue
+  // lists alongside the input.*/output.* variants — otherwise they fell through to opaque text.
+  if (/(^|\.)frequency\.status$/.test(varName)) {
     return FREQUENCY_STATUS;
   }
-  if (/\.(voltage|current|temperature|humidity)\.status$/.test(varName)) {
+  if (/(^|\.)(voltage|current|temperature|humidity)\.status$/.test(varName)) {
     return THRESHOLD_STATUS;
   }
   // Two-state enabled/disabled toggles that would otherwise fall through to bare text.

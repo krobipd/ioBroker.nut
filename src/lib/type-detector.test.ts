@@ -58,11 +58,6 @@ describe("type-detector", () => {
       expect(r.parsedValue).toBe("1");
     });
 
-    it("should detect driver.flag.* as string", () => {
-      const r = detectType("driver.flag.ignorelb", "enabled", false);
-      expect(r.type).toBe("string");
-    });
-
     it("should detect driver.parameter.port as string", () => {
       const r = detectType("driver.parameter.port", "auto", false);
       expect(r.type).toBe("string");
@@ -103,6 +98,38 @@ describe("type-detector", () => {
       const r = detectType("ups.status", "OL", false);
       expect(r.type).toBe("string");
       expect(r.role).toBe("text");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // driver.flag.* — NUT-core on/off flags: a real boolean, not dead text
+  // -----------------------------------------------------------------------
+  describe("driver.flag.* boolean", () => {
+    it("should detect driver.flag.* as read-only boolean (enabled → true)", () => {
+      const r = detectType("driver.flag.ignorelb", "enabled", false);
+      expect(r.type).toBe("boolean");
+      expect(r.parsedValue).toBe(true);
+      expect(r.write).toBe(false);
+    });
+
+    it("should map driver.flag.* disabled → false", () => {
+      expect(detectType("driver.flag.nolock", "disabled", false).parsedValue).toBe(false);
+    });
+
+    it("should map numeric driver.flag.* (ST_FLAG_NUMBER, e.g. allow_killpower) 1→true 0→false", () => {
+      expect(detectType("driver.flag.allow_killpower", "1", false).parsedValue).toBe(true);
+      expect(detectType("driver.flag.allow_killpower", "0", false).parsedValue).toBe(false);
+    });
+
+    it("should keep driver.flag.* read-only even when LIST RW marks it writable", () => {
+      const r = detectType("driver.flag.allow_killpower", "1", true);
+      expect(r.type).toBe("boolean");
+      expect(r.write).toBe(false);
+    });
+
+    it("should leave a driver.flag.* with an unexpected value as opaque string", () => {
+      const r = detectType("driver.flag.weird", "sometimes", false);
+      expect(r.type).toBe("string");
     });
   });
 
@@ -348,8 +375,16 @@ describe("type-detector", () => {
       expect(detectType("ups.power", "159", false).role).toBe("value.power");
     });
 
-    it("should assign value.power for realpower vars", () => {
-      expect(detectType("ups.realpower", "147", false).role).toBe("value.power");
+    it("should assign value.power.active for realpower vars (real/active power)", () => {
+      expect(detectType("ups.realpower", "147", false).role).toBe("value.power.active");
+    });
+
+    it("should assign value.voltage to input.transfer.high (voltage set-point without 'voltage' token)", () => {
+      expect(detectType("input.transfer.high", "260", false).role).toBe("value.voltage");
+    });
+
+    it("should assign value.voltage to input.transfer.low", () => {
+      expect(detectType("input.transfer.low", "180", false).role).toBe("value.voltage");
     });
 
     it("should assign value.interval for battery.runtime", () => {
@@ -488,6 +523,36 @@ describe("type-detector", () => {
       expect(detectStates("outlet.2.switch")).toEqual({ on: "on", off: "off" });
     });
 
+    it("should return enum states for device.type", () => {
+      expect(detectStates("device.type")).toEqual({
+        ups: "ups",
+        pdu: "pdu",
+        scd: "scd",
+        psu: "psu",
+        ats: "ats",
+      });
+    });
+
+    it("should return threshold states for top-level voltage.status", () => {
+      expect(detectStates("voltage.status")).toEqual({
+        good: "good",
+        "warning-low": "warning-low",
+        "warning-high": "warning-high",
+        "critical-low": "critical-low",
+        "critical-high": "critical-high",
+      });
+    });
+
+    it("should return threshold states for top-level current.status", () => {
+      expect(detectStates("current.status")).toEqual({
+        good: "good",
+        "warning-low": "warning-low",
+        "warning-high": "warning-high",
+        "critical-low": "critical-low",
+        "critical-high": "critical-high",
+      });
+    });
+
     it("should return undefined for unknown variables", () => {
       expect(detectStates("battery.charge")).toBeUndefined();
     });
@@ -528,9 +593,9 @@ describe("type-detector", () => {
       expect(r.unit).toBeUndefined();
     });
 
-    it("ups.realpower still value.power / W", () => {
+    it("ups.realpower → value.power.active / W (real/active power)", () => {
       const r = detectType("ups.realpower", "147", false);
-      expect(r.role).toBe("value.power");
+      expect(r.role).toBe("value.power.active");
       expect(r.unit).toBe("W");
     });
   });
@@ -548,6 +613,7 @@ describe("type-detector", () => {
     const CONTACTS = ["open", "closed", "active", "inactive"];
     const CHARGER = ["charging", "discharging", "floating", "resting"];
     const BEEPER = ["enabled", "disabled", "muted"];
+    const DEVTYPE = ["ups", "pdu", "scd", "psu", "ats"];
 
     interface Row {
       name: string;
@@ -600,6 +666,9 @@ describe("type-detector", () => {
       { name: "ambient.1.present", value: "yes", type: "boolean" },
       { name: "battery.protection", value: "yes", type: "boolean" },
       { name: "ups.start.auto", value: "yes", type: "boolean" },
+      // driver.flag.* — NUT-core on/off flags, read as boolean (enabled/disabled or 0/1)
+      { name: "driver.flag.ignorelb", value: "enabled", type: "boolean" },
+      { name: "driver.flag.allow_killpower", value: "1", type: "boolean" },
       // Enums (string + common.states)
       { name: "input.voltage.status", value: "critical-low", type: "string", states: THR },
       { name: "input.current.status", value: "critical-high", type: "string", states: THR },
@@ -617,6 +686,10 @@ describe("type-detector", () => {
       { name: "ambient.1.temperature.alarm", value: "enabled", type: "string", states: ENDIS },
       { name: "input.transfer.bypass.forced", value: "enabled", type: "string", states: ENDIS },
       { name: "ambient.1.contacts.1.status", value: "open", type: "string", states: CONTACTS },
+      { name: "device.type", value: "ups", type: "string", states: DEVTYPE },
+      // Top-level status forms the NUT catalogue lists next to the input.*/output.* variants
+      { name: "voltage.status", value: "good", type: "string", states: THR },
+      { name: "current.status", value: "critical-low", type: "string", states: THR },
       // Opaque strings (correct as text, no states)
       { name: "device.model", value: "SMART-UPS 700", type: "string" },
       { name: "device.serial", value: "WS9643050926", type: "string" },
