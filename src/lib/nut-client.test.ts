@@ -1528,3 +1528,31 @@ describe("isTlsConfigError", () => {
     expect(isTlsConfigError({ code: 42 })).toBe(false);
   });
 });
+
+describe("NutClient credential redaction", () => {
+  it("should not log plaintext username or password at debug level", async () => {
+    const debugLogs: string[] = [];
+    const logger = {
+      debug: (m: string) => debugLogs.push(m),
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+    };
+    const mock = createMockNutServer(cmd =>
+      cmd.startsWith("USERNAME") || cmd.startsWith("PASSWORD") ? "OK" : "ERR UNKNOWN-COMMAND",
+    );
+    const port = await mock.start();
+    const client = new NutClient("127.0.0.1", port, { logger });
+    try {
+      await client.connect();
+      await client.authenticate("secretuser", "s3cr3t-pw");
+      expect(debugLogs.some(l => l.includes("s3cr3t-pw"))).toBe(false);
+      expect(debugLogs.some(l => l.includes("secretuser"))).toBe(false);
+      expect(debugLogs).toContain(">> USERNAME ***");
+      expect(debugLogs).toContain(">> PASSWORD ***");
+    } finally {
+      client.destroy();
+      await mock.stop();
+    }
+  });
+});

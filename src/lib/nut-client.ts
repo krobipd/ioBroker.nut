@@ -600,7 +600,7 @@ export class NutClient {
       this.resyncAfterTimeout(entry.command);
     }, this.commandTimeout);
 
-    this.log?.debug(`>> ${entry.command}`);
+    this.log?.debug(`>> ${redactForLog(entry.command)}`);
 
     if (entry.multiLine) {
       this.multiLineBuffer = [];
@@ -691,4 +691,21 @@ function unescapeNut(s: string): string {
 
 function escapeNut(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
+ * Redact NUT credential commands before they are logged. USERNAME/PASSWORD carry values declared
+ * protected/encrypted in io-package.json — they must never reach the log file, even at debug level.
+ * The wire write still uses the unredacted command; only the log line is masked.
+ *
+ * @param command The raw NUT command about to be sent
+ */
+function redactForLog(command: string): string {
+  if (command.startsWith("PASSWORD ")) {
+    return "PASSWORD ***";
+  }
+  if (command.startsWith("USERNAME ")) {
+    return "USERNAME ***";
+  }
+  return command;
 }
