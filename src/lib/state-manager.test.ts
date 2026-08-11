@@ -1142,3 +1142,38 @@ describe("sanitizeUpsName", () => {
     expect(sanitizeUpsName("ups@home#1")).toBe("ups_home_1");
   });
 });
+
+describe("update migration — changed datapoints are updated in place", () => {
+  it("upgrades an existing string state to boolean when the detected type changes (driver.flag)", async () => {
+    const { adapter, objects } = createMockAdapter();
+    const sm = new StateManager(adapter);
+    // An older adapter version stored driver.flag.ignorelb as opaque text, and the user renamed it.
+    objects.set("ups0.driver.flag-ignorelb", {
+      type: "state",
+      common: { type: "string", role: "text", name: "My flag", read: true, write: false },
+      native: {},
+    });
+
+    await sm.updateVariables("ups0", [{ name: "driver.flag.ignorelb", value: "enabled" }], new Set());
+
+    const obj = objects.get("ups0.driver.flag-ignorelb");
+    expect(obj?.common.type).toBe("boolean"); // datapoint type migrated in place
+    expect(obj?.common.role).toBe("indicator");
+    expect(obj?.common.name).toBe("My flag"); // user rename preserved
+  });
+
+  it("adds common.states to an existing enum-less state on update (device.type)", async () => {
+    const { adapter, objects } = createMockAdapter();
+    const sm = new StateManager(adapter);
+    objects.set("ups0.device.type", {
+      type: "state",
+      common: { type: "string", role: "text", name: "Device type" },
+      native: {},
+    });
+
+    await sm.updateVariables("ups0", [{ name: "device.type", value: "ups" }], new Set());
+
+    const obj = objects.get("ups0.device.type");
+    expect(obj?.common.states).toEqual({ ups: "ups", pdu: "pdu", scd: "scd", psu: "psu", ats: "ats" });
+  });
+});
