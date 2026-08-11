@@ -6,7 +6,7 @@ vi.mock("@iobroker/adapter-core", () => ({
   },
 }));
 
-import { StateManager, nutVarToStateId, nutVarToReadableName } from "./state-manager";
+import { StateManager, nutVarToStateId, nutVarToReadableName, sanitizeUpsName } from "./state-manager";
 
 // ---------------------------------------------------------------------------
 // Mock adapter
@@ -1127,5 +1127,18 @@ describe("StateManager", () => {
       expect(obj?.common.type).toBe("string");
       expect(states.get("ups0.ALARM")?.val).toBe("On battery");
     });
+  });
+});
+
+describe("sanitizeUpsName", () => {
+  it("passes clean alphanumeric/underscore/dash names through unchanged", () => {
+    expect(sanitizeUpsName("ups0")).toBe("ups0");
+    expect(sanitizeUpsName("my-ups_2")).toBe("my-ups_2");
+  });
+
+  it("replaces spaces, dots and forbidden chars with underscore (object-ID safe)", () => {
+    expect(sanitizeUpsName("my ups!")).toBe("my_ups_");
+    expect(sanitizeUpsName("rack.a")).toBe("rack_a");
+    expect(sanitizeUpsName("ups@home#1")).toBe("ups_home_1");
   });
 });

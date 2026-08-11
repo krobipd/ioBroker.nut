@@ -125,6 +125,17 @@ function varTranslation(nutVarName: string): LocalizedName | undefined {
 }
 
 /**
+ * Sanitize a NUT UPS name into an object-ID-safe segment: only A-Za-z0-9_- survive, everything
+ * else (spaces, dots, ioBroker FORBIDDEN_CHARS) becomes an underscore. The result is the object ID;
+ * the real NUT name is kept separately for the protocol (INSTCMD/SET VAR/LIST VAR).
+ *
+ * @param name Raw UPS name as reported by LIST UPS
+ */
+export function sanitizeUpsName(name: string): string {
+  return name.replace(/[^A-Za-z0-9_-]/g, "_");
+}
+
+/**
  * Convert NUT variable name to ioBroker state ID (dots after channel → dashes).
  *
  * @param upsName UPS identifier

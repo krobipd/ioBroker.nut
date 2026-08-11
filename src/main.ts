@@ -12,7 +12,7 @@ import {
 } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
-import { nutVarToStateId, StateManager } from "./lib/state-manager";
+import { nutVarToStateId, sanitizeUpsName, StateManager } from "./lib/state-manager";
 import { detectType } from "./lib/type-detector";
 import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types";
 
@@ -208,13 +208,13 @@ export class NutAdapter extends utils.Adapter {
     if (!this.authenticated || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
       return;
     }
-    for (const ups of this.discoveredUps.keys()) {
+    for (const [upsId, ups] of this.discoveredUps) {
       try {
-        const commands = await this.client.listCmd(ups);
-        await this.stateManager.createCommandButtons(ups, commands);
-        this.log.debug(`Created ${commands.length} command buttons for ${ups}`);
+        const commands = await this.client.listCmd(ups.name);
+        await this.stateManager.createCommandButtons(upsId, commands);
+        this.log.debug(`Created ${commands.length} command buttons for ${ups.name}`);
       } catch (err) {
-        this.log.debug(`Failed to list commands for ${ups}: ${errText(err)}`);
+        this.log.debug(`Failed to list commands for ${ups.name}: ${errText(err)}`);
       }
     }
   }
@@ -253,6 +253,27 @@ export class NutAdapter extends utils.Adapter {
     void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {});
   }
 
+  /**
+   * Make a sanitized UPS name unique among the currently discovered UPSes. Two different NUT names
+   * can collapse to the same sanitized object ID (e.g. "u.p" and "u p" → "u_p"); disambiguate
+   * deterministically (…-2, …-3) and warn so the collision is visible in the admin.
+   *
+   * @param baseId Sanitized candidate object ID
+   * @param rawName Original NUT name, for the warning
+   */
+  private uniqueUpsId(baseId: string, rawName: string): string {
+    if (!this.discoveredUps.has(baseId)) {
+      return baseId;
+    }
+    let n = 2;
+    while (this.discoveredUps.has(`${baseId}-${n}`)) {
+      n++;
+    }
+    const unique = `${baseId}-${n}`;
+    this.log.warn(`UPS name '${rawName}' collides with another after sanitization → using object ID '${unique}'`);
+    return unique;
+  }
+
   private async discover(): Promise<void> {
     if (!this.client || !this.stateManager) {
       return;
@@ -262,8 +283,12 @@ export class NutAdapter extends utils.Adapter {
 
     this.discoveredUps.clear();
     for (const ups of upsList) {
-      this.discoveredUps.set(ups.name, ups);
-      await this.stateManager.ensureUpsDevice(ups.name, ups.description);
+      // The NUT name can contain characters ioBroker forbids in object IDs (spaces, dots, etc.);
+      // sanitize it for the object tree and key discoveredUps on that ID. The real NUT name stays
+      // in the map value and is used for every protocol call (LIST VAR/INSTCMD/SET VAR).
+      const upsId = this.uniqueUpsId(sanitizeUpsName(ups.name), ups.name);
+      this.discoveredUps.set(upsId, ups);
+      await this.stateManager.ensureUpsDevice(upsId, ups.description);
     }
 
     const knownNames = new Set(this.discoveredUps.keys());
@@ -323,57 +348,58 @@ export class NutAdapter extends utils.Adapter {
 
     this.isPolling = true;
     try {
-      for (const upsName of this.discoveredUps.keys()) {
+      for (const [upsId, ups] of this.discoveredUps) {
+        // upsId is the sanitized object-ID segment; nutName is the real NUT name for the protocol.
+        const nutName = ups.name;
         try {
           // Only query LIST RW when SET VAR is enabled — otherwise the variables would be marked
           // writable (write: true) in the admin object tree while a write is silently blocked, and
           // querying is pointless. With SET VAR off every variable stays read-only.
           const [variables, rwVars] = await Promise.all([
-            this.client.listVar(upsName),
+            this.client.listVar(nutName),
             this.nutConfig().enableSetVar
-              ? this.client.listRw(upsName).catch((err: unknown) => {
-                  this.log.debug(`LIST RW ${upsName} failed (non-critical): ${errText(err)}`);
+              ? this.client.listRw(nutName).catch((err: unknown) => {
+                  this.log.debug(`LIST RW ${nutName} failed (non-critical): ${errText(err)}`);
                   return [] as NutVariable[];
                 })
               : Promise.resolve<NutVariable[]>([]),
           ]);
 
           const rwNames = new Set(rwVars.map(v => v.name));
-          await this.stateManager.updateVariables(upsName, variables, rwNames);
+          await this.stateManager.updateVariables(upsId, variables, rwNames);
 
-          const upsDesc = this.discoveredUps.get(upsName);
-          await this.stateManager.updateDeviceName(upsName, upsDesc?.description ?? "", variables);
+          await this.stateManager.updateDeviceName(upsId, ups.description, variables);
 
           const statusVar = variables.find(v => v.name === "ups.status");
           if (statusVar) {
             // Pass battery.charger.status so charging/discharging fill in even on UPSes that
             // report it instead of the CHRG/DISCHRG status flags (e.g. Eaton Ellipse ECO).
             const chargerStatus = variables.find(v => v.name === "battery.charger.status")?.value;
-            await this.stateManager.updateStatusFlags(upsName, statusVar.value, chargerStatus);
+            await this.stateManager.updateStatusFlags(upsId, statusVar.value, chargerStatus);
           }
 
-          await this.enrichWritableVars(upsName, rwVars);
+          await this.enrichWritableVars(upsId, nutName, rwVars);
 
-          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: true, ack: true });
+          await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: true, ack: true });
 
-          if (this.failedUps.has(upsName)) {
-            this.log.info(`UPS '${upsName}' recovered`);
-            this.failedUps.delete(upsName);
+          if (this.failedUps.has(upsId)) {
+            this.log.info(`UPS '${nutName}' recovered`);
+            this.failedUps.delete(upsId);
           }
         } catch (err) {
-          await this.setStateChangedAsync(`${upsName}.info.reachable`, { val: false, ack: true });
+          await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: false, ack: true });
 
-          const msg = `Failed to poll UPS '${upsName}': ${errText(err)}`;
-          if (this.failedUps.has(upsName)) {
+          const msg = `Failed to poll UPS '${nutName}': ${errText(err)}`;
+          if (this.failedUps.has(upsId)) {
             this.log.debug(msg);
           } else {
             const isDataStale = err instanceof NutError && err.code === "DATA-STALE";
             if (isDataStale) {
-              this.log.warn(`UPS '${upsName}': driver reports stale data — keeping existing states`);
+              this.log.warn(`UPS '${nutName}': driver reports stale data — keeping existing states`);
             } else {
               this.log.warn(msg);
             }
-            this.failedUps.add(upsName);
+            this.failedUps.add(upsId);
           }
         }
       }
@@ -412,15 +438,16 @@ export class NutAdapter extends utils.Adapter {
    * per connection (guarded by enrichedUps). Each query is best-effort — a driver that does not
    * support LIST ENUM/RANGE just logs at debug.
    *
-   * @param upsName UPS identifier
+   * @param upsId Sanitized UPS object-ID segment (for state IDs)
+   * @param nutName Real NUT name (for LIST ENUM/RANGE protocol calls)
    * @param rwVars Writable variables from LIST RW
    */
-  private async enrichWritableVars(upsName: string, rwVars: NutVariable[]): Promise<void> {
-    if (!this.client || !this.stateManager || this.enrichedUps.has(upsName) || rwVars.length === 0) {
+  private async enrichWritableVars(upsId: string, nutName: string, rwVars: NutVariable[]): Promise<void> {
+    if (!this.client || !this.stateManager || this.enrichedUps.has(upsId) || rwVars.length === 0) {
       return;
     }
     for (const rw of rwVars) {
-      const stateId = nutVarToStateId(upsName, rw.name);
+      const stateId = nutVarToStateId(upsId, rw.name);
       // A writable yes/no var is a boolean state (detectType → boolean only via parseYesNo). Its
       // LIST ENUM yes/no must not become common.states — a string-keyed {yes,no} map is meaningless
       // on a boolean — so skip the enum round-trip entirely for booleans. RANGE stays (harmless: a
@@ -428,7 +455,7 @@ export class NutAdapter extends utils.Adapter {
       const isBoolean = detectType(rw.name, rw.value, true).type === "boolean";
       if (!isBoolean) {
         try {
-          const enumVals = await this.client.listEnum(upsName, rw.name);
+          const enumVals = await this.client.listEnum(nutName, rw.name);
           if (enumVals.length > 0) {
             const states: Record<string, string> = {};
             for (const v of enumVals) {
@@ -437,11 +464,11 @@ export class NutAdapter extends utils.Adapter {
             await this.stateManager.enrichStateMetadata(stateId, { states });
           }
         } catch (err: unknown) {
-          this.log.debug(`LIST ENUM ${upsName} ${rw.name}: not supported (${errText(err)})`);
+          this.log.debug(`LIST ENUM ${nutName} ${rw.name}: not supported (${errText(err)})`);
         }
       }
       try {
-        const ranges = await this.client.listRange(upsName, rw.name);
+        const ranges = await this.client.listRange(nutName, rw.name);
         if (ranges.length > 0) {
           const min = parseDecimal(ranges[0].min);
           const max = parseDecimal(ranges[0].max);
@@ -455,10 +482,10 @@ export class NutAdapter extends utils.Adapter {
           await this.stateManager.enrichStateMetadata(stateId, patch);
         }
       } catch (err: unknown) {
-        this.log.debug(`LIST RANGE ${upsName} ${rw.name}: not supported (${errText(err)})`);
+        this.log.debug(`LIST RANGE ${nutName} ${rw.name}: not supported (${errText(err)})`);
       }
     }
-    this.enrichedUps.add(upsName);
+    this.enrichedUps.add(upsId);
   }
 
   private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
@@ -482,11 +509,14 @@ export class NutAdapter extends utils.Adapter {
         return;
       }
 
-      const upsName = parts[0];
-      if (!this.discoveredUps.has(upsName)) {
-        this.log.debug(`onStateChange: unknown UPS '${upsName}', ignoring`);
+      const upsId = parts[0];
+      const ups = this.discoveredUps.get(upsId);
+      if (!ups) {
+        this.log.debug(`onStateChange: unknown UPS '${upsId}', ignoring`);
         return;
       }
+      // parts[0] is the sanitized object ID; the protocol needs the real NUT name.
+      const nutName = ups.name;
 
       if (parts[1] === "commands") {
         if (!config.enableCommands) {
@@ -494,12 +524,12 @@ export class NutAdapter extends utils.Adapter {
           return;
         }
         const cmdName = this.stateManager?.nutNameForState(localId) ?? parts.slice(2).join(".").replace(/-/g, ".");
-        this.log.debug(`INSTCMD ${upsName} ${cmdName}`);
+        this.log.debug(`INSTCMD ${nutName} ${cmdName}`);
         try {
-          await this.client.instCmd(upsName, cmdName);
-          this.log.info(`Command executed: ${cmdName} on ${upsName}`);
+          await this.client.instCmd(nutName, cmdName);
+          this.log.info(`Command executed: ${cmdName} on ${nutName}`);
         } catch (err) {
-          this.log.error(`Command failed: ${cmdName} on ${upsName} — ${errText(err)}`);
+          this.log.error(`Command failed: ${cmdName} on ${nutName} — ${errText(err)}`);
         }
         await this.setState(id, { val: false, ack: true });
         return;
@@ -517,13 +547,13 @@ export class NutAdapter extends utils.Adapter {
       // accepts yes/no). Translate it back to the token NUT expects — String(true) = "true" would
       // be rejected with INVALID-VALUE/SET-FAILED. Numbers/enum strings write verbatim.
       const value = typeof state.val === "boolean" ? (state.val ? "yes" : "no") : String(state.val);
-      this.log.debug(`SET VAR ${upsName} ${varName} "${value}"`);
+      this.log.debug(`SET VAR ${nutName} ${varName} "${value}"`);
       try {
-        await this.client.setVar(upsName, varName, value);
+        await this.client.setVar(nutName, varName, value);
         await this.setState(id, { val: state.val, ack: true });
-        this.log.info(`Variable set: ${varName} = "${value}" on ${upsName}`);
+        this.log.info(`Variable set: ${varName} = "${value}" on ${nutName}`);
       } catch (err) {
-        this.log.error(`SET VAR failed: ${varName} on ${upsName} — ${errText(err)}`);
+        this.log.error(`SET VAR failed: ${varName} on ${nutName} — ${errText(err)}`);
       }
     } catch (err: unknown) {
       this.log.error(`onStateChange failed: ${errText(err)}`);

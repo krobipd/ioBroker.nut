@@ -410,6 +410,35 @@ describe("discover", () => {
   });
 });
 
+describe("UPS name sanitization", () => {
+  it("sanitizes forbidden UPS names into object IDs but uses the real name for the NUT protocol", async () => {
+    const s = await setupConnected({ enableCommands: true, enableSetVar: true, username: "u", password: "p" }, [
+      { name: "my ups!", description: "Weird UPS" },
+    ]);
+    // Object tree + cleanup work on the sanitized ID; discoveredUps is keyed on it.
+    expect([...s.internal.discoveredUps.keys()]).toEqual(["my_ups_"]);
+    expect(s.sm.ensureUpsDevice).toHaveBeenCalledWith("my_ups_", "Weird UPS");
+    expect(s.sm.cleanupRemovedUps).toHaveBeenCalledWith(new Set(["my_ups_"]));
+    // NUT protocol calls (poll) use the real, unsanitized name.
+    expect(s.client.listVar).toHaveBeenCalledWith("my ups!");
+    // Command buttons: LIST CMD uses the real name, buttons are created under the sanitized ID.
+    expect(s.client.listCmd).toHaveBeenCalledWith("my ups!");
+    expect(s.sm.createCommandButtons).toHaveBeenCalledWith("my_ups_", [{ name: "beeper.enable" }]);
+    // A command targeting the sanitized object ID must reach NUT with the real name.
+    await s.internal.onStateChange("nut2.0.my_ups_.commands.beeper-enable", { val: true, ack: false });
+    expect(s.client.instCmd).toHaveBeenCalledWith("my ups!", "beeper.enable");
+  });
+
+  it("disambiguates two UPS names that collapse to the same object ID and warns", async () => {
+    const s = await setupConnected({}, [
+      { name: "u.p", description: "A" },
+      { name: "u p", description: "B" },
+    ]);
+    expect([...s.internal.discoveredUps.keys()]).toEqual(["u_p", "u_p-2"]);
+    expect(logsOf(s.stub, "warn").some(m => m.includes("collides"))).toBe(true);
+  });
+});
+
 describe("classifyError", () => {
   it("maps NutError to its code, network codes to NETWORK, timeouts to TIMEOUT", async () => {
     const { internal } = setup();
