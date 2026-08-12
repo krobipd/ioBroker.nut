@@ -19,9 +19,9 @@
 ```
 src/main.ts                     → NutAdapter (Lifecycle, Polling, onStateChange für Commands/SetVar)
 src/lib/
-├── nut-client.ts               → NUT TCP Client (persistent, command queue, reconnect, auth)
+├── nut-client.ts               → NUT TCP Client (persistent, command queue, reconnect, auth, redactForLog für Credential-Echo)
 ├── nut-client.test.ts           → Mocked net.Socket tests
-├── state-manager.ts            → ioBroker state CRUD (device/channel/state, createdIds-Cache, legacy cleanup, cleanupDeprecatedInfoStates, enrichStateMetadata, nutVarToStateId/nutVarToReadableName)
+├── state-manager.ts            → ioBroker state CRUD (device/channel/state, createdIds-Cache, legacy cleanup, cleanupDeprecatedInfoStates, enrichStateMetadata, nutVarToStateId/nutVarToReadableName, sanitizeUpsName)
 ├── state-manager.test.ts
 ├── type-detector.ts            → NUT variable → ioBroker type/role/unit Mapping
 ├── type-detector.test.ts
@@ -54,6 +54,11 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 13. **STARTTLS** — opt-in `useTls` verschlüsselt die Verbindung (Credentials sonst Klartext). `connect()` macht den Upgrade vor jedem Command. Default `tlsRejectUnauthorized=false` (NUT-Server meist self-signed); ehrlich eingeordnet (transit-encryption, kein MITM-Schutz ohne valides Zertifikat). TLS-Config-Fehler → gelb/kein Retry (wie Auth-Fail)
 14. **Unified Retry-Loop im Client** — `start()` besitzt EINE Schleife: retryt den initialen Connect, reconnectet bei Drops, stoppt gelb bei TLS-Config-Fatal (`onFatal`). `connect()` bleibt pur (One-Shot, kein Retry → Verbindungstest-Client unverändert). `setOnConnect` läuft idempotent bei initial UND Reconnect (kein Setup-Pfad-Drift). Backoff via purem `coerce.ts:computeReconnectDelay` (1s→60s). Timer managed (`adapter.setTimeout`-Injection → auto-cleared on unload)
 15. **charging/discharging auch aus `battery.charger.status`** — USVen ohne CHRG/DISCHRG-Flags (z.B. Eaton Ellipse ECO, Apollon77-Issues #168/#97) füllen die Booleans über `battery.charger.status` (charging/discharging)
+16. **`driver.flag.*` → read-only Boolean** — NUT-core on/off flag (`enabled`/`disabled`/`0`/`1` via `parseFlagValue`); read-only erzwungen, weil das einzige schreibbare (`allow_killpower`, `ST_FLAG_NUMBER`) ein `1/0`-SET-Token bräuchte, das der Boolean-Schreibpfad (yes/no) nicht trägt. Ebenso getypt: `device.type` + top-level `voltage/current.status` → Enum (`(^|\.)`-Anker in `detectStates`), `ups.realpower` → `value.power.active` (VA-`ups.power` bleibt `value.power` — kein `value.power.apparent` in ioBroker), `input.transfer.*`-Grenzwerte → `value.voltage`
+17. **on/off + enabled/disabled bleiben Enums (`common.states`), NICHT Boolean** — `onStateChange` mappt Boolean hart auf `yes`/`no`; ein Boolean-on-the-wire bräuchte per-Variable-Vokabular (`on` statt `yes`) → würde SET VAR für diese Variablen still brechen (die F1-Klasse). Ein Enum mit states ist bereits der echte Typ, kein Text-Dump
+18. **UPS-Namen-Sanitisierung** — `sanitizeUpsName` filtert Objekt-ID-verbotene Zeichen auf `[A-Za-z0-9_-]`; `discoveredUps` ist auf die sanitisierte ID gekeyt, der echte NUT-Name bleibt im Wert und wird für JEDEN Protokoll-Aufruf (LIST VAR/RW/ENUM/RANGE/CMD, INSTCMD, SET VAR) genutzt; zwei Namen, die auf dieselbe ID kollabieren, werden disambiguiert (`…-2`) + gewarnt
+19. **Poll als setTimeout-Kette** — `scheduleNextPoll` plant den nächsten Poll erst nach Abschluss des vorigen (kein Overlap statt fixem `setInterval`); `pollTimer` bleibt zwischen Ticks definiert, damit der `armPollTimer`-Idempotenz-Guard + die post-connect-Recovery-Re-Entry halten. `onUnload` clear via `clearTimeout`
+20. **Credential-Redaction im Log** — `redactForLog` maskiert `USERNAME`/`PASSWORD` im Debug-Command-Echo (beides `protectedNative`/`encryptedNative`); der Wire-Write bleibt unredacted
 
 ## NUT-Protokoll Referenz
 
@@ -63,7 +68,7 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (472 unit + 57 package = 529)
+## Tests (494 unit + 57 package = 551)
 
 ## Versionshistorie
 
