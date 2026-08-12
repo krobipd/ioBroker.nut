@@ -377,7 +377,7 @@ export class StateManager {
       `${upsName}.status.severity`,
       {
         type: "number",
-        role: "value",
+        role: "value.severity",
         read: true,
         write: false,
         name: tName("statusSeverity"),

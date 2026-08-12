@@ -59,6 +59,14 @@ function detectType(varName, rawValue, isWritable) {
         parsedValue: flag
       };
     }
+    return {
+      type: "string",
+      role: "text",
+      unit: void 0,
+      read: true,
+      write: false,
+      parsedValue: rawValue
+    };
   }
   if (isKnownString(varName)) {
     return {
@@ -206,6 +214,12 @@ function detectRole(varName, type, isWritable) {
   }
   if (varName.includes("current")) {
     return "value.current";
+  }
+  if (varName.includes("frequency") && !/\.frequency\..+\.range$/.test(varName)) {
+    return isWritable ? "level" : "value.frequency";
+  }
+  if (varName.includes("humidity")) {
+    return isWritable ? "level" : "value.humidity";
   }
   if (varName.includes("power") && !varName.includes("powerfactor")) {
     if (isWritable) {

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "news": {
+      "0.7.0": {
+        "en": "Mains frequency, status severity and humidity now use their dedicated ioBroker role, so charts and device detection pick them up correctly.",
+        "de": "Netzfrequenz, Status-Schweregrad und Luftfeuchte nutzen jetzt ihre eigene ioBroker-Rolle, sodass Diagramme und Geräteerkennung sie korrekt erfassen.",
+        "ru": "Частота сети, уровень серьёзности статуса и влажность теперь используют собственную роль ioBroker, поэтому графики и распознавание устройств учитывают их правильно.",
+        "pt": "Frequência da rede, gravidade do estado e humidade passam a usar a sua própria função ioBroker, para gráficos e deteção de dispositivos corretos.",
+        "nl": "Netfrequentie, statusernst en luchtvochtigheid gebruiken nu hun eigen ioBroker-rol, zodat grafieken en apparaatdetectie ze correct herkennen.",
+        "fr": "La fréquence secteur, la gravité de l'état et l'humidité utilisent désormais leur propre rôle ioBroker, pour des graphiques et une détection d'appareils corrects.",
+        "it": "Frequenza di rete, gravità dello stato e umidità ora usano il proprio ruolo ioBroker, così grafici e rilevamento dispositivi li riconoscono correttamente.",
+        "es": "La frecuencia de red, la gravedad del estado y la humedad ahora usan su propio rol de ioBroker, para gráficos y detección de dispositivos correctos.",
+        "pl": "Częstotliwość sieci, poziom ważności statusu i wilgotność używają teraz własnej roli ioBroker, dzięki czemu wykresy i wykrywanie urządzeń działają poprawnie.",
+        "uk": "Частота мережі, рівень серйозності статусу та вологість тепер використовують власну роль ioBroker, тож графіки та розпізнавання пристроїв визначають їх правильно.",
+        "zh-cn": "市电频率、状态严重程度和湿度现在使用各自专用的 ioBroker 角色，因此图表和设备检测能正确识别它们。"
+      },
       "0.6.0": {
         "en": "More UPS readings now appear with their correct ioBroker type instead of plain text, so numeric values, yes/no switches and status fields can be used directly in charts and scripts.",
         "de": "Mehr USV-Werte erscheinen jetzt mit ihrem korrekten ioBroker-Typ statt als reiner Text, sodass Zahlenwerte, Ja/Nein-Schalter und Statusfelder direkt in Diagrammen und Skripten nutzbar sind.",

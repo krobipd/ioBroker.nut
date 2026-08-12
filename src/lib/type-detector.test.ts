@@ -131,6 +131,12 @@ describe("type-detector", () => {
       const r = detectType("driver.flag.weird", "sometimes", false);
       expect(r.type).toBe("string");
     });
+
+    it("should leave a NUMERIC unrecognised driver.flag.* as opaque string, not a number", () => {
+      const r = detectType("driver.flag.weird", "2", false);
+      expect(r.type).toBe("string");
+      expect(r.role).toBe("text");
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -389,6 +395,18 @@ describe("type-detector", () => {
 
     it("should assign value.interval for battery.runtime", () => {
       expect(detectType("battery.runtime", "2050", false).role).toBe("value.interval");
+    });
+
+    it("should assign value.frequency for frequency", () => {
+      expect(detectType("input.frequency", "50.0", false).role).toBe("value.frequency");
+    });
+
+    it("should assign value.humidity for ambient humidity", () => {
+      expect(detectType("ambient.humidity", "45", false).role).toBe("value.humidity");
+    });
+
+    it("should keep a frequency range (percentage band) as generic value, not value.frequency", () => {
+      expect(detectType("input.transfer.frequency.bypass.range", "10", false).role).toBe("value");
     });
 
     it("should assign value.interval for ups.timer.*", () => {

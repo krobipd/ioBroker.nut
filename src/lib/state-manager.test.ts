@@ -436,6 +436,26 @@ describe("StateManager", () => {
   });
 
   // -----------------------------------------------------------------------
+  // Role migration on update — a changed role must reach existing objects
+  // -----------------------------------------------------------------------
+  describe("role migration on update", () => {
+    it("should overwrite an existing state's generic role on the next poll (value → value.frequency)", async () => {
+      const { adapter, objects } = createMockAdapter();
+      // Seed the object as an older adapter version created it: generic value role.
+      objects.set("ups0.input.frequency", {
+        type: "state",
+        common: { type: "number", role: "value", name: "Frequency", unit: "Hz", read: true, write: false },
+        native: {},
+      });
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "input.frequency", value: "50.0" }], new Set());
+
+      expect(objects.get("ups0.input.frequency")?.common.role).toBe("value.frequency");
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // Status flags
   // -----------------------------------------------------------------------
   describe("updateStatusFlags", () => {
@@ -470,6 +490,15 @@ describe("StateManager", () => {
       await sm.updateStatusFlags("ups0", "OB LB");
 
       expect(states.get("ups0.status.severity")?.val).toBe(3);
+    });
+
+    it("should assign role value.severity to the severity state", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateStatusFlags("ups0", "OL");
+
+      expect(objects.get("ups0.status.severity")?.common.role).toBe("value.severity");
     });
 
     it("should create boolean states for all known flags", async () => {

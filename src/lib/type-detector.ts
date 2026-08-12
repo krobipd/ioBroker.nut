@@ -61,7 +61,8 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
   // enabled/disabled or 0/1. Model it as a real boolean instead of dead text. Kept read-only: the
   // only writable one (allow_killpower, ST_FLAG_NUMBER) is a dangerous kill-power switch whose SET
   // wire token (1/0) differs from the boolean write path's yes/no — read-only avoids both a silent
-  // SET failure and an accidental toggle. An unrecognised value falls through to opaque string.
+  // SET failure and an accidental toggle. An unrecognised value is kept as an opaque string
+  // (below), never guessed as a number.
   if (varName.startsWith("driver.flag.")) {
     const flag = parseFlagValue(rawValue);
     if (flag !== undefined) {
@@ -74,6 +75,17 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
         parsedValue: flag,
       };
     }
+    // A flag reporting an unexpected value stays an opaque string. Do NOT fall through to the
+    // numeric heuristic: a value like "2" must not become a number state and flip the state's
+    // type between polls. "Don't guess" — the flag namespace is only ever on/off in practice.
+    return {
+      type: "string",
+      role: "text",
+      unit: undefined,
+      read: true,
+      write: false,
+      parsedValue: rawValue,
+    };
   }
 
   if (isKnownString(varName)) {
@@ -278,6 +290,14 @@ function detectRole(varName: string, type: "number" | "string", isWritable: bool
   }
   if (varName.includes("current")) {
     return "value.current";
+  }
+  // Real frequency (Hz) → value.frequency. A "*.frequency.*.range" is a percentage-of-nominal
+  // band (unit %), not a frequency reading, so it stays the generic value role.
+  if (varName.includes("frequency") && !/\.frequency\..+\.range$/.test(varName)) {
+    return isWritable ? "level" : "value.frequency";
+  }
+  if (varName.includes("humidity")) {
+    return isWritable ? "level" : "value.humidity";
   }
   // "powerfactor" contains "power" but is a 0..1 factor, not a power value.
   if (varName.includes("power") && !varName.includes("powerfactor")) {

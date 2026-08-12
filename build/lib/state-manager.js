@@ -337,7 +337,7 @@ class StateManager {
       `${upsName}.status.severity`,
       {
         type: "number",
-        role: "value",
+        role: "value.severity",
         read: true,
         write: false,
         name: (0, import_i18n.tName)("statusSeverity"),

@@ -1,4 +1,12 @@
 # Older changes
+## 0.5.0 (2026-07-02)
+
+- Device readings now have correct types instead of plain text: yes/no fields become booleans, numeric fields carry their unit, and status, severity and enum fields show a readable label.
+- The admin "Test connection" button now reports the real result — a clear error, or the list of discovered UPS devices — instead of always showing "Ok".
+- More reliable on slow or flaky networks: no needless drop-and-reconnect, a stalled connection now fails fast instead of hanging, and the adapter recovers instead of getting stuck at startup.
+- Clearer status labels: the OFF flag now reads "Off" instead of "Offline", and the on-line flag "On line power" instead of "Online" — so neither is mistaken for a lost network connection.
+- When variable writing (SET VAR) is disabled, readings are shown as read-only instead of looking editable but silently ignoring your changes.
+
 ## 0.4.5 (2026-06-21)
 
 - With login credentials configured, a NUT server that has more than one UPS no longer leaves the adapter offline (yellow). Multi-UPS setups with authentication now connect and poll correctly.
