@@ -366,6 +366,29 @@ describe("StateManager", () => {
       expect(states.get("ups0.ups.status")?.val).toBe("OL");
     });
 
+    it("discards garbage in a numeric field and warns exactly once", async () => {
+      const { adapter, states, logs } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      // battery.charge carries a unit → it is expected numeric. Storing
+      // "Infinity" would flip the datapoint's type and every consumer reading
+      // it (charts, scripts) gets a value it cannot use.
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "Infinity" }], new Set());
+      expect(states.has("ups0.battery.charge")).toBe(false);
+      const warns = (): string[] => logs.filter(l => l.startsWith("WARN:") && l.includes("Discarding non-numeric"));
+      expect(warns()).toHaveLength(1);
+
+      // Second poll with the same garbage: dropped again, but no second warn —
+      // a UPS that reports junk every 15 s must not flood the log.
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "12abc" }], new Set());
+      expect(states.has("ups0.battery.charge")).toBe(false);
+      expect(warns()).toHaveLength(1);
+
+      // A good value afterwards still lands.
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "77" }], new Set());
+      expect(states.get("ups0.battery.charge")?.val).toBe(77);
+    });
+
     it("should create channels automatically", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);

@@ -158,6 +158,11 @@ export class NutClient {
 
   /** One iteration of the persistent loop: connect, then fire onConnect or handle the failure. */
   private attemptConnect(): void {
+    // Shortcut, deliberately without its own test: connect() rejects on a
+    // destroyed client and handleConnectFailure bails on it too, so removing
+    // this check changes nothing observable (equivalent mutant, 2026-08-22 test
+    // audit). It stays because it keeps a torn-down client from even entering
+    // the loop.
     if (this.destroyed) {
       return;
     }

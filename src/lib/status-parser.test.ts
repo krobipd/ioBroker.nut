@@ -11,6 +11,18 @@ describe("status-parser", () => {
       expect(r.flags.onBattery).toBe(false);
     });
 
+    it("ignores an unknown token instead of inventing a flag", () => {
+      // NUT drivers emit private tokens (ACFAIL, COMMFAULT, …) the spec lets
+      // clients ignore. Setting a flag for them would create a state named
+      // after "undefined" in the object tree.
+      const r = parseStatus("OL ACFAIL TIP");
+      expect(Object.keys(r.flags).sort()).toEqual([...ALL_FLAG_KEYS].sort());
+      expect(Object.prototype.hasOwnProperty.call(r.flags, "undefined")).toBe(false);
+      expect(r.flags.online).toBe(true);
+      // The raw string keeps them, so nothing is lost for diagnosis.
+      expect(r.raw).toContain("ACFAIL");
+    });
+
     it("should parse OB as onBattery", () => {
       expect(parseStatus("OB").flags.onBattery).toBe(true);
     });

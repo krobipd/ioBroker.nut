@@ -649,6 +649,11 @@ describe("onStateChange — command and SET VAR gates", () => {
     await s.internal.onStateChange("nut2.0.ups0.commands.beeper-enable", null);
     await s.internal.onStateChange("nut2.0.ghost.commands.beeper-enable", { val: true, ack: false });
     expect(s.client.instCmd).not.toHaveBeenCalled();
+    // A state of a UPS that is gone (renamed, unplugged, removed from the NUT
+    // server) is a normal event — it must stay a debug line. An error entry
+    // sends whoever reads the log hunting a fault that does not exist.
+    expect(logsOf(s.stub, "error")).toEqual([]);
+    expect(logsOf(s.stub, "debug").some(m => m.includes("unknown UPS"))).toBe(true);
   });
 
   it("executes a command (dashes→dots), resets the button and logs", async () => {

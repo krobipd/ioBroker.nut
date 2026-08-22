@@ -201,9 +201,12 @@ function createStartTlsMockServer(handler: MockHandler): {
   start: () => Promise<number>;
   stop: () => Promise<void>;
   commands: string[];
+  /** Server-names the client offered via SNI (empty when it offered none). */
+  sniNames: string[];
 } {
   const commands: string[] = [];
   const connections = new Set<net.Socket | tls.TLSSocket>();
+  const sniNames: string[] = [];
   let port = 0;
 
   const respond = (sock: net.Socket | tls.TLSSocket, cmd: string): void => {
@@ -237,6 +240,11 @@ function createStartTlsMockServer(handler: MockHandler): {
           const tlsSocket = new tls.TLSSocket(socket, {
             isServer: true,
             secureContext: tls.createSecureContext({ cert: TEST_TLS_CERT, key: TEST_TLS_KEY }),
+            // Record the SNI the client offered — RFC 6066 forbids an IP literal there.
+            SNICallback: (name, cb) => {
+              sniNames.push(name);
+              cb(null, tls.createSecureContext({ cert: TEST_TLS_CERT, key: TEST_TLS_KEY }));
+            },
           });
           connections.add(tlsSocket);
           tlsSocket.setEncoding("utf8");
@@ -263,6 +271,7 @@ function createStartTlsMockServer(handler: MockHandler): {
 
   return {
     commands,
+    sniNames,
     start: () =>
       new Promise<number>(resolve => {
         server.listen(0, "127.0.0.1", () => {
@@ -323,6 +332,23 @@ describe("NutClient", () => {
       const client = new NutClient("127.0.0.1", 3493);
       client.destroy();
       await expect(client.connect()).rejects.toThrow("Client has been destroyed");
+    });
+
+    it("start() after destroy opens no socket at all", async () => {
+      const mock = createMockNutServer();
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        client.destroy();
+        // A reconnect timer that fires during teardown, or a late start() from
+        // onReady racing onUnload, must not resurrect the connection.
+        client.start();
+        await new Promise(r => setTimeout(r, 150));
+        expect(client.isConnected).toBe(false);
+        expect(mock.commands, "no NUT traffic after destroy").toEqual([]);
+      } finally {
+        await mock.stop();
+      }
     });
   });
 
@@ -1374,6 +1400,22 @@ describe("NutClient", () => {
         }
       },
     );
+
+    it("offers no server-name for an IP address (RFC 6066)", { timeout: 10000 }, async () => {
+      const mock = createStartTlsMockServer(() => "ERR UNKNOWN-COMMAND");
+      const port = await mock.start();
+      try {
+        // Connecting by IP: an IP literal as server-name is forbidden — Node warns
+        // and drops it, and a strict server can reject the handshake outright.
+        const client = new NutClient("127.0.0.1", port, { useTls: true, tlsRejectUnauthorized: false });
+        await client.connect();
+        expect(client.isTls).toBe(true);
+        expect(mock.sniNames, "no SNI for an IP host").toEqual([]);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
 
     it("rejects connect when the server has no TLS support", async () => {
       const mock = createMockNutServer(cmd => {

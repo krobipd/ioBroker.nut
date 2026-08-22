@@ -1,5 +1,6 @@
 import {
   coerceCommandTimeoutMs,
+  parseDecimal,
   coerceHost,
   coercePollIntervalSec,
   coercePort,
@@ -56,6 +57,30 @@ describe("coerce", () => {
   // -----------------------------------------------------------------------
   // coerceHost
   // -----------------------------------------------------------------------
+  describe("parseDecimal", () => {
+    it("accepts finite numbers and decimal strings", () => {
+      expect(parseDecimal(42)).toBe(42);
+      expect(parseDecimal(-1.5)).toBe(-1.5);
+      expect(parseDecimal(" 12.5 ")).toBe(12.5);
+    });
+
+    it("rejects a non-finite number that is already typed as one", () => {
+      // A NUT value can arrive pre-parsed (JSON payload, admin config). Passing
+      // Infinity through would store a value ioBroker cannot render and that
+      // every consumer of the datapoint has to special-case.
+      expect(parseDecimal(Infinity)).toBeNaN();
+      expect(parseDecimal(-Infinity)).toBeNaN();
+      expect(parseDecimal(NaN)).toBeNaN();
+    });
+
+    it("rejects text that only starts like a number", () => {
+      expect(parseDecimal("12abc")).toBeNaN();
+      expect(parseDecimal("Infinity")).toBeNaN();
+      expect(parseDecimal("")).toBeNaN();
+      expect(parseDecimal(null)).toBeNaN();
+    });
+  });
+
   describe("coerceHost", () => {
     it("should return trimmed host string", () => {
       expect(coerceHost("  192.168.1.100  ")).toBe("192.168.1.100");
