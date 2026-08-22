@@ -176,7 +176,7 @@ nut2.0.
 -->
 ### 0.7.0 (2026-08-12)
 
-- More UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.
+- Improved: more UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.
 - Fixed: a driver flag reporting an unusual value is now kept as a text state instead of being misread as a number, so its type no longer changes between updates.
 
 ### 0.6.0 (2026-08-11)
