@@ -9,7 +9,8 @@
 - **Version + Changelog:** current version in `io-package.json`; full internal dev history moved to `.claude/dev-history.md` (local, not auto-loaded). User-facing changelog: `README.md` + `io-package.json` news.
 - **GitHub:** https://github.com/krobipd/ioBroker.nut2
 - **npm:** https://www.npmjs.com/package/iobroker.nut2
-- **Repository PR:** noch nicht eingereicht
+- **Repository:** im Latest-Verzeichnis seit 2026-08-13 (PR #6373). Stable ist ein späterer, eigener Schritt.
+- **Sentry:** `common.plugins.sentry` mit der gemeinsamen power-dreams-Adresse (ab v0.8.0, wie die übrigen Adapter) — kein eigenes npm-Paket, das Werkzeug kommt über den js-controller. README-Abzeichen + `## Sentry`-Abschnitt sind gate-erzwungen.
 - **Runtime-Deps:** nur `@iobroker/adapter-core` (TCP via Node.js built-in `net`)
 - **Test-Setup:** Tests unter `src/**/*.test.ts` direkt via **vitest**. `test/package.js` + `test/integration.js` bleiben mocha (`@iobroker/testing` ist mocha-only).
 - **`@types/node` an `engines.node`-Min gekoppelt:** `^22.x` weil `engines.node: ">=22"`
