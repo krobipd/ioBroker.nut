@@ -174,6 +174,10 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- Fixed: a UPS no longer keeps showing as online after the adapter is stopped or while the NUT server cannot be reached — the reachability indicator is now cleared instead of staying green.
+
 ### 0.7.0 (2026-08-12)
 
 - Improved: more UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.

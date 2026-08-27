@@ -1229,3 +1229,41 @@ describe("update migration — changed datapoints are updated in place", () => {
     expect(obj?.common.states).toEqual({ ups: "ups", pdu: "pdu", scd: "scd", psu: "psu", ats: "ats" });
   });
 });
+
+describe("markAllUnreachable", () => {
+  it("resets info.reachable to false for every known UPS device", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter);
+    await sm.ensureUpsDevice("ups0", "Main UPS");
+    await sm.ensureUpsDevice("ups1", "Second UPS");
+    states.set("ups0.info.reachable", { val: true, ack: true });
+    states.set("ups1.info.reachable", { val: true, ack: true });
+
+    await sm.markAllUnreachable();
+
+    expect(states.get("ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(states.get("ups1.info.reachable")).toEqual({ val: false, ack: true });
+  });
+
+  it("skips devices without an info.reachable state instead of writing a missing id", async () => {
+    const { adapter, objects, states } = createMockAdapter();
+    const sm = new StateManager(adapter);
+    objects.set("legacy", { type: "device", common: { name: "Device from an older layout" }, native: {} });
+
+    await sm.markAllUnreachable();
+
+    expect(states.has("legacy.info.reachable")).toBe(false);
+  });
+
+  it("ignores channels and states — only device objects carry the online indicator", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter);
+    await sm.ensureUpsDevice("ups0", "Main UPS");
+    await sm.updateVariables("ups0", [{ name: "ups.status", value: "OL" }], new Set());
+
+    await sm.markAllUnreachable();
+
+    expect(states.get("ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(states.get("ups0.ups.status")).toEqual({ val: "OL", ack: true });
+  });
+});

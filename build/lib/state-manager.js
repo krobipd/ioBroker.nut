@@ -398,6 +398,33 @@ class StateManager {
     return this.nutNames.get(stateId);
   }
   /**
+   * Reset `info.reachable` to false for every UPS device already in the object tree.
+   *
+   * ioBroker keeps the last value of a state forever, and the device object points its
+   * `statusStates.onlineId` at this one — so a UPS keeps showing "online" across an adapter
+   * restart until the first successful poll overwrites it. That window is unbounded whenever
+   * the NUT server cannot be reached: the poll timer is only armed after a connect, so with
+   * the server down nothing ever writes the state and the stale `true` stands indefinitely.
+   * Called at startup, before the first connect attempt: not-yet-read is honestly "not
+   * reachable", which is what the state's own default (`def: false`) already declares.
+   */
+  async markAllUnreachable() {
+    const adapterObjects = await this.adapter.getAdapterObjectsAsync();
+    const localIds = new Set(
+      Object.keys(adapterObjects).map((id) => id.replace(`${this.adapter.namespace}.`, ""))
+    );
+    for (const [id, obj] of Object.entries(adapterObjects)) {
+      if (obj.type !== "device") {
+        continue;
+      }
+      const reachableId = `${id.replace(`${this.adapter.namespace}.`, "")}.info.reachable`;
+      if (!localIds.has(reachableId)) {
+        continue;
+      }
+      await this.adapter.setStateChangedAsync(reachableId, { val: false, ack: true });
+    }
+  }
+  /**
    * Remove device objects for UPS devices no longer reported by the NUT server.
    *
    * @param currentUpsNames Set of currently discovered UPS names

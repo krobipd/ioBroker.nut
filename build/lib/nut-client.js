@@ -50,6 +50,7 @@ class NutError extends Error {
     this.code = code;
     this.name = "NutError";
   }
+  code;
 }
 class NutTimeoutError extends Error {
   /**
@@ -60,6 +61,7 @@ class NutTimeoutError extends Error {
     this.command = command;
     this.name = "NutTimeoutError";
   }
+  command;
 }
 const TLS_FATAL_ERROR_CODES = /* @__PURE__ */ new Set([
   // NUT-level: the server cannot/does not start TLS

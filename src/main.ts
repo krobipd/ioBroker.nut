@@ -77,6 +77,11 @@ export class NutAdapter extends utils.Adapter {
 
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
 
+      // Built before the host check so the online indicators are cleared even on a misconfigured
+      // instance: nothing will poll, so a stale "reachable" would stand forever.
+      this.stateManager = this.makeStateManager();
+      await this.stateManager.markAllUnreachable();
+
       const host = coerceHost(config.host);
       if (!host) {
         this.log.error("NUT server host is required — check adapter configuration");
@@ -104,7 +109,6 @@ export class NutAdapter extends utils.Adapter {
         },
         logger: this.nutLogger,
       });
-      this.stateManager = this.makeStateManager();
 
       // Unified retry loop lives in the client (start): it retries the initial connect,
       // reconnects on drops, and runs the idempotent post-connect setup on every (re)connect.
@@ -613,6 +617,12 @@ export class NutAdapter extends utils.Adapter {
       }
       this.testClients.clear();
       void this.setState("info.connection", { val: false, ack: true }).catch(() => {});
+      // A stopped adapter reads nothing, so it must not keep claiming the UPS is reachable —
+      // that state backs the device object's online indicator (statusStates.onlineId).
+      // Fire-and-forget like info.connection above: onUnload stays synchronous.
+      for (const upsId of this.discoveredUps.keys()) {
+        void this.setState(`${upsId}.info.reachable`, { val: false, ack: true }).catch(() => {});
+      }
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${errText(err)}`);
     }

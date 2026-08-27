@@ -88,6 +88,8 @@ class NutAdapter extends utils.Adapter {
         `onReady: starting (host='${config.host}', port=${JSON.stringify(config.port)}, pollInterval=${JSON.stringify(config.pollInterval)}s)`
       );
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      this.stateManager = this.makeStateManager();
+      await this.stateManager.markAllUnreachable();
       const host = (0, import_coerce.coerceHost)(config.host);
       if (!host) {
         this.log.error("NUT server host is required \u2014 check adapter configuration");
@@ -112,7 +114,6 @@ class NutAdapter extends utils.Adapter {
         },
         logger: this.nutLogger
       });
-      this.stateManager = this.makeStateManager();
       this.client.setOnConnect(() => {
         void this.onConnected().catch((err) => this.log.error(`onConnected failed: ${(0, import_coerce.errText)(err)}`));
       });
@@ -541,6 +542,10 @@ class NutAdapter extends utils.Adapter {
       this.testClients.clear();
       void this.setState("info.connection", { val: false, ack: true }).catch(() => {
       });
+      for (const upsId of this.discoveredUps.keys()) {
+        void this.setState(`${upsId}.info.reachable`, { val: false, ack: true }).catch(() => {
+        });
+      }
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${(0, import_coerce.errText)(err)}`);
     }

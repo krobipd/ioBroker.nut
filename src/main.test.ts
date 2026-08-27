@@ -168,6 +168,7 @@ interface FakeStateManager {
   cleanupLegacyObjects: ReturnType<typeof vi.fn>;
   enrichStateMetadata: ReturnType<typeof vi.fn>;
   nutNameForState: ReturnType<typeof vi.fn>;
+  markAllUnreachable: ReturnType<typeof vi.fn>;
 }
 
 function makeFakeStateManager(): FakeStateManager {
@@ -181,6 +182,7 @@ function makeFakeStateManager(): FakeStateManager {
     cleanupLegacyObjects: vi.fn(async () => {}),
     enrichStateMetadata: vi.fn(async () => {}),
     nutNameForState: vi.fn(() => undefined),
+    markAllUnreachable: vi.fn(async () => {}),
   };
 }
 
@@ -264,6 +266,18 @@ describe("onReady", () => {
     expect(client.setOnConnect).toHaveBeenCalledTimes(1);
     expect(client.setOnFatal).toHaveBeenCalledTimes(1);
     expect(client.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the online indicators before the first connect (a hard kill leaves them stale)", async () => {
+    const { internal, sm } = setup();
+    await internal.onReady();
+    expect(sm.markAllUnreachable).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the online indicators even when no host is configured", async () => {
+    const { internal, sm } = setup({ host: "" });
+    await internal.onReady();
+    expect(sm.markAllUnreachable).toHaveBeenCalledTimes(1);
   });
 
   it("errors out without a host and never builds a client", async () => {
@@ -752,6 +766,15 @@ describe("onUnload", () => {
     expect(testClient.destroy).toHaveBeenCalledTimes(1);
     expect(s.internal.testClients.size).toBe(0);
     expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
+  });
+
+  it("marks every discovered UPS unreachable so a stopped adapter stops showing it online", async () => {
+    const s = await setupConnected();
+    s.stub.states.set("nut2.0.ups0.info.reachable", { val: true, ack: true });
+
+    s.internal.onUnload(vi.fn());
+
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
   });
 
   it("hard-destroys when not authenticated", async () => {
