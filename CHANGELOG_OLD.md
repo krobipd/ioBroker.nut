@@ -1,4 +1,8 @@
 # Older changes
+## 0.5.1 (2026-07-13)
+
+- Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.
+
 ## 0.5.0 (2026-07-02)
 
 - Device readings now have correct types instead of plain text: yes/no fields become booleans, numeric fields carry their unit, and status, severity and enum fields show a readable label.

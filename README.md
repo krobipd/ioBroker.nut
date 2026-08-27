@@ -2,7 +2,7 @@
 
 **Release:** [![npm version](https://img.shields.io/npm/v/iobroker.nut2)](https://www.npmjs.com/package/iobroker.nut2) ![stable](https://iobroker.live/badges/nut2-stable.svg) ![Installations](https://iobroker.live/badges/nut2-installed.svg) [![npm downloads](https://img.shields.io/npm/dt/iobroker.nut2)](https://www.npmjs.com/package/iobroker.nut2)
 
-**Build:** [![Test and Release](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml) ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+**Build:** [![Test and Release](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/krobipd/ioBroker.nut2/actions/workflows/test-and-release.yml) ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Sentry](https://img.shields.io/badge/error%20reporting-Sentry-362d59?logo=sentry&logoColor=white)](https://github.com/ioBroker/plugin-sentry#plugin-sentry)
 
 **Support:** [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=ko-fi)](https://ko-fi.com/krobipd) [![PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/krobipd)
 
@@ -21,6 +21,14 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 - Persistent TCP connection with automatic reconnect and exponential backoff
 - Network interface selector for multi-homed servers
 - Connection test button in the admin UI
+
+---
+
+## Sentry / Error reporting
+
+**This adapter uses Sentry libraries to automatically report exceptions and code errors to the developers.** Reporting only happens if you have enabled error reporting in the ioBroker diagnostics (**System settings → Diagnostics and error reporting**). Only an anonymous installation ID is transmitted — no name, e-mail address or IP address.
+
+For details and how to disable it, see the [Sentry plugin documentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry). Error reporting requires js-controller 3.0 or newer.
 
 ---
 
@@ -174,8 +182,9 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.8.0 (2026-08-27)
 
+- New: the adapter now reports crashes to the developer — only if error reporting is enabled in the ioBroker diagnostics settings, and only anonymously without personal data.
 - Fixed: a UPS no longer keeps showing as online after the adapter is stopped or while the NUT server cannot be reached — the reachability indicator is now cleared instead of staying green.
 
 ### 0.7.0 (2026-08-12)
@@ -196,10 +205,6 @@ nut2.0.
 ### 0.5.2 (2026-07-26)
 
 - The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.
-
-### 0.5.1 (2026-07-13)
-
-- Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

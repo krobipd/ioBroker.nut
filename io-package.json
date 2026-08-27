@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "news": {
+      "0.8.0": {
+        "en": "A UPS no longer stays marked as online when the adapter is stopped or cannot reach the NUT server, and crashes can now be reported anonymously via Sentry.",
+        "de": "Eine USV wird nicht mehr als online angezeigt, wenn der Adapter gestoppt ist oder den NUT-Server nicht erreicht; zudem können Abstürze anonym per Sentry gemeldet werden.",
+        "ru": "ИБП больше не отображается как «в сети», если адаптер остановлен или не может связаться с сервером NUT, а сбои теперь можно анонимно отправлять через Sentry.",
+        "pt": "Um UPS deixa de aparecer como online quando o adaptador está parado ou não alcança o servidor NUT e as falhas podem agora ser comunicadas anonimamente via Sentry.",
+        "nl": "Een UPS wordt niet langer als online weergegeven wanneer de adapter is gestopt of de NUT-server niet bereikt, en crashes kunnen nu anoniem via Sentry worden gemeld.",
+        "fr": "Un onduleur n'apparaît plus comme en ligne lorsque l'adaptateur est arrêté ou n'atteint pas le serveur NUT, et les plantages peuvent être signalés anonymement via Sentry.",
+        "it": "Un UPS non risulta più online quando l'adapter è fermo o non raggiunge il server NUT e i crash possono ora essere segnalati in forma anonima tramite Sentry.",
+        "es": "Un SAI ya no aparece como en línea cuando el adaptador está detenido o no alcanza el servidor NUT, y los fallos ahora pueden notificarse de forma anónima mediante Sentry.",
+        "pl": "Zasilacz UPS nie jest już pokazywany jako online, gdy adapter jest zatrzymany lub nie łączy się z serwerem NUT, a awarie można teraz anonimowo zgłaszać przez Sentry.",
+        "uk": "ДБЖ більше не показується як онлайн, коли адаптер зупинено або він не може зв'язатися із сервером NUT, а збої тепер можна анонімно надсилати через Sentry.",
+        "zh-cn": "当适配器已停止或无法连接 NUT 服务器时，UPS 不再显示为在线；此外崩溃信息现在可以通过 Sentry 匿名上报。"
+      },
       "0.7.0": {
         "en": "Mains frequency, status severity and humidity now use their dedicated ioBroker role, so charts and device detection pick them up correctly.",
         "de": "Netzfrequenz, Status-Schweregrad und Luftfeuchte nutzen jetzt ihre eigene ioBroker-Rolle, sodass Diagramme und Geräteerkennung sie korrekt erfassen.",
@@ -54,6 +67,11 @@
         "pl": "Interwał odpytywania można teraz obniżyć do 2 sekund — poniżej sterownik NUT sam nie ma nowych wartości.",
         "uk": "Інтервал опитування тепер можна зменшити до 2 секунд — швидше сам драйвер NUT нових значень не видає.",
         "zh-cn": "轮询间隔现在最低可设为 2 秒 — 低于该值时 NUT 驱动本身也没有新的读数。"
+      }
+    },
+    "plugins": {
+      "sentry": {
+        "dsn": "https://66f27ceff38c1ce1e6cdcc3095ba06d3@o4511524771266560.ingest.de.sentry.io/4511524773560400"
       }
     },
     "titleLang": {
