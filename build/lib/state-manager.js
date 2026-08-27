@@ -410,9 +410,7 @@ class StateManager {
    */
   async markAllUnreachable() {
     const adapterObjects = await this.adapter.getAdapterObjectsAsync();
-    const localIds = new Set(
-      Object.keys(adapterObjects).map((id) => id.replace(`${this.adapter.namespace}.`, ""))
-    );
+    const localIds = new Set(Object.keys(adapterObjects).map((id) => id.replace(`${this.adapter.namespace}.`, "")));
     for (const [id, obj] of Object.entries(adapterObjects)) {
       if (obj.type !== "device") {
         continue;
