@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Azzera timer watchdog",
   "cmdBeeperToggle": "Attiva/disattiva segnalatore",
   "flagTesting": "Test in corso",
-  "flagOverheat": "Surriscaldato"
+  "flagOverheat": "Surriscaldato",
+  "upsCountTotal": "UPS rilevati",
+  "upsCountReachable": "UPS raggiungibili",
+  "upsAllReachable": "Tutti gli UPS raggiungibili"
 }

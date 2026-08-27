@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Redefinir temporizador watchdog",
   "cmdBeeperToggle": "Alternar alarme sonoro",
   "flagTesting": "Testando",
-  "flagOverheat": "Superaquecido"
+  "flagOverheat": "Superaquecido",
+  "upsCountTotal": "UPS encontrados",
+  "upsCountReachable": "UPS acessíveis",
+  "upsAllReachable": "Todos os UPS acessíveis"
 }

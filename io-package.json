@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "news": {
+      "0.9.0": {
+        "en": "Three new states show how many UPS devices were found, how many answer right now and whether that is all of them — and a stopped adapter no longer shows a UPS as reachable.",
+        "de": "Drei neue Datenpunkte zeigen, wie viele USVen gefunden wurden, wie viele gerade antworten und ob das alle sind — und eine gestoppte Instanz zeigt keine USV mehr als erreichbar.",
+        "ru": "Три новых состояния показывают, сколько ИБП найдено, сколько отвечает сейчас и все ли это — а остановленный адаптер больше не показывает ИБП доступным.",
+        "pt": "Três novos estados mostram quantos UPS foram encontrados, quantos respondem agora e se são todos — e um adaptador parado deixa de mostrar um UPS como acessível.",
+        "nl": "Drie nieuwe datapunten tonen hoeveel UPS'en zijn gevonden, hoeveel er nu antwoorden en of dat alle zijn — en een gestopte adapter toont geen UPS meer als bereikbaar.",
+        "fr": "Trois nouveaux états indiquent combien d'onduleurs ont été trouvés, combien répondent et si ce sont tous — et un adaptateur arrêté n'affiche plus d'onduleur joignable.",
+        "it": "Tre nuovi stati mostrano quanti UPS sono stati trovati, quanti rispondono ora e se sono tutti — e un adapter fermo non mostra più un UPS come raggiungibile.",
+        "es": "Tres nuevos estados muestran cuántos SAI se encontraron, cuántos responden ahora y si son todos — y un adaptador detenido ya no muestra un SAI como accesible.",
+        "pl": "Trzy nowe stany pokazują, ile zasilaczy UPS znaleziono, ile odpowiada teraz i czy to wszystkie — a zatrzymany adapter nie pokazuje już UPS jako osiągalnego.",
+        "uk": "Три нові стани показують, скільки ДБЖ знайдено, скільки відповідає зараз і чи це всі — а зупинений адаптер більше не показує ДБЖ доступним.",
+        "zh-cn": "三个新数据点显示已发现多少台 UPS、当前有多少台响应以及是否全部响应；已停止的适配器不再把 UPS 显示为可访问。"
+      },
       "0.8.0": {
         "en": "A UPS no longer stays marked as online when the adapter is stopped or cannot reach the NUT server, and crashes can now be reported anonymously via Sentry.",
         "de": "Eine USV wird nicht mehr als online angezeigt, wenn der Adapter gestoppt ist oder den NUT-Server nicht erreicht; zudem können Abstürze anonym per Sentry gemeldet werden.",
@@ -123,9 +136,6 @@
     "adminUI": {
       "config": "json"
     },
-    "supportedMessages": {
-      "stopInstance": true
-    },
     "dependencies": [
       {
         "js-controller": ">=7.2.2"
@@ -207,6 +217,81 @@
         },
         "type": "boolean",
         "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.upsTotal",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "UPS devices found",
+          "de": "Gefundene USVen",
+          "ru": "Найдено ИБП",
+          "pt": "UPS encontrados",
+          "nl": "Gevonden UPS'en",
+          "fr": "Onduleurs détectés",
+          "it": "UPS rilevati",
+          "es": "SAI encontrados",
+          "pl": "Znalezione zasilacze UPS",
+          "uk": "Знайдені ДБЖ",
+          "zh-cn": "已发现的 UPS 数量"
+        },
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.upsReachable",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "UPS devices reachable",
+          "de": "Erreichbare USVen",
+          "ru": "Доступные ИБП",
+          "pt": "UPS acessíveis",
+          "nl": "Bereikbare UPS'en",
+          "fr": "Onduleurs joignables",
+          "it": "UPS raggiungibili",
+          "es": "SAI accesibles",
+          "pl": "Osiągalne zasilacze UPS",
+          "uk": "Доступні ДБЖ",
+          "zh-cn": "可访问的 UPS 数量"
+        },
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.allUpsReachable",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "All UPS devices reachable",
+          "de": "Alle USVen erreichbar",
+          "ru": "Все ИБП доступны",
+          "pt": "Todos os UPS acessíveis",
+          "nl": "Alle UPS'en bereikbaar",
+          "fr": "Tous les onduleurs joignables",
+          "it": "Tutti gli UPS raggiungibili",
+          "es": "Todos los SAI accesibles",
+          "pl": "Wszystkie zasilacze UPS osiągalne",
+          "uk": "Усі ДБЖ доступні",
+          "zh-cn": "所有 UPS 均可访问"
+        },
+        "type": "boolean",
+        "role": "indicator",
         "read": true,
         "write": false,
         "def": false

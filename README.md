@@ -78,7 +78,11 @@ States are organized by NUT domain. The exact set of states depends on what your
 
 ```
 nut2.0.
-├── info.connection                    — Connection to NUT server (bool)
+├── info/
+│   ├── connection                     — Connection to NUT server (bool)
+│   ├── upsTotal                       — UPS devices found (number)
+│   ├── upsReachable                   — How many of them answer right now (number)
+│   └── allUpsReachable                — All of them answering? (bool)
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
     │   └── reachable                  — UPS responds / data is fresh (bool)
@@ -182,6 +186,11 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.9.0 (2026-08-27)
+
+- New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.
+- Fixed: a UPS kept showing as reachable while the adapter was stopped — it now goes offline there, on installations that were updated as well.
+
 ### 0.8.0 (2026-08-27)
 
 - New: the adapter now reports crashes to the developer — only if error reporting is enabled in the ioBroker diagnostics settings, and only anonymously without personal data.
@@ -201,10 +210,6 @@ nut2.0.
 ### 0.5.3 (2026-07-26)
 
 - The version history shown in the adapter manager now lists only versions that actually exist for this adapter.
-
-### 0.5.2 (2026-07-26)
-
-- The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

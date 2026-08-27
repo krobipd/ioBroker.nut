@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Watchdog-timer resetten",
   "cmdBeeperToggle": "Pieptoon omschakelen",
   "flagTesting": "Test bezig",
-  "flagOverheat": "Oververhit"
+  "flagOverheat": "Oververhit",
+  "upsCountTotal": "Gevonden UPS'en",
+  "upsCountReachable": "Bereikbare UPS'en",
+  "upsAllReachable": "Alle UPS'en bereikbaar"
 }

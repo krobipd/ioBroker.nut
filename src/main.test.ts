@@ -10,6 +10,8 @@
  * covered by their own suites against real sockets / the preserve-aware mock.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@iobroker/adapter-core", () => {
@@ -74,6 +76,9 @@ vi.mock("@iobroker/adapter-core", () => {
       }
     }
 
+    getForeignObjectAsync = vi.fn(async (_id: string): Promise<unknown> => null);
+    extendForeignObjectAsync = vi.fn(async (_id: string, _obj: unknown): Promise<void> => {});
+
     sendTo(): void {}
   }
 
@@ -101,6 +106,8 @@ interface StubSurface {
   subscriptions: string[];
   intervals: { cb: () => void; ms: number }[];
   timeouts: { cb: () => void; ms: number; cleared: boolean }[];
+  getForeignObjectAsync: ReturnType<typeof vi.fn>;
+  extendForeignObjectAsync: ReturnType<typeof vi.fn>;
 }
 
 interface FakeClient {
@@ -169,6 +176,7 @@ interface FakeStateManager {
   enrichStateMetadata: ReturnType<typeof vi.fn>;
   nutNameForState: ReturnType<typeof vi.fn>;
   markAllUnreachable: ReturnType<typeof vi.fn>;
+  writeUpsSummary: ReturnType<typeof vi.fn>;
 }
 
 function makeFakeStateManager(): FakeStateManager {
@@ -183,6 +191,7 @@ function makeFakeStateManager(): FakeStateManager {
     enrichStateMetadata: vi.fn(async () => {}),
     nutNameForState: vi.fn(() => undefined),
     markAllUnreachable: vi.fn(async () => {}),
+    writeUpsSummary: vi.fn(async () => {}),
   };
 }
 
@@ -759,8 +768,8 @@ describe("onUnload", () => {
     const callback = vi.fn();
 
     s.internal.onUnload(callback);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
 
-    expect(callback).toHaveBeenCalledTimes(1);
     expect(s.client.shutdown).toHaveBeenCalledTimes(1); // graceful LOGOUT path
     expect(s.client.destroy).not.toHaveBeenCalled();
     expect(testClient.destroy).toHaveBeenCalledTimes(1);
@@ -781,9 +790,9 @@ describe("onUnload", () => {
     const s = await setupConnected();
     const callback = vi.fn();
     s.internal.onUnload(callback);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
     expect(s.client.destroy).toHaveBeenCalledTimes(1);
     expect(s.client.shutdown).not.toHaveBeenCalled();
-    expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it("calls the callback even when teardown throws", async () => {
@@ -794,5 +803,169 @@ describe("onUnload", () => {
     const callback = vi.fn();
     s.internal.onUnload(callback);
     expect(callback).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("UPS summary through the whole life cycle", () => {
+  it("reports how many UPSes answered after a poll", async () => {
+    const s = await setupConnected({}, [
+      { name: "ups0", description: "One" },
+      { name: "ups1", description: "Two" },
+    ]);
+    s.sm.writeUpsSummary.mockClear();
+
+    await s.internal.poll();
+
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(2, 2);
+  });
+
+  it("counts a UPS that stopped answering as not reachable", async () => {
+    const s = await setupConnected({}, [
+      { name: "ups0", description: "One" },
+      { name: "ups1", description: "Two" },
+    ]);
+    s.client.listVar.mockImplementation(async (ups: string) => {
+      if (ups === "ups1") {
+        throw new Error("no answer");
+      }
+      return [{ name: "ups.status", value: "OL" }];
+    });
+    s.sm.writeUpsSummary.mockClear();
+
+    await s.internal.poll();
+
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(2, 1);
+  });
+
+  it("drops the summary to zero when the whole poll fails", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockRejectedValue(new Error("server gone"));
+    s.client.isConnected = false;
+    s.sm.writeUpsSummary.mockClear();
+
+    await s.internal.poll();
+
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
+  });
+
+  it("takes the summary down when the adapter stops", async () => {
+    const s = await setupConnected();
+    const callback = vi.fn();
+
+    s.internal.onUnload(callback);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+
+    expect(s.stub.states.get("nut2.0.info.upsReachable")).toEqual({ val: 0, ack: true });
+    expect(s.stub.states.get("nut2.0.info.allUpsReachable")).toEqual({ val: false, ack: true });
+    // How many UPSes exist did not change just because the adapter is off.
+    expect(s.stub.states.has("nut2.0.info.upsTotal")).toBe(false);
+  });
+});
+
+describe("shutdown contract", () => {
+  it("the manifest must not declare stopInstance, or none of this runs at all", () => {
+    // With the entry the host kills the process one second after asking it to stop —
+    // onUnload never runs and every state written while shutting down is dead code.
+    // A property of the MANIFEST, so only a test can defend it.
+    const manifest = JSON.parse(readFileSync(join(__dirname, "..", "io-package.json"), "utf8")) as {
+      common: { supportedMessages?: Record<string, unknown> };
+    };
+    expect(manifest.common.supportedMessages?.stopInstance).toBeUndefined();
+  });
+
+  it("tells the controller we are done only AFTER the last state was written", async () => {
+    const s = await setupConnected();
+    const order: string[] = [];
+    // Resolves on a LATER turn of the event loop, like a real database round trip — an
+    // immediately-resolving stub would record the write synchronously and the test would
+    // pass even with the callback fired first.
+    (s.stub as unknown as { setState: (id: string, v: unknown) => Promise<void> }).setState = (id: string) =>
+      new Promise<void>(resolve =>
+        setTimeout(() => {
+          order.push(`write:${id}`);
+          resolve();
+        }, 0),
+      );
+    const callback = vi.fn(() => order.push("callback"));
+
+    s.internal.onUnload(callback);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+
+    expect(order[order.length - 1]).toBe("callback");
+    expect(order).toContain("write:info.connection");
+    expect(order).toContain("write:ups0.info.reachable");
+  });
+
+  it("switches off a leftover stopInstance flag and stops the start there", async () => {
+    const s = setup();
+    s.stub.getForeignObjectAsync.mockResolvedValue({
+      common: { supportedMessages: { stopInstance: true } },
+    });
+
+    await s.internal.onReady();
+
+    expect(s.stub.extendForeignObjectAsync).toHaveBeenCalledWith("system.adapter.nut2.0", {
+      common: { supportedMessages: { stopInstance: false } },
+    });
+    // Carrying on would arm timers in a process the host is already shutting down.
+    expect(s.client.start).not.toHaveBeenCalled();
+    expect(s.sm.markAllUnreachable).not.toHaveBeenCalled();
+  });
+
+  it("starts normally when the flag is already off", async () => {
+    const s = setup();
+    s.stub.getForeignObjectAsync.mockResolvedValue({
+      common: { supportedMessages: { stopInstance: false } },
+    });
+
+    await s.internal.onReady();
+
+    expect(s.stub.extendForeignObjectAsync).not.toHaveBeenCalled();
+    expect(s.client.start).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("device markers follow a wholesale poll failure", () => {
+  it("marks every UPS unreachable when the poll fails as a whole", async () => {
+    const s = await setupConnected();
+    // A failure OUTSIDE the per-UPS loop (the states DB, not one device).
+    s.stub.states.clear();
+    const original = s.internal.stateManager!;
+    (original as unknown as { updateVariables: unknown }).updateVariables = vi.fn(async () => {});
+    s.client.listVar.mockResolvedValue([{ name: "ups.status", value: "OL" }]);
+    s.sm.writeUpsSummary.mockRejectedValueOnce(new Error("states db gone"));
+
+    await s.internal.poll();
+
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
+  });
+});
+
+describe("the whole chain agrees in every state", () => {
+  it("marks the UPSes unreachable when authentication fails on a reconnect", async () => {
+    const s = await setupConnected({ username: "u", password: "p" });
+    // First connect worked — the UPS is green and counted.
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+    s.sm.writeUpsSummary.mockClear();
+    s.client.authenticate.mockRejectedValue(new Error("ACCESS-DENIED"));
+
+    await (s.internal.onConnected as () => Promise<void>)();
+
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
+  });
+
+  it("marks the UPSes unreachable when the encrypted connection fails fatally", async () => {
+    const s = await setupConnected();
+    s.sm.writeUpsSummary.mockClear();
+
+    s.client.onFatal!(new Error("FEATURE-NOT-CONFIGURED"));
+    await vi.waitFor(() => expect(s.sm.writeUpsSummary).toHaveBeenCalled());
+
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
   });
 });

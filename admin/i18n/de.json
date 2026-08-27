@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Watchdog-Timer zurücksetzen",
   "cmdBeeperToggle": "Signalton umschalten",
   "flagTesting": "Test läuft",
-  "flagOverheat": "Überhitzt"
+  "flagOverheat": "Überhitzt",
+  "upsCountTotal": "Gefundene USVen",
+  "upsCountReachable": "Erreichbare USVen",
+  "upsAllReachable": "Alle USVen erreichbar"
 }

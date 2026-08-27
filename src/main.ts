@@ -67,8 +67,63 @@ export class NutAdapter extends utils.Adapter {
     };
   }
 
+  /**
+   * Switch off `supportedMessages.stopInstance` on this instance's own object.
+   *
+   * The entry was dropped from the manifest, which only helps a FRESH install: an upgrade
+   * merges the manifest into the existing instance object and never removes a key, so the old
+   * `true` survives in the database — and that is what the host reads. With it the host kills
+   * the process one second after asking it to stop, `onUnload` never runs, and every state
+   * written while shutting down is dead code (measured on a live js-controller 7.2.2).
+   *
+   * Only written when it is actually still on: every instance-object change restarts the
+   * instance, so doing it unconditionally would be a restart loop.
+   *
+   * @returns true when the correction was written and the restart is coming — the caller has to
+   *   stop right there. Carrying on would arm timers and write states in a process the host is
+   *   already shutting down.
+   */
+  private async clearStopInstanceFlag(): Promise<boolean> {
+    const id = `system.adapter.${this.namespace}`;
+    try {
+      const obj = await this.getForeignObjectAsync(id);
+      const supported = obj?.common?.supportedMessages as { stopInstance?: unknown } | undefined;
+      if (!supported?.stopInstance) {
+        return false;
+      }
+      this.log.info("Correcting a leftover setting from an earlier version — this instance restarts once");
+      await this.extendForeignObjectAsync(id, { common: { supportedMessages: { stopInstance: false } } });
+      return true;
+    } catch (err: unknown) {
+      // Objects DB unreachable — not worth failing the start over; the next start retries.
+      this.log.debug(`Could not check the instance object ${id}: ${errText(err)}`);
+      return false;
+    }
+  }
+
+  /**
+   * Nothing is being read right now — take the whole chain down together: every device marker
+   * (that is what colours the device in the object tree) and the summary. `info.connection` is
+   * written by each caller, because only they know whether the connection itself is the reason.
+   *
+   * Used by every dead end that is NOT a per-UPS failure: authentication rejected, a fatal TLS
+   * problem, and a poll that failed as a whole. Leaving a UPS green next to "0 of 1 reachable"
+   * is the contradiction this exists to prevent.
+   */
+  private async markAllUpsUnreachable(): Promise<void> {
+    for (const upsId of this.discoveredUps.keys()) {
+      await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: false, ack: true });
+    }
+    await this.stateManager?.writeUpsSummary(this.discoveredUps.size, 0);
+  }
+
   private async onReady(): Promise<void> {
     try {
+      // First: without this the whole shutdown path stays dead on an updated install.
+      // A correction means the host is restarting us — no point setting anything up.
+      if (await this.clearStopInstanceFlag()) {
+        return;
+      }
       await I18n.init(join(this.adapterDir, "admin"), this);
       const config = this.nutConfig();
       this.log.debug(
@@ -201,6 +256,7 @@ export class NutAdapter extends utils.Adapter {
       );
       this.client.destroy(); // stop the retry loop; stay alive + yellow
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      await this.markAllUpsUnreachable();
       return false;
     }
   }
@@ -270,6 +326,9 @@ export class NutAdapter extends utils.Adapter {
     );
     this.client?.destroy();
     void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {});
+    void this.markAllUpsUnreachable().catch(() => {
+      /* states DB unreachable — the next start stamps them again */
+    });
   }
 
   /**
@@ -367,6 +426,7 @@ export class NutAdapter extends utils.Adapter {
 
     this.isPolling = true;
     try {
+      let reachable = 0;
       for (const [upsId, ups] of this.discoveredUps) {
         // upsId is the sanitized object-ID segment; nutName is the real NUT name for the protocol.
         const nutName = ups.name;
@@ -400,6 +460,7 @@ export class NutAdapter extends utils.Adapter {
           await this.enrichWritableVars(upsId, nutName, rwVars);
 
           await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: true, ack: true });
+          reachable++;
 
           if (this.failedUps.has(upsId)) {
             this.log.info(`UPS '${nutName}' recovered`);
@@ -428,6 +489,10 @@ export class NutAdapter extends utils.Adapter {
       // connection is down (poll keeps firing during the reconnect backoff). Gate on the client.
       await this.setStateChangedAsync("info.connection", { val: this.client?.isConnected ?? false, ack: true });
 
+      // One line an automation can watch instead of every device: how many UPSes there are and
+      // how many answered THIS poll. A UPS that failed above is counted as not reachable.
+      await this.stateManager.writeUpsSummary(this.discoveredUps.size, reachable);
+
       if (this.lastErrorCode) {
         this.log.info("Connection restored");
         this.lastErrorCode = "";
@@ -447,6 +512,11 @@ export class NutAdapter extends utils.Adapter {
       }
 
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      // The poll failed as a WHOLE (not a single UPS — those are caught inside the loop), so this
+      // run learned nothing about any of them. Every device marker goes down together with the
+      // summary: leaving a UPS green next to "0 of 1 reachable" is the same contradiction on one
+      // screen that the summary is meant to resolve.
+      await this.markAllUpsUnreachable();
     } finally {
       this.isPolling = false;
     }
@@ -616,13 +686,29 @@ export class NutAdapter extends utils.Adapter {
         tc.destroy();
       }
       this.testClients.clear();
-      void this.setState("info.connection", { val: false, ack: true }).catch(() => {});
-      // A stopped adapter reads nothing, so it must not keep claiming the UPS is reachable —
-      // that state backs the device object's online indicator (statusStates.onlineId).
-      // Fire-and-forget like info.connection above: onUnload stays synchronous.
+
+      // A stopped adapter reads nothing, so it must not keep claiming a UPS is reachable — that
+      // state backs the device object's online indicator (statusStates.onlineId), and
+      // info.connection alone would leave every device green. The summary goes down with them;
+      // info.upsTotal stays, how many UPSes exist did not change.
+      //
+      // The callback goes LAST, after the writes: reporting "done" straight away loses them —
+      // the host tears the process down as soon as it is told. No own timeout guard either:
+      // `this.setTimeout` refuses during shutdown and a bare `setTimeout` is a checker finding;
+      // the host's own deadline is the only one needed.
+      const writes: Promise<unknown>[] = [this.setState("info.connection", { val: false, ack: true })];
       for (const upsId of this.discoveredUps.keys()) {
-        void this.setState(`${upsId}.info.reachable`, { val: false, ack: true }).catch(() => {});
+        writes.push(this.setState(`${upsId}.info.reachable`, { val: false, ack: true }));
       }
+      writes.push(this.setState("info.upsReachable", { val: 0, ack: true }));
+      writes.push(this.setState("info.allUpsReachable", { val: false, ack: true }));
+      void Promise.all(writes)
+        .catch((err: unknown) => {
+          // States DB already going down — nothing left to report to.
+          this.log.debug(`onUnload: final states rejected: ${errText(err)}`);
+        })
+        .finally(callback);
+      return;
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${errText(err)}`);
     }

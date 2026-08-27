@@ -470,6 +470,32 @@ export class StateManager {
       }
       await this.adapter.setStateChangedAsync(reachableId, { val: false, ack: true });
     }
+    // The summary makes the same claim one level up — "2 of 2 reachable" while nothing is
+    // being read is the identical lie. `info.upsTotal` stays: how many UPSes exist did not
+    // change just because nobody is asking them.
+    await this.adapter.setStateChangedAsync("info.upsReachable", { val: 0, ack: true });
+    await this.adapter.setStateChangedAsync("info.allUpsReachable", { val: false, ack: true });
+  }
+
+  /**
+   * Write the fleet summary: how many UPS devices the NUT server reports and how many of them
+   * answered this poll. `allUpsReachable` is the one line an automation can watch instead of
+   * checking every device — deliberately false while nothing was found at all, because "0 of 0"
+   * is not "everything is fine".
+   *
+   * The three states are static instance objects, so they exist from installation on and need
+   * no create-on-first-write.
+   *
+   * @param total UPS devices currently discovered on the NUT server
+   * @param reachable How many of them answered this poll
+   */
+  async writeUpsSummary(total: number, reachable: number): Promise<void> {
+    await this.adapter.setStateChangedAsync("info.upsTotal", { val: total, ack: true });
+    await this.adapter.setStateChangedAsync("info.upsReachable", { val: reachable, ack: true });
+    await this.adapter.setStateChangedAsync("info.allUpsReachable", {
+      val: total > 0 && reachable === total,
+      ack: true,
+    });
   }
 
   /**

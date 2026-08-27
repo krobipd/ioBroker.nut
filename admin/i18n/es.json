@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Restablecer temporizador watchdog",
   "cmdBeeperToggle": "Alternar zumbador",
   "flagTesting": "Probando",
-  "flagOverheat": "Sobrecalentado"
+  "flagOverheat": "Sobrecalentado",
+  "upsCountTotal": "SAI encontrados",
+  "upsCountReachable": "SAI accesibles",
+  "upsAllReachable": "Todos los SAI accesibles"
 }

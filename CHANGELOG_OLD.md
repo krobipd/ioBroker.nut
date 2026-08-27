@@ -1,4 +1,8 @@
 # Older changes
+## 0.5.2 (2026-07-26)
+
+- The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.
+
 ## 0.5.1 (2026-07-13)
 
 - Writable yes/no UPS settings (e.g. automatic restart after power returns) can now actually be changed from ioBroker — previously toggling them was silently rejected by the NUT server.

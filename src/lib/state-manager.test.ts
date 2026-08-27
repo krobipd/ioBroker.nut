@@ -1267,3 +1267,50 @@ describe("markAllUnreachable", () => {
     expect(states.get("ups0.ups.status")).toEqual({ val: "OL", ack: true });
   });
 });
+
+describe("UPS summary states", () => {
+  it("writes how many UPSes there are and how many answer", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter as never);
+
+    await sm.writeUpsSummary(3, 2);
+
+    expect(states.get("info.upsTotal")).toEqual({ val: 3, ack: true });
+    expect(states.get("info.upsReachable")).toEqual({ val: 2, ack: true });
+    expect(states.get("info.allUpsReachable")).toEqual({ val: false, ack: true });
+  });
+
+  it("says all reachable only when every UPS answers", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter as never);
+
+    await sm.writeUpsSummary(2, 2);
+
+    expect(states.get("info.allUpsReachable")).toEqual({ val: true, ack: true });
+  });
+
+  it("does not claim all-reachable while no UPS is known at all", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter as never);
+
+    await sm.writeUpsSummary(0, 0);
+
+    // 0 of 0 is not "everything is fine" — it means nothing was found.
+    expect(states.get("info.allUpsReachable")).toEqual({ val: false, ack: true });
+  });
+
+  it("takes the summary down with the devices when nothing is being read", async () => {
+    const { adapter, states } = createMockAdapter();
+    const sm = new StateManager(adapter as never);
+    states.set("info.upsTotal", { val: 3, ack: true });
+    states.set("info.upsReachable", { val: 3, ack: true });
+    states.set("info.allUpsReachable", { val: true, ack: true });
+    await sm.markAllUnreachable();
+
+    // The count of UPSes that exist is still the best estimate — only the
+    // "how many answer" part drops.
+    expect(states.get("info.upsTotal")).toEqual({ val: 3, ack: true });
+    expect(states.get("info.upsReachable")).toEqual({ val: 0, ack: true });
+    expect(states.get("info.allUpsReachable")).toEqual({ val: false, ack: true });
+  });
+});

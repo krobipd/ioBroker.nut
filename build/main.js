@@ -80,8 +80,60 @@ class NutAdapter extends utils.Adapter {
       info: (m) => this.log.info(m)
     };
   }
+  /**
+   * Switch off `supportedMessages.stopInstance` on this instance's own object.
+   *
+   * The entry was dropped from the manifest, which only helps a FRESH install: an upgrade
+   * merges the manifest into the existing instance object and never removes a key, so the old
+   * `true` survives in the database — and that is what the host reads. With it the host kills
+   * the process one second after asking it to stop, `onUnload` never runs, and every state
+   * written while shutting down is dead code (measured on a live js-controller 7.2.2).
+   *
+   * Only written when it is actually still on: every instance-object change restarts the
+   * instance, so doing it unconditionally would be a restart loop.
+   *
+   * @returns true when the correction was written and the restart is coming — the caller has to
+   *   stop right there. Carrying on would arm timers and write states in a process the host is
+   *   already shutting down.
+   */
+  async clearStopInstanceFlag() {
+    var _a;
+    const id = `system.adapter.${this.namespace}`;
+    try {
+      const obj = await this.getForeignObjectAsync(id);
+      const supported = (_a = obj == null ? void 0 : obj.common) == null ? void 0 : _a.supportedMessages;
+      if (!(supported == null ? void 0 : supported.stopInstance)) {
+        return false;
+      }
+      this.log.info("Correcting a leftover setting from an earlier version \u2014 this instance restarts once");
+      await this.extendForeignObjectAsync(id, { common: { supportedMessages: { stopInstance: false } } });
+      return true;
+    } catch (err) {
+      this.log.debug(`Could not check the instance object ${id}: ${(0, import_coerce.errText)(err)}`);
+      return false;
+    }
+  }
+  /**
+   * Nothing is being read right now — take the whole chain down together: every device marker
+   * (that is what colours the device in the object tree) and the summary. `info.connection` is
+   * written by each caller, because only they know whether the connection itself is the reason.
+   *
+   * Used by every dead end that is NOT a per-UPS failure: authentication rejected, a fatal TLS
+   * problem, and a poll that failed as a whole. Leaving a UPS green next to "0 of 1 reachable"
+   * is the contradiction this exists to prevent.
+   */
+  async markAllUpsUnreachable() {
+    var _a;
+    for (const upsId of this.discoveredUps.keys()) {
+      await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: false, ack: true });
+    }
+    await ((_a = this.stateManager) == null ? void 0 : _a.writeUpsSummary(this.discoveredUps.size, 0));
+  }
   async onReady() {
     try {
+      if (await this.clearStopInstanceFlag()) {
+        return;
+      }
       await import_adapter_core.I18n.init((0, import_node_path.join)(this.adapterDir, "admin"), this);
       const config = this.nutConfig();
       this.log.debug(
@@ -193,6 +245,7 @@ class NutAdapter extends utils.Adapter {
       );
       this.client.destroy();
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      await this.markAllUpsUnreachable();
       return false;
     }
   }
@@ -259,6 +312,8 @@ class NutAdapter extends utils.Adapter {
     );
     (_b = this.client) == null ? void 0 : _b.destroy();
     void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {
+    });
+    void this.markAllUpsUnreachable().catch(() => {
     });
   }
   /**
@@ -335,6 +390,7 @@ class NutAdapter extends utils.Adapter {
     this.log.debug(`poll: starting (lastErrorCode='${this.lastErrorCode}', upsCount=${this.discoveredUps.size})`);
     this.isPolling = true;
     try {
+      let reachable = 0;
       for (const [upsId, ups] of this.discoveredUps) {
         const nutName = ups.name;
         try {
@@ -355,6 +411,7 @@ class NutAdapter extends utils.Adapter {
           }
           await this.enrichWritableVars(upsId, nutName, rwVars);
           await this.setStateChangedAsync(`${upsId}.info.reachable`, { val: true, ack: true });
+          reachable++;
           if (this.failedUps.has(upsId)) {
             this.log.info(`UPS '${nutName}' recovered`);
             this.failedUps.delete(upsId);
@@ -376,6 +433,7 @@ class NutAdapter extends utils.Adapter {
         }
       }
       await this.setStateChangedAsync("info.connection", { val: (_c = (_b = this.client) == null ? void 0 : _b.isConnected) != null ? _c : false, ack: true });
+      await this.stateManager.writeUpsSummary(this.discoveredUps.size, reachable);
       if (this.lastErrorCode) {
         this.log.info("Connection restored");
         this.lastErrorCode = "";
@@ -393,6 +451,7 @@ class NutAdapter extends utils.Adapter {
         this.log.error(`Poll failed: ${errMsg}`);
       }
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
+      await this.markAllUpsUnreachable();
     } finally {
       this.isPolling = false;
     }
@@ -540,12 +599,16 @@ class NutAdapter extends utils.Adapter {
         tc.destroy();
       }
       this.testClients.clear();
-      void this.setState("info.connection", { val: false, ack: true }).catch(() => {
-      });
+      const writes = [this.setState("info.connection", { val: false, ack: true })];
       for (const upsId of this.discoveredUps.keys()) {
-        void this.setState(`${upsId}.info.reachable`, { val: false, ack: true }).catch(() => {
-        });
+        writes.push(this.setState(`${upsId}.info.reachable`, { val: false, ack: true }));
       }
+      writes.push(this.setState("info.upsReachable", { val: 0, ack: true }));
+      writes.push(this.setState("info.allUpsReachable", { val: false, ack: true }));
+      void Promise.all(writes).catch((err) => {
+        this.log.debug(`onUnload: final states rejected: ${(0, import_coerce.errText)(err)}`);
+      }).finally(callback);
+      return;
     } catch (err) {
       this.log.debug(`onUnload error (ignored): ${(0, import_coerce.errText)(err)}`);
     }

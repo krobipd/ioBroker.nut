@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Réinitialiser le minuteur watchdog",
   "cmdBeeperToggle": "Basculer l'alarme sonore",
   "flagTesting": "Test en cours",
-  "flagOverheat": "Surchauffe"
+  "flagOverheat": "Surchauffe",
+  "upsCountTotal": "Onduleurs détectés",
+  "upsCountReachable": "Onduleurs joignables",
+  "upsAllReachable": "Tous les onduleurs joignables"
 }

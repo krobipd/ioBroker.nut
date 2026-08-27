@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "重置看门狗定时器",
   "cmdBeeperToggle": "切换蜂鸣器",
   "flagTesting": "测试中",
-  "flagOverheat": "过热"
+  "flagOverheat": "过热",
+  "upsCountTotal": "已发现的 UPS 数量",
+  "upsCountReachable": "可访问的 UPS 数量",
+  "upsAllReachable": "所有 UPS 均可访问"
 }

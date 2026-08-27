@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Сбросить таймер watchdog",
   "cmdBeeperToggle": "Переключить звуковой сигнал",
   "flagTesting": "Тестирование",
-  "flagOverheat": "Перегрев"
+  "flagOverheat": "Перегрев",
+  "upsCountTotal": "Найдено ИБП",
+  "upsCountReachable": "Доступные ИБП",
+  "upsAllReachable": "Все ИБП доступны"
 }

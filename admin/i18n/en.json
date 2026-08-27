@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Reset watchdog timer",
   "cmdBeeperToggle": "Toggle beeper",
   "flagTesting": "Testing",
-  "flagOverheat": "Overheated"
+  "flagOverheat": "Overheated",
+  "upsCountTotal": "UPS devices found",
+  "upsCountReachable": "UPS devices reachable",
+  "upsAllReachable": "All UPS devices reachable"
 }

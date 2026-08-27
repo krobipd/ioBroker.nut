@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Zresetuj licznik watchdog",
   "cmdBeeperToggle": "Przełącz sygnał dźwiękowy",
   "flagTesting": "Test w toku",
-  "flagOverheat": "Przegrzanie"
+  "flagOverheat": "Przegrzanie",
+  "upsCountTotal": "Znalezione zasilacze UPS",
+  "upsCountReachable": "Osiągalne zasilacze UPS",
+  "upsAllReachable": "Wszystkie zasilacze UPS osiągalne"
 }

@@ -146,5 +146,8 @@
   "cmdResetWatchdog": "Скинути таймер watchdog",
   "cmdBeeperToggle": "Перемкнути звуковий сигнал",
   "flagTesting": "Тестування",
-  "flagOverheat": "Перегрів"
+  "flagOverheat": "Перегрів",
+  "upsCountTotal": "Знайдені ДБЖ",
+  "upsCountReachable": "Доступні ДБЖ",
+  "upsAllReachable": "Усі ДБЖ доступні"
 }
