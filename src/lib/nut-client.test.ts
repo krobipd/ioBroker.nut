@@ -640,10 +640,10 @@ describe("NutClient", () => {
       }
     });
 
-    it("rejects a value with a line break instead of smuggling a second command onto the wire", async () => {
-      // Gate-bypass guard: escaping only handles quotes/backslashes. A raw newline in the value
-      // would split into a second protocol line — e.g. INSTCMD load.off while enableCommands is
-      // off. The client must reject such a value and put NOTHING on the wire.
+    it("refuses a value containing a line break at the wire (defense in depth)", async () => {
+      // A SET VAR value goes out quoted and escapeNut neutralises quotes/backslashes, so upsd
+      // reads a newline inside the quotes literally — it cannot be smuggled into a second command.
+      // The client still refuses it up front rather than send a malformed line.
       const mock = createMockNutServer();
       const port = await mock.start();
       try {
@@ -709,6 +709,23 @@ describe("NutClient", () => {
         await client.authenticate("admin", "secret");
         expect(mock.commands).toContain("USERNAME admin");
         expect(mock.commands).toContain("PASSWORD secret");
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+
+    it("refuses a password with a line break — the one unquoted path onto the wire", async () => {
+      // USERNAME/PASSWORD are sent without quotes, so a newline in the value (a pasted credential
+      // with a trailing newline) would split into a bogus second command line. Refuse it instead.
+      const mock = createMockNutServer();
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        mock.commands.length = 0;
+        await expect(client.authenticate("admin", "secret\nLOGOUT")).rejects.toThrow();
+        expect(mock.commands.some(c => c === "LOGOUT")).toBe(false);
         client.destroy();
       } finally {
         await mock.stop();
