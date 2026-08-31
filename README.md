@@ -162,8 +162,9 @@ The adapter polls the NUT server on a fixed interval. NUT itself has no server p
 
 - **Any write** to `nut2.0.notify` triggers an immediate poll of all UPS devices — writing an empty value is simply a manual refresh.
 - The recommended value format is `$NOTIFYTYPE $UPSNAME` (both provided by upsmon). The event type stays in the trigger state; when the UPS name matches a discovered UPS it is also written to that device's `{ups_name}.info.notify`, so an automation can react per UPS (e.g. run a script on `SHUTDOWN`).
-- Several events in quick succession collapse into a single follow-up poll.
-- The `@host` part upsmon appends to `$UPSNAME` is stripped automatically.
+- The event is recorded and acknowledged **before** the poll starts, and the trigger works even while the NUT server is unreachable — a `SHUTDOWN` event still arrives in ioBroker when the NUT host dies moments later.
+- The UPS may be referenced by its real NUT name or by the object ID shown in ioBroker; the `@host` part upsmon appends to `$UPSNAME` is stripped automatically.
+- Several events in quick succession collapse into a single follow-up poll; an unknown UPS name is logged once and falls back to refreshing everything.
 
 Example `upsmon.conf` on the NUT server (events only fire for `NOTIFYFLAG` lines carrying `EXEC`):
 

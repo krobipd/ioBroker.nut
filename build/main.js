@@ -39,6 +39,7 @@ var import_message_router = require("./lib/message-router");
 var import_nut_client = require("./lib/nut-client");
 var import_state_manager = require("./lib/state-manager");
 var import_type_detector = require("./lib/type-detector");
+const NOTIFY_WARN_CAP = 100;
 class NutAdapter extends utils.Adapter {
   client = null;
   stateManager = null;
@@ -610,6 +611,9 @@ class NutAdapter extends utils.Adapter {
         if (this.warnedNotifyRefs.has(upsRef)) {
           this.log.debug(msg);
         } else {
+          if (this.warnedNotifyRefs.size >= NOTIFY_WARN_CAP) {
+            this.warnedNotifyRefs.clear();
+          }
           this.warnedNotifyRefs.add(upsRef);
           this.log.warn(msg);
         }

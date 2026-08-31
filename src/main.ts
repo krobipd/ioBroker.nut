@@ -17,6 +17,9 @@ import { nutVarToStateId, sanitizeUpsName, StateManager } from "./lib/state-mana
 import { detectType } from "./lib/type-detector";
 import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types";
 
+/** Upper bound for the notify warn-dedup set (external input must not grow it without limit). */
+const NOTIFY_WARN_CAP = 100;
+
 /**
  * NUT adapter — lifecycle, polling, command/SET-VAR dispatch.
  * Exported so the orchestration unit tests can drive its handlers directly.
@@ -712,6 +715,12 @@ export class NutAdapter extends utils.Adapter {
         if (this.warnedNotifyRefs.has(upsRef)) {
           this.log.debug(msg);
         } else {
+          // The dedup set is fed by an external write — cap it so a flood of distinct unknown
+          // names cannot grow it without bound. At the cap we drop the dedup memory and start
+          // over: the worst case is one more warn per name, never unbounded memory.
+          if (this.warnedNotifyRefs.size >= NOTIFY_WARN_CAP) {
+            this.warnedNotifyRefs.clear();
+          }
           this.warnedNotifyRefs.add(upsRef);
           this.log.warn(msg);
         }

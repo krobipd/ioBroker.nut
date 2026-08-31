@@ -508,6 +508,10 @@ class NutClient {
   }
   sendCommand(command, multiLine) {
     return new Promise((resolve, reject) => {
+      if (/[\r\n]/.test(command)) {
+        reject(new Error("NUT command must not contain line breaks"));
+        return;
+      }
       if (!this.connected || !this.socket) {
         reject(new Error("Not connected"));
         return;

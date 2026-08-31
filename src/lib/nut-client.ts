@@ -549,6 +549,15 @@ export class NutClient {
 
   private sendCommand(command: string, multiLine: boolean): Promise<string[]> {
     return new Promise<string[]>((resolve, reject) => {
+      // A NUT command is exactly one protocol line. A newline embedded in an argument (e.g. a
+      // SET VAR value the user supplied — escapeNut only handles quotes/backslashes) would split
+      // into a second line the server executes as its own command: that bypasses the
+      // enableCommands safety gate (…"\nINSTCMD ups load.off"…). Reject before anything reaches
+      // the wire; a real NUT variable value never contains a line break.
+      if (/[\r\n]/.test(command)) {
+        reject(new Error("NUT command must not contain line breaks"));
+        return;
+      }
       if (!this.connected || !this.socket) {
         reject(new Error("Not connected"));
         return;

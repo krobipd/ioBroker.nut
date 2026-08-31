@@ -212,6 +212,7 @@ interface Internal {
   enrichedUps: Set<string>;
   discoveredUps: Map<string, UpsInfo>;
   authenticated: boolean;
+  warnedNotifyRefs: Set<string>;
   testClients: Set<{ destroy: () => void }>;
   pollTimer: unknown;
   lastErrorCode: string;
@@ -875,6 +876,16 @@ describe("notify trigger — the upsmon doorbell", () => {
 
     expect(s.stub.states.get("nut2.0.ups0.info.notify")).toEqual({ val: "SHUTDOWN", ack: true });
     expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "SHUTDOWN ups0", ack: true });
+  });
+
+  it("the unknown-name warn-dedup set stays bounded under a flood of distinct names", async () => {
+    // The set is fed by an external write (upsmon / anyone with write access). Without a cap it
+    // would grow one entry per distinct unknown UPS name for the whole adapter lifetime.
+    const s = await setupConnected();
+    for (let i = 0; i < 300; i++) {
+      await s.internal.onStateChange("nut2.0.notify", { val: `ONBATT ghost-${i}`, ack: false });
+    }
+    expect(s.internal.warnedNotifyRefs.size).toBeLessThanOrEqual(100);
   });
 });
 

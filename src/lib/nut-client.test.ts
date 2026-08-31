@@ -639,6 +639,24 @@ describe("NutClient", () => {
         await mock.stop();
       }
     });
+
+    it("rejects a value with a line break instead of smuggling a second command onto the wire", async () => {
+      // Gate-bypass guard: escaping only handles quotes/backslashes. A raw newline in the value
+      // would split into a second protocol line — e.g. INSTCMD load.off while enableCommands is
+      // off. The client must reject such a value and put NOTHING on the wire.
+      const mock = createMockNutServer();
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        mock.commands.length = 0;
+        await expect(client.setVar("ups0", "outlet.desc", "x\nINSTCMD ups0 load.off")).rejects.toThrow();
+        expect(mock.commands.some(c => c.includes("INSTCMD"))).toBe(false);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
   });
 
   // -----------------------------------------------------------------------
