@@ -38,6 +38,8 @@
   "statusSeverity": "Poziom ważności",
   "statusDisplay": "Wyświetlanie stanu",
   "upsReachable": "Osiągalny",
+  "notifyTrigger": "Wyzwól odpytanie (zdarzenie upsmon)",
+  "upsLastNotify": "Ostatnie zdarzenie upsmon",
   "channelUpsInfo": "Informacja",
   "flagOnline": "Zasilanie sieciowe",
   "flagOnBattery": "Na baterii",

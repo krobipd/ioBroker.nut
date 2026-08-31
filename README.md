@@ -18,6 +18,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 - Parsed `ups.status` flags as individual booleans (online, onBattery, lowBattery, charging, ...) plus computed severity (0–4)
 - Instant commands (INSTCMD) via button states — beeper control, load management, self-test
 - Writable variables (SET VAR) — change UPS settings directly from ioBroker
+- Instant updates on UPS events — a writable `notify` trigger state lets upsmon push ONBATT/LOWBATT/SHUTDOWN the moment they happen
 - Persistent TCP connection with automatic reconnect and exponential backoff
 - Network interface selector for multi-homed servers
 - Connection test button in the admin UI
@@ -83,9 +84,11 @@ nut2.0.
 │   ├── upsTotal                       — UPS devices found (number)
 │   ├── upsReachable                   — How many of them answer right now (number)
 │   └── allUpsReachable                — All of them answering? (bool)
+├── notify                             — Writable trigger: poll now / record an upsmon event
 └── {ups_name}/                        — Device (e.g. "ups0")
     ├── info/
-    │   └── reachable                  — UPS responds / data is fresh (bool)
+    │   ├── reachable                  — UPS responds / data is fresh (bool)
+    │   └── notify                     — Last upsmon event routed to this UPS (string)
     ├── battery/
     │   ├── battery.charge             — Battery level (%, number)
     │   ├── battery.charge-low         — Low battery threshold (%)
@@ -153,6 +156,43 @@ nut2.0.
 
 ---
 
+## Instant updates from upsmon (notify trigger)
+
+The adapter polls the NUT server on a fixed interval. NUT itself has no server push — but `upsmon`, NUT's own monitoring client, detects events (power failure, low battery, forced shutdown) and can run a program via `NOTIFYCMD` the moment they happen. Point that program at the writable trigger state `nut2.0.notify` and the adapter refreshes immediately instead of waiting for the next poll:
+
+- **Any write** to `nut2.0.notify` triggers an immediate poll of all UPS devices — writing an empty value is simply a manual refresh.
+- The recommended value format is `$NOTIFYTYPE $UPSNAME` (both provided by upsmon). The event type stays in the trigger state; when the UPS name matches a discovered UPS it is also written to that device's `{ups_name}.info.notify`, so an automation can react per UPS (e.g. run a script on `SHUTDOWN`).
+- Several events in quick succession collapse into a single follow-up poll.
+- The `@host` part upsmon appends to `$UPSNAME` is stripped automatically.
+
+Example `upsmon.conf` on the NUT server (events only fire for `NOTIFYFLAG` lines carrying `EXEC`):
+
+```
+NOTIFYCMD /etc/nut/iobroker-notify.sh
+NOTIFYFLAG ONLINE   SYSLOG+EXEC
+NOTIFYFLAG ONBATT   SYSLOG+EXEC
+NOTIFYFLAG LOWBATT  SYSLOG+EXEC
+NOTIFYFLAG FSD      SYSLOG+EXEC
+NOTIFYFLAG SHUTDOWN SYSLOG+EXEC
+NOTIFYFLAG REPLBATT SYSLOG+EXEC
+```
+
+`/etc/nut/iobroker-notify.sh` (make it executable), using the ioBroker [simple-api](https://github.com/ioBroker/ioBroker.simple-api) adapter — this works from containers too, no ioBroker binaries needed on the NUT host:
+
+```sh
+#!/bin/sh
+curl -sG "http://<iobroker-host>:8082/set/nut2.0.notify" --data-urlencode "value=$NOTIFYTYPE $UPSNAME"
+```
+
+If ioBroker runs on the same host as the NUT server, the ioBroker CLI works as well:
+
+```sh
+#!/bin/sh
+iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
+```
+
+---
+
 ## Troubleshooting
 
 ### Connection failed
@@ -186,6 +226,10 @@ nut2.0.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- New: writable `notify` trigger state — upsmon (or any script) pushes events like ONBATT or SHUTDOWN for an instant refresh, and a matched event also lands on that UPS device (#14)
+
 ### 0.9.0 (2026-08-27)
 
 - New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.

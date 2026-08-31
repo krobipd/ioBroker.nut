@@ -159,6 +159,23 @@ describe("StateManager", () => {
       expect(objects.has("ups0")).toBe(true);
       expect(objects.has("ups1")).toBe(true);
     });
+
+    it("creates the per-UPS last-event state under the adapter-owned info channel", async () => {
+      // Under info, not directly under the device: a NUT server is free to expose a
+      // variable of any name, and a dotless var lands directly under the device —
+      // the info channel is the only namespace NUT can never write into.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      const notify = objects.get("ups0.info.notify");
+      expect(notify?.type).toBe("state");
+      expect(notify?.common.role).toBe("text");
+      expect(notify?.common.type).toBe("string");
+      expect(notify?.common.write).toBe(false);
+      expect(notify?.common.read).toBe(true);
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -995,6 +1012,21 @@ describe("StateManager", () => {
 
       expect(deletedIds).not.toContain("info");
       expect(deletedIds).not.toContain("ups0");
+    });
+
+    it("must not eat the root-level notify trigger state as an orphan", async () => {
+      // `notify` is a static instance object at the root — it is NOT a UPS device,
+      // so without an exemption the orphan sweep would delete it on every discover.
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("notify", { type: "state", common: { name: "Trigger" }, native: {} });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+
+      expect(deletedIds).not.toContain("notify");
+      expect(objects.has("notify")).toBe(true);
     });
 
     it("should remove v0.1.0 dot-style objects under known UPS", async () => {

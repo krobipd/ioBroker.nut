@@ -38,6 +38,8 @@
   "statusSeverity": "Livello di gravità",
   "statusDisplay": "Visualizzazione stato",
   "upsReachable": "Raggiungibile",
+  "notifyTrigger": "Avvia interrogazione (evento upsmon)",
+  "upsLastNotify": "Ultimo evento upsmon",
   "channelUpsInfo": "Informazione",
   "flagOnline": "Da rete",
   "flagOnBattery": "A batteria",

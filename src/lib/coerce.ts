@@ -137,3 +137,50 @@ export function computeReconnectDelay(attempt: number, baseMs: number, maxMs: nu
   const a = Math.max(1, Math.floor(attempt));
   return Math.min(baseMs * 2 ** (a - 1), maxMs);
 }
+
+/** Parsed write to the `notify` trigger state. */
+export interface NotifyTrigger {
+  /** upsmon $NOTIFYTYPE (first token), "" for a bare manual refresh. */
+  type: string;
+  /** upsmon $UPSNAME with the `@host[:port]` part stripped, "" when absent. */
+  upsRef: string;
+}
+
+// The state is writable from outside (REST API) — cap what we keep so a stray
+// blob cannot be pushed into the object DB through the doorbell.
+const NOTIFY_MAX_LENGTH = 200;
+
+/**
+ * Parse a write to the `notify` trigger state into event type + UPS reference.
+ * The documented format is `$NOTIFYTYPE $UPSNAME` as upsmon delivers them; the
+ * UPS part is optional (manual refresh) and may itself contain spaces, so the
+ * reference is everything after the first whitespace run. upsmon's $UPSNAME
+ * carries the monitored system as `name@host[:port]` — only the name matters
+ * here, the host is already fixed in the adapter config.
+ *
+ * @param raw Raw state value (boundary: any shape can arrive)
+ */
+export function parseNotifyTrigger(raw: unknown): NotifyTrigger {
+  let text: string;
+  if (typeof raw === "string") {
+    text = raw;
+  } else if (typeof raw === "number" || typeof raw === "boolean" || typeof raw === "bigint") {
+    text = String(raw);
+  } else {
+    // null/undefined/objects — no usable trigger value.
+    text = "";
+  }
+  text = text.trim().slice(0, NOTIFY_MAX_LENGTH);
+
+  const firstWs = text.search(/\s/);
+  if (firstWs < 0) {
+    return { type: text, upsRef: "" };
+  }
+  const type = text.slice(0, firstWs);
+  let upsRef = text.slice(firstWs).trim();
+  const at = upsRef.indexOf("@");
+  if (at >= 0) {
+    upsRef = upsRef.slice(0, at).trim();
+  }
+  return { type, upsRef };
+}

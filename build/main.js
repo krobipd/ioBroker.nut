@@ -45,6 +45,9 @@ class NutAdapter extends utils.Adapter {
   pollTimer = void 0;
   pollIntervalMs = 0;
   isPolling = false;
+  pollAgainRequested = false;
+  /** Unknown UPS names seen on the notify trigger — warn once each, then debug (no log spam). */
+  warnedNotifyRefs = /* @__PURE__ */ new Set();
   lastErrorCode = "";
   failedUps = /* @__PURE__ */ new Set();
   discoveredUps = /* @__PURE__ */ new Map();
@@ -142,6 +145,7 @@ class NutAdapter extends utils.Adapter {
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
       this.stateManager = this.makeStateManager();
       await this.stateManager.markAllUnreachable();
+      await this.subscribeStatesAsync("notify");
       const host = (0, import_coerce.coerceHost)(config.host);
       if (!host) {
         this.log.error("NUT server host is required \u2014 check adapter configuration");
@@ -381,6 +385,7 @@ class NutAdapter extends utils.Adapter {
   async poll() {
     var _a, _b, _c;
     if (this.isPolling) {
+      this.pollAgainRequested = true;
       this.log.debug("Skipping poll \u2014 previous poll still running");
       return;
     }
@@ -454,6 +459,10 @@ class NutAdapter extends utils.Adapter {
       await this.markAllUpsUnreachable();
     } finally {
       this.isPolling = false;
+      if (this.pollAgainRequested && !this.unloaded) {
+        this.pollAgainRequested = false;
+        void this.poll();
+      }
     }
   }
   /**
@@ -515,6 +524,10 @@ class NutAdapter extends utils.Adapter {
       const config = this.nutConfig();
       const localId = id.replace(`${this.namespace}.`, "");
       this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
+      if (localId === "notify") {
+        await this.handleNotifyTrigger(state.val);
+        return;
+      }
       if (!this.client) {
         this.log.debug(`onStateChange: ignoring ${localId} \u2014 no client connection`);
         return;
@@ -564,6 +577,54 @@ class NutAdapter extends utils.Adapter {
     } catch (err) {
       this.log.error(`onStateChange failed: ${(0, import_coerce.errText)(err)}`);
     }
+  }
+  /**
+   * A write to the `notify` trigger state — the doorbell upsmon (or a hand on the admin) rings
+   * instead of waiting for the next scheduled poll. Value format: `$NOTIFYTYPE $UPSNAME` as
+   * upsmon delivers them via NOTIFYCMD; both parts are optional (an empty write is a plain
+   * manual refresh).
+   *
+   * Order is deliberate: record the event and confirm the trigger FIRST, poll second. On a
+   * SHUTDOWN event the NUT host may die mid-poll — the event itself must already be safe.
+   *
+   * @param rawVal Raw state value as written (REST API, script, admin — any shape can arrive)
+   */
+  async handleNotifyTrigger(rawVal) {
+    if (this.unloaded) {
+      return;
+    }
+    const { type, upsRef } = (0, import_coerce.parseNotifyTrigger)(rawVal);
+    let matchedId;
+    if (upsRef) {
+      for (const [upsId, ups] of this.discoveredUps) {
+        if (ups.name === upsRef) {
+          matchedId = upsId;
+          break;
+        }
+      }
+      if (!matchedId && this.discoveredUps.has((0, import_state_manager.sanitizeUpsName)(upsRef))) {
+        matchedId = (0, import_state_manager.sanitizeUpsName)(upsRef);
+      }
+      if (!matchedId) {
+        const msg = `notify: unknown UPS '${upsRef}' \u2014 refreshing all UPSes, event recorded on the trigger state only`;
+        if (this.warnedNotifyRefs.has(upsRef)) {
+          this.log.debug(msg);
+        } else {
+          this.warnedNotifyRefs.add(upsRef);
+          this.log.warn(msg);
+        }
+      }
+    }
+    if (type) {
+      this.log.info(`upsmon event '${type}'${matchedId ? ` for UPS '${matchedId}'` : ""} \u2014 refreshing`);
+      if (matchedId) {
+        await this.setState(`${matchedId}.info.notify`, { val: type, ack: true });
+      }
+    } else {
+      this.log.debug("notify: manual refresh triggered");
+    }
+    await this.setState("notify", { val: rawVal, ack: true });
+    await this.poll();
   }
   async onMessage(obj) {
     try {

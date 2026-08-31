@@ -389,13 +389,14 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(s.stub, "error")).toEqual([]);
   });
 
-  it("subscribes exactly once and only when commands or SET VAR are enabled", async () => {
+  it("subscribes the wildcard exactly once and only when commands or SET VAR are enabled", async () => {
+    // The notify trigger subscription from onReady is always there; the wildcard only for writes.
     const off = await setupConnected();
-    expect(off.stub.subscriptions).toEqual([]);
+    expect(off.stub.subscriptions).toEqual(["notify"]);
 
     const on = await setupConnected({ enableSetVar: true });
     await on.internal.onConnected();
-    expect(on.stub.subscriptions).toEqual(["*"]);
+    expect(on.stub.subscriptions).toEqual(["notify", "*"]);
   });
 
   it("post-connect failure is caught and logged", async () => {
@@ -757,6 +758,123 @@ describe("onStateChange — command and SET VAR gates", () => {
     const s = await setupConnected({ enableSetVar: true });
     await s.internal.onStateChange("nut2.0.shallow", { val: 1, ack: false });
     expect(s.client.setVar).not.toHaveBeenCalled();
+  });
+});
+
+describe("notify trigger — the upsmon doorbell", () => {
+  it("subscribes the trigger in onReady, even on a misconfigured instance", async () => {
+    // The doorbell must exist before (and independent of) any successful connect —
+    // with the NUT server down, a write still has to be received and recorded.
+    const { internal, stub } = setup({ host: "" });
+    await internal.onReady();
+    expect(stub.subscriptions).toContain("notify");
+  });
+
+  it("records the event on the matched UPS, acks the trigger and polls", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockClear();
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "ONBATT ups0", ack: false });
+
+    expect(s.stub.states.get("nut2.0.ups0.info.notify")).toEqual({ val: "ONBATT", ack: true });
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "ONBATT ups0", ack: true });
+    expect(s.client.listVar).toHaveBeenCalled();
+    expect(logsOf(s.stub, "info").some(m => m.includes("upsmon event 'ONBATT'"))).toBe(true);
+  });
+
+  it("matches the real NUT name (with @host) even when the object ID is sanitized", async () => {
+    const s = await setupConnected({}, [{ name: "my ups!", description: "Weird UPS" }]);
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "LOWBATT my ups!@nas.local", ack: false });
+
+    expect(s.stub.states.get("nut2.0.my_ups_.info.notify")).toEqual({ val: "LOWBATT", ack: true });
+  });
+
+  it("matches the sanitized object ID as well", async () => {
+    const s = await setupConnected({}, [{ name: "my ups!", description: "Weird UPS" }]);
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "LOWBATT my_ups_", ack: false });
+
+    expect(s.stub.states.get("nut2.0.my_ups_.info.notify")).toEqual({ val: "LOWBATT", ack: true });
+  });
+
+  it("unknown UPS reference: polls everything, warns once, acks — no device write", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockClear();
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "ONBATT ghost", ack: false });
+    await s.internal.onStateChange("nut2.0.notify", { val: "ONLINE ghost", ack: false });
+
+    expect(s.client.listVar).toHaveBeenCalled();
+    expect(s.stub.states.has("nut2.0.ghost.info.notify")).toBe(false);
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "ONLINE ghost", ack: true });
+    // Warn once per unknown name — the repeat goes to debug.
+    expect(logsOf(s.stub, "warn").filter(m => m.includes("unknown UPS 'ghost'"))).toHaveLength(1);
+  });
+
+  it("an empty write is a bare manual refresh: poll yes, event no, info-noise no", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockClear();
+    const infoBefore = logsOf(s.stub, "info").length;
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "", ack: false });
+
+    expect(s.client.listVar).toHaveBeenCalled();
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "", ack: true });
+    expect(s.stub.states.has("nut2.0.ups0.info.notify")).toBe(false);
+    expect(logsOf(s.stub, "info").length).toBe(infoBefore);
+  });
+
+  it("ignores its own ack echo", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockClear();
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "ONBATT", ack: true });
+
+    expect(s.client.listVar).not.toHaveBeenCalled();
+  });
+
+  it("an event during a running poll queues exactly one follow-up poll", async () => {
+    const s = await setupConnected();
+    const resolvers: Array<(vars: NutVariable[]) => void> = [];
+    s.client.listVar.mockImplementation(() => new Promise<NutVariable[]>(res => resolvers.push(res)));
+    s.client.listVar.mockClear();
+
+    const running = s.internal.poll();
+    // The poll is now stuck inside LIST VAR; the doorbell rings twice meanwhile.
+    const n1 = s.internal.onStateChange("nut2.0.notify", { val: "ONBATT ups0", ack: false });
+    const n2 = s.internal.onStateChange("nut2.0.notify", { val: "LOWBATT ups0", ack: false });
+    expect(s.client.listVar).toHaveBeenCalledTimes(1);
+
+    resolvers[0]([{ name: "ups.status", value: "OB" }]);
+    await running;
+    await Promise.all([n1, n2]);
+    // Exactly ONE follow-up poll for both rings together.
+    await vi.waitFor(() => expect(s.client.listVar).toHaveBeenCalledTimes(2));
+    resolvers[1]([{ name: "ups.status", value: "OB LB" }]);
+    // Both events were still recorded individually.
+    expect(s.stub.states.get("nut2.0.ups0.info.notify")).toEqual({ val: "LOWBATT", ack: true });
+  });
+
+  it("without a client (server never reached) the event is still recorded and acked", async () => {
+    const { internal, stub } = setup({ host: "" });
+    await internal.onReady();
+    const errorsFromSetup = logsOf(stub, "error").length; // the legitimate "host is required"
+
+    await internal.onStateChange("nut2.0.notify", { val: "SHUTDOWN", ack: false });
+
+    expect(stub.states.get("nut2.0.notify")).toEqual({ val: "SHUTDOWN", ack: true });
+    expect(logsOf(stub, "error").length).toBe(errorsFromSetup);
+  });
+
+  it("records the event and acks BEFORE polling, so a dying NUT host cannot swallow it", async () => {
+    const s = await setupConnected();
+    s.client.listVar.mockRejectedValue(new Error("host is going down"));
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "SHUTDOWN ups0", ack: false });
+
+    expect(s.stub.states.get("nut2.0.ups0.info.notify")).toEqual({ val: "SHUTDOWN", ack: true });
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "SHUTDOWN ups0", ack: true });
   });
 });
 

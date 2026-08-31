@@ -38,6 +38,8 @@
   "statusSeverity": "Schweregrad",
   "statusDisplay": "Statusanzeige",
   "upsReachable": "Erreichbar",
+  "notifyTrigger": "Abfrage anstoßen (upsmon-Ereignis)",
+  "upsLastNotify": "Letztes upsmon-Ereignis",
   "channelUpsInfo": "Information",
   "flagOnline": "Netzbetrieb",
   "flagOnBattery": "Auf Batterie",

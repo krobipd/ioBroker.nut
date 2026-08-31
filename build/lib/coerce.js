@@ -25,7 +25,8 @@ __export(coerce_exports, {
   computeReconnectDelay: () => computeReconnectDelay,
   errText: () => errText,
   localAddressOf: () => localAddressOf,
-  parseDecimal: () => parseDecimal
+  parseDecimal: () => parseDecimal,
+  parseNotifyTrigger: () => parseNotifyTrigger
 });
 module.exports = __toCommonJS(coerce_exports);
 var import_types = require("./types");
@@ -100,6 +101,29 @@ function computeReconnectDelay(attempt, baseMs, maxMs) {
   const a = Math.max(1, Math.floor(attempt));
   return Math.min(baseMs * 2 ** (a - 1), maxMs);
 }
+const NOTIFY_MAX_LENGTH = 200;
+function parseNotifyTrigger(raw) {
+  let text;
+  if (typeof raw === "string") {
+    text = raw;
+  } else if (typeof raw === "number" || typeof raw === "boolean" || typeof raw === "bigint") {
+    text = String(raw);
+  } else {
+    text = "";
+  }
+  text = text.trim().slice(0, NOTIFY_MAX_LENGTH);
+  const firstWs = text.search(/\s/);
+  if (firstWs < 0) {
+    return { type: text, upsRef: "" };
+  }
+  const type = text.slice(0, firstWs);
+  let upsRef = text.slice(firstWs).trim();
+  const at = upsRef.indexOf("@");
+  if (at >= 0) {
+    upsRef = upsRef.slice(0, at).trim();
+  }
+  return { type, upsRef };
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   coerceCommandTimeoutMs,
@@ -109,6 +133,7 @@ function computeReconnectDelay(attempt, baseMs, maxMs) {
   computeReconnectDelay,
   errText,
   localAddressOf,
-  parseDecimal
+  parseDecimal,
+  parseNotifyTrigger
 });
 //# sourceMappingURL=coerce.js.map

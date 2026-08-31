@@ -297,6 +297,31 @@
         "def": false
       },
       "native": {}
+    },
+    {
+      "_id": "notify",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Trigger poll (upsmon event)",
+          "de": "Abfrage anstoßen (upsmon-Ereignis)",
+          "ru": "Запустить опрос (событие upsmon)",
+          "pt": "Disparar consulta (evento upsmon)",
+          "nl": "Peiling starten (upsmon-gebeurtenis)",
+          "fr": "Déclencher l'interrogation (événement upsmon)",
+          "it": "Avvia interrogazione (evento upsmon)",
+          "es": "Iniciar sondeo (evento upsmon)",
+          "pl": "Wyzwól odpytanie (zdarzenie upsmon)",
+          "uk": "Запустити опитування (подія upsmon)",
+          "zh-cn": "触发轮询（upsmon 事件）"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": true,
+        "def": ""
+      },
+      "native": {}
     }
   ]
 }

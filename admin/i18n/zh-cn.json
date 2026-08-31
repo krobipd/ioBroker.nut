@@ -38,6 +38,8 @@
   "statusSeverity": "严重程度",
   "statusDisplay": "状态显示",
   "upsReachable": "可访问",
+  "notifyTrigger": "触发轮询（upsmon 事件）",
+  "upsLastNotify": "最近的 upsmon 事件",
   "channelUpsInfo": "信息",
   "flagOnline": "市电供电",
   "flagOnBattery": "使用电池",

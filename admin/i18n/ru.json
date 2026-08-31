@@ -38,6 +38,8 @@
   "statusSeverity": "Уровень серьёзности",
   "statusDisplay": "Отображение статуса",
   "upsReachable": "Доступен",
+  "notifyTrigger": "Запустить опрос (событие upsmon)",
+  "upsLastNotify": "Последнее событие upsmon",
   "channelUpsInfo": "Информация",
   "flagOnline": "От сети",
   "flagOnBattery": "На батарее",

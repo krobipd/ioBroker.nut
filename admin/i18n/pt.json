@@ -38,6 +38,8 @@
   "statusSeverity": "Nível de gravidade",
   "statusDisplay": "Exibição do estado",
   "upsReachable": "Acessível",
+  "notifyTrigger": "Disparar consulta (evento upsmon)",
+  "upsLastNotify": "Último evento upsmon",
   "channelUpsInfo": "Informação",
   "flagOnline": "Na rede elétrica",
   "flagOnBattery": "Na bateria",

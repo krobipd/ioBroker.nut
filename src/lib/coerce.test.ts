@@ -7,6 +7,7 @@ import {
   computeReconnectDelay,
   errText,
   localAddressOf,
+  parseNotifyTrigger,
 } from "./coerce";
 
 describe("coerce", () => {
@@ -296,6 +297,51 @@ describe("coerce", () => {
     it("returns a concrete interface address, trimmed", () => {
       expect(localAddressOf("10.0.0.2")).toBe("10.0.0.2");
       expect(localAddressOf("  192.168.1.5  ")).toBe("192.168.1.5");
+    });
+  });
+
+  describe("parseNotifyTrigger", () => {
+    it("takes the first token as the upsmon event type", () => {
+      expect(parseNotifyTrigger("ONBATT")).toEqual({ type: "ONBATT", upsRef: "" });
+    });
+
+    it("takes everything after the first whitespace run as the UPS reference", () => {
+      expect(parseNotifyTrigger("ONBATT ups3")).toEqual({ type: "ONBATT", upsRef: "ups3" });
+      // A NUT name may contain spaces — the reference is the REST, not the second token.
+      expect(parseNotifyTrigger("LOWBATT my ups")).toEqual({ type: "LOWBATT", upsRef: "my ups" });
+    });
+
+    it("strips the @host[:port] part upsmon appends to $UPSNAME", () => {
+      expect(parseNotifyTrigger("ONBATT ups3@nas.local")).toEqual({ type: "ONBATT", upsRef: "ups3" });
+      expect(parseNotifyTrigger("ONBATT ups3@nas.local:3493")).toEqual({ type: "ONBATT", upsRef: "ups3" });
+      expect(parseNotifyTrigger("SHUTDOWN @host")).toEqual({ type: "SHUTDOWN", upsRef: "" });
+    });
+
+    it("collapses tabs and repeated spaces like a shell would", () => {
+      expect(parseNotifyTrigger("ONBATT\t  ups0")).toEqual({ type: "ONBATT", upsRef: "ups0" });
+      expect(parseNotifyTrigger("  ONLINE   ups0  ")).toEqual({ type: "ONLINE", upsRef: "ups0" });
+    });
+
+    it("treats empty and whitespace-only values as a bare manual refresh", () => {
+      expect(parseNotifyTrigger("")).toEqual({ type: "", upsRef: "" });
+      expect(parseNotifyTrigger("   ")).toEqual({ type: "", upsRef: "" });
+      expect(parseNotifyTrigger(null)).toEqual({ type: "", upsRef: "" });
+      expect(parseNotifyTrigger(undefined)).toEqual({ type: "", upsRef: "" });
+    });
+
+    it("stringifies primitive non-string writes but rejects objects", () => {
+      // A script may write a number/boolean; the REST API always sends strings.
+      expect(parseNotifyTrigger(42)).toEqual({ type: "42", upsRef: "" });
+      expect(parseNotifyTrigger(true)).toEqual({ type: "true", upsRef: "" });
+      // "[object Object]" as an event type helps nobody — an object is no trigger value.
+      expect(parseNotifyTrigger({ evil: 1 })).toEqual({ type: "", upsRef: "" });
+    });
+
+    it("caps an overlong value instead of storing arbitrary blobs", () => {
+      const blob = `X${"A".repeat(500)}`;
+      const parsed = parseNotifyTrigger(blob);
+      expect(parsed.type.length).toBeLessThanOrEqual(200);
+      expect(parsed.type.startsWith("XAA")).toBe(true);
     });
   });
 });

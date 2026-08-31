@@ -219,6 +219,17 @@ export class StateManager {
       def: false,
     });
 
+    // Last upsmon event routed to this UPS through the `notify` trigger state. Lives under the
+    // adapter-owned info channel: a dotless NUT variable lands directly under the device, so any
+    // leaf there could one day collide with a real variable name — info never can.
+    await this.ensureState(`${upsName}.info.notify`, {
+      type: "string",
+      role: "text",
+      read: true,
+      write: false,
+      name: tName("upsLastNotify"),
+    });
+
     await this.cleanupDeprecatedInfoStates(upsName);
   }
 
@@ -538,7 +549,9 @@ export class StateManager {
       const parts = localId.split(".");
       const topLevel = parts[0];
 
-      if (topLevel === "info") {
+      // Adapter-owned roots that are NOT UPS devices: the info channel and the notify trigger
+      // state. Without the exemption the orphan sweep would eat them on every discover.
+      if (topLevel === "info" || topLevel === "notify") {
         continue;
       }
 

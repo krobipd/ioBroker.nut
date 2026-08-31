@@ -38,6 +38,8 @@
   "statusSeverity": "Ernst",
   "statusDisplay": "Statusweergave",
   "upsReachable": "Bereikbaar",
+  "notifyTrigger": "Peiling starten (upsmon-gebeurtenis)",
+  "upsLastNotify": "Laatste upsmon-gebeurtenis",
   "channelUpsInfo": "Informatie",
   "flagOnline": "Op netstroom",
   "flagOnBattery": "Op batterij",

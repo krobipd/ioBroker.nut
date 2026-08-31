@@ -38,6 +38,8 @@
   "statusSeverity": "Severity level",
   "statusDisplay": "Status display",
   "upsReachable": "Reachable",
+  "notifyTrigger": "Trigger poll (upsmon event)",
+  "upsLastNotify": "Last upsmon event",
   "channelUpsInfo": "Information",
   "flagOnline": "On line power",
   "flagOnBattery": "On battery",

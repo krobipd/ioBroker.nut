@@ -207,6 +207,13 @@ class StateManager {
       name: (0, import_i18n.tName)("upsReachable"),
       def: false
     });
+    await this.ensureState(`${upsName}.info.notify`, {
+      type: "string",
+      role: "text",
+      read: true,
+      write: false,
+      name: (0, import_i18n.tName)("upsLastNotify")
+    });
     await this.cleanupDeprecatedInfoStates(upsName);
   }
   /**
@@ -479,7 +486,7 @@ class StateManager {
       const localId = fullId.replace(`${this.adapter.namespace}.`, "");
       const parts = localId.split(".");
       const topLevel = parts[0];
-      if (topLevel === "info") {
+      if (topLevel === "info" || topLevel === "notify") {
         continue;
       }
       if (!knownUpsNames.has(topLevel)) {

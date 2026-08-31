@@ -9,6 +9,7 @@ import {
   errText,
   localAddressOf,
   parseDecimal,
+  parseNotifyTrigger,
 } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
 import { NutClient, NutError } from "./lib/nut-client";
@@ -26,6 +27,9 @@ export class NutAdapter extends utils.Adapter {
   private pollTimer: ioBroker.Timeout | undefined = undefined;
   private pollIntervalMs = 0;
   private isPolling = false;
+  private pollAgainRequested = false;
+  /** Unknown UPS names seen on the notify trigger — warn once each, then debug (no log spam). */
+  private warnedNotifyRefs = new Set<string>();
   private lastErrorCode = "";
   private failedUps = new Set<string>();
   private discoveredUps = new Map<string, UpsInfo>();
@@ -136,6 +140,12 @@ export class NutAdapter extends utils.Adapter {
       // instance: nothing will poll, so a stale "reachable" would stand forever.
       this.stateManager = this.makeStateManager();
       await this.stateManager.markAllUnreachable();
+
+      // The upsmon doorbell listens from the very start, independent of any successful connect:
+      // with the NUT server down (or the host missing) a write must still be received, recorded
+      // and confirmed — a SHUTDOWN event arriving while the connection is broken is the one that
+      // matters most.
+      await this.subscribeStatesAsync("notify");
 
       const host = coerceHost(config.host);
       if (!host) {
@@ -415,6 +425,11 @@ export class NutAdapter extends utils.Adapter {
 
   private async poll(): Promise<void> {
     if (this.isPolling) {
+      // Remember the request instead of dropping it: a notify trigger firing while a poll is
+      // in flight may have arrived AFTER that poll already read ups.status — without a
+      // follow-up the fresh event data would wait a full interval. Many triggers in a row
+      // (upsmon fires one NOTIFYCMD per event) still collapse into ONE follow-up poll.
+      this.pollAgainRequested = true;
       this.log.debug("Skipping poll — previous poll still running");
       return;
     }
@@ -519,6 +534,12 @@ export class NutAdapter extends utils.Adapter {
       await this.markAllUpsUnreachable();
     } finally {
       this.isPolling = false;
+      if (this.pollAgainRequested && !this.unloaded) {
+        this.pollAgainRequested = false;
+        // Fire-and-forget: poll() never rejects (everything above is caught), and the timer
+        // chain stays untouched — this is just one extra run for the queued request.
+        void this.poll();
+      }
     }
   }
 
@@ -586,6 +607,13 @@ export class NutAdapter extends utils.Adapter {
       const localId = id.replace(`${this.namespace}.`, "");
       this.log.debug(`onStateChange: ${localId} val=${JSON.stringify(state.val)}`);
 
+      // The notify trigger comes BEFORE the client guard: recording an upsmon event must work
+      // even while the NUT server is unreachable (the poll below then just runs into nothing).
+      if (localId === "notify") {
+        await this.handleNotifyTrigger(state.val);
+        return;
+      }
+
       if (!this.client) {
         this.log.debug(`onStateChange: ignoring ${localId} — no client connection`);
         return;
@@ -647,6 +675,61 @@ export class NutAdapter extends utils.Adapter {
     } catch (err: unknown) {
       this.log.error(`onStateChange failed: ${errText(err)}`);
     }
+  }
+
+  /**
+   * A write to the `notify` trigger state — the doorbell upsmon (or a hand on the admin) rings
+   * instead of waiting for the next scheduled poll. Value format: `$NOTIFYTYPE $UPSNAME` as
+   * upsmon delivers them via NOTIFYCMD; both parts are optional (an empty write is a plain
+   * manual refresh).
+   *
+   * Order is deliberate: record the event and confirm the trigger FIRST, poll second. On a
+   * SHUTDOWN event the NUT host may die mid-poll — the event itself must already be safe.
+   *
+   * @param rawVal Raw state value as written (REST API, script, admin — any shape can arrive)
+   */
+  private async handleNotifyTrigger(rawVal: ioBroker.StateValue): Promise<void> {
+    if (this.unloaded) {
+      return;
+    }
+    const { type, upsRef } = parseNotifyTrigger(rawVal);
+
+    let matchedId: string | undefined;
+    if (upsRef) {
+      // First by the real NUT name (survives sanitization AND `…-2` collision suffixes),
+      // then by the sanitized object ID — covers both spellings a user may configure.
+      for (const [upsId, ups] of this.discoveredUps) {
+        if (ups.name === upsRef) {
+          matchedId = upsId;
+          break;
+        }
+      }
+      if (!matchedId && this.discoveredUps.has(sanitizeUpsName(upsRef))) {
+        matchedId = sanitizeUpsName(upsRef);
+      }
+      if (!matchedId) {
+        const msg = `notify: unknown UPS '${upsRef}' — refreshing all UPSes, event recorded on the trigger state only`;
+        if (this.warnedNotifyRefs.has(upsRef)) {
+          this.log.debug(msg);
+        } else {
+          this.warnedNotifyRefs.add(upsRef);
+          this.log.warn(msg);
+        }
+      }
+    }
+
+    if (type) {
+      this.log.info(`upsmon event '${type}'${matchedId ? ` for UPS '${matchedId}'` : ""} — refreshing`);
+      if (matchedId) {
+        await this.setState(`${matchedId}.info.notify`, { val: type, ack: true });
+      }
+    } else {
+      this.log.debug("notify: manual refresh triggered");
+    }
+
+    // Confirm the trigger (ack echo) before the poll for the same reason the event went first.
+    await this.setState("notify", { val: rawVal, ack: true });
+    await this.poll();
   }
 
   private async onMessage(obj: ioBroker.Message): Promise<void> {
