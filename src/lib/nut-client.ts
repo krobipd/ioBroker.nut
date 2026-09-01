@@ -8,6 +8,13 @@ import { NUT_DEFAULT_COMMAND_TIMEOUT } from "./types";
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 60000;
 
+/**
+ * Hard bound for a single (incomplete) response line in the receive buffer. The command timeout
+ * only bounds an ACTIVE command — between commands, a broken server streaming bytes without a
+ * line break would grow the buffer without limit. No legitimate NUT line comes near this.
+ */
+export const MAX_LINE_BYTES = 1_048_576;
+
 /** NUT protocol error with error code (see types.ts:NUT_ERRORS for the documented set). */
 export class NutError extends Error {
   /**
@@ -635,6 +642,18 @@ export class NutClient {
     for (const line of lines) {
       // NUT uses LF; tolerate CRLF from non-conformant servers.
       this.processLine(line.endsWith("\r") ? line.slice(0, -1) : line);
+    }
+
+    // The remainder is one incomplete line. Past the cap it can only be a broken (or hostile)
+    // stream — treat it like a timeout desync: drop the connection so the buffer cannot grow
+    // without bound; the persistent loop reconnects on a clean stream.
+    if (this.buffer.length > MAX_LINE_BYTES) {
+      this.log?.warn(`NUT response line exceeded ${MAX_LINE_BYTES} bytes — dropping the connection`);
+      this.buffer = "";
+      this.connected = false;
+      this.rejectAll(new Error("NUT response line exceeded the size limit"));
+      this.socket?.destroy();
+      this.scheduleReconnect();
     }
   }
 

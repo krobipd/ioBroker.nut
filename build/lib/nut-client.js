@@ -28,6 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var nut_client_exports = {};
 __export(nut_client_exports, {
+  MAX_LINE_BYTES: () => MAX_LINE_BYTES,
   NutClient: () => NutClient,
   NutError: () => NutError,
   NutTimeoutError: () => NutTimeoutError,
@@ -40,6 +41,7 @@ var import_coerce = require("./coerce");
 var import_types = require("./types");
 const RECONNECT_BASE_MS = 1e3;
 const RECONNECT_MAX_MS = 6e4;
+const MAX_LINE_BYTES = 1048576;
 class NutError extends Error {
   /**
    * @param code NUT error code (a server may send codes outside the documented set, so this is `string`)
@@ -559,11 +561,20 @@ class NutClient {
 `);
   }
   onData(data) {
+    var _a, _b;
     this.buffer += data;
     const lines = this.buffer.split("\n");
     this.buffer = lines.pop();
     for (const line of lines) {
       this.processLine(line.endsWith("\r") ? line.slice(0, -1) : line);
+    }
+    if (this.buffer.length > MAX_LINE_BYTES) {
+      (_a = this.log) == null ? void 0 : _a.warn(`NUT response line exceeded ${MAX_LINE_BYTES} bytes \u2014 dropping the connection`);
+      this.buffer = "";
+      this.connected = false;
+      this.rejectAll(new Error("NUT response line exceeded the size limit"));
+      (_b = this.socket) == null ? void 0 : _b.destroy();
+      this.scheduleReconnect();
     }
   }
   processLine(line) {
@@ -640,6 +651,7 @@ function redactForLog(command) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  MAX_LINE_BYTES,
   NutClient,
   NutError,
   NutTimeoutError,

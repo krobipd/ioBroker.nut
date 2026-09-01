@@ -1,6 +1,6 @@
 import * as net from "node:net";
 import * as tls from "node:tls";
-import { isTlsConfigError, NutClient, NutError, NutTimeoutError } from "./nut-client";
+import { isTlsConfigError, MAX_LINE_BYTES, NutClient, NutError, NutTimeoutError } from "./nut-client";
 
 // Throwaway self-signed cert+key (CN=localhost, 10y) for the STARTTLS handshake test only.
 // The client connects with tlsRejectUnauthorized:false, so a self-signed cert is accepted.
@@ -1047,6 +1047,37 @@ describe("NutClient", () => {
         client.destroy();
       } finally {
         await mock.stop();
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Receive-buffer bound
+  // -----------------------------------------------------------------------
+  describe("receive-buffer bound", () => {
+    it("drops the connection when bytes stream in without a line break past the cap", { timeout: 15000 }, async () => {
+      // The leak case: between commands nothing bounds the line buffer — the command timeout only
+      // covers an ACTIVE command, so a server that keeps sending bytes with NO line break would
+      // grow it without limit. A raw server (the shared mock always appends "\n", which would make
+      // it one complete line instead) streams > cap bytes and never terminates the line.
+      const server = net.createServer(socket => {
+        socket.setEncoding("utf8");
+        socket.on("data", (d: string) => {
+          if (d.includes("GET VAR")) {
+            socket.write("x".repeat(MAX_LINE_BYTES + 64)); // no trailing "\n": an unterminated line
+          }
+        });
+      });
+      await new Promise<void>(resolve => server.listen(0, "127.0.0.1", () => resolve()));
+      const port = (server.address() as net.AddressInfo).port;
+      try {
+        const client = new NutClient("127.0.0.1", port, { commandTimeout: 10000 });
+        await client.connect();
+        await expect(client.getVar("ups0", "ups.status")).rejects.toThrow(/line/i);
+        expect(client.isConnected).toBe(false);
+        client.destroy();
+      } finally {
+        await new Promise<void>(resolve => server.close(() => resolve()));
       }
     });
   });
