@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "news": {
+      "0.10.0": {
+        "en": "New: a writable notify state lets upsmon (or any script) push UPS events — on battery, low battery, shutdown — for an instant refresh instead of waiting for the next poll.",
+        "de": "Neu: Ein beschreibbarer notify-Datenpunkt lässt upsmon (oder ein Skript) USV-Ereignisse — Batteriebetrieb, Batterie schwach, Abschaltung — sofort melden, statt auf die nächste Abfrage zu warten.",
+        "ru": "Новое: записываемый датапоинт notify позволяет upsmon (или скрипту) сразу передавать события ИБП — работа от батареи, низкий заряд, выключение — вместо ожидания следующего опроса.",
+        "pt": "Novo: um estado notify gravável permite que o upsmon (ou um script) envie eventos do UPS — em bateria, bateria fraca, encerramento — para atualização imediata, sem esperar o próximo ciclo.",
+        "nl": "Nieuw: een beschrijfbare notify-status laat upsmon (of een script) UPS-gebeurtenissen — op accu, accu laag, afsluiten — meteen doorgeven in plaats van te wachten op de volgende peiling.",
+        "fr": "Nouveau : un état notify inscriptible permet à upsmon (ou à un script) de pousser les événements de l'onduleur — sur batterie, batterie faible, arrêt — pour un rafraîchissement immédiat.",
+        "it": "Novità: uno stato notify scrivibile consente a upsmon (o a uno script) di inviare subito gli eventi dell'UPS — a batteria, batteria scarica, spegnimento — senza attendere il polling successivo.",
+        "es": "Nuevo: un estado notify grabable permite que upsmon (o un script) envíe eventos del SAI — en batería, batería baja, apagado — para una actualización inmediata sin esperar al siguiente sondeo.",
+        "pl": "Nowość: zapisywalny stan notify pozwala upsmon (lub skryptowi) natychmiast przekazywać zdarzenia UPS — na baterii, niski poziom, wyłączenie — zamiast czekać na kolejne odpytanie.",
+        "uk": "Нове: записуваний датапоінт notify дозволяє upsmon (або скрипту) одразу передавати події ДБЖ — робота від батареї, низький заряд, вимкнення — без очікування наступного опитування.",
+        "zh-cn": "新增：可写的 notify 状态点让 upsmon（或任意脚本）即时推送 UPS 事件——使用电池、电量低、关机——无需等待下一次轮询。"
+      },
       "0.9.0": {
         "en": "Three new states show how many UPS devices were found, how many answer right now and whether that is all of them — and a stopped adapter no longer shows a UPS as reachable.",
         "de": "Drei neue Datenpunkte zeigen, wie viele USVen gefunden wurden, wie viele gerade antworten und ob das alle sind — und eine gestoppte Instanz zeigt keine USV mehr als erreichbar.",

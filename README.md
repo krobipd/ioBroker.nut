@@ -227,9 +227,10 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.10.0 (2026-09-01)
 
 - New: writable `notify` trigger state — upsmon (or any script) pushes events like ONBATT or SHUTDOWN for an instant refresh, and a matched event also lands on that UPS device (#14)
+- Improved: a password accidentally saved with a stray line break is now rejected cleanly instead of silently breaking the connection to the NUT server
 
 ### 0.9.0 (2026-08-27)
 
@@ -251,10 +252,6 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 - UPS readings now carry their correct data type instead of plain text, so numeric values, yes/no fields and status values can be charted, compared and used directly in scripts.
 - Security fix: the NUT username and password no longer appear in the ioBroker log, where they could previously show up in plain text while commands were exchanged.
 - A UPS whose name contains a space, dot or other special character now appears correctly in the object tree instead of a broken or missing device entry.
-
-### 0.5.3 (2026-07-26)
-
-- The version history shown in the adapter manager now lists only versions that actually exist for this adapter.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
