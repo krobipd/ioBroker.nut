@@ -53,6 +53,19 @@ describe("coerce", () => {
       obj.self = obj;
       expect(typeof errText(obj)).toBe("string");
     });
+
+    it("always returns a string — Symbol, function and a toJSON that drops everything", () => {
+      // JSON.stringify returns undefined for all three WITHOUT throwing, so the catch never
+      // ran and the declared string return was a lie (fleet defect, fixed in beszel/parcelapp/
+      // homewizard first). A log line must never read "undefined" for a real error value.
+      const cases: unknown[] = [Symbol("boom"), function boom() {}, { toJSON: () => undefined }];
+      for (const value of cases) {
+        const text = errText(value);
+        expect(typeof text).toBe("string");
+        expect(text.length).toBeGreaterThan(0);
+      }
+      expect(errText(Symbol("boom"))).toContain("boom");
+    });
   });
 
   // -----------------------------------------------------------------------

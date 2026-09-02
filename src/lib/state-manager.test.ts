@@ -23,6 +23,37 @@ interface MockState {
   ack: boolean;
 }
 
+/**
+ * The merge js-controller performs on extendObject (`node.extend(true, …)`): plain objects key by
+ * key, arrays element by element, `undefined` skipped, `null` overwriting. The tests must see the
+ * same semantics as production — a shallow merge would hide exactly the shrink problem.
+ *
+ * @param target the existing value (mutated)
+ * @param source the new value
+ * @returns the merged target
+ */
+function deepExtend(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+  for (const [key, value] of Object.entries(source)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      const base =
+        target[key] !== null && typeof target[key] === "object" && !Array.isArray(target[key]) ? target[key] : {};
+      target[key] = deepExtend({ ...base }, value as Record<string, any>);
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const base = Array.isArray(target[key]) ? [...target[key]] : [];
+      value.forEach((v, i) => (base[i] = v));
+      target[key] = base;
+      continue;
+    }
+    target[key] = value;
+  }
+  return target;
+}
+
 function createMockAdapter(): {
   adapter: any;
   objects: Map<string, MockObj>;
@@ -50,10 +81,12 @@ function createMockAdapter(): {
       return Promise.resolve();
     },
     getObjectAsync: (id: string) => Promise.resolve(objects.get(id) ?? null),
-    // Mirrors the REAL js-controller preserve semantics (7.0.7
-    // removePreservedProperties): a preserved attribute that exists on the OLD
-    // object wins — the new value is dropped. The earlier mock merged
-    // unconditionally and thereby hid that the mfr+model name fallback never
+    // Mirrors the REAL js-controller merge (7.2.2 → node.extend(true, old, new)): objects are
+    // merged KEY BY KEY (a shorter new value list therefore leaves the dropped entries behind),
+    // `undefined` is skipped and `null` overwrites. A shallow mock would replace common.states
+    // wholesale and thus prove the opposite of what production does. `preserve` mirrors
+    // removePreservedProperties (7.0.7): an attribute the OLD object has wins, the new value is
+    // dropped — the earlier unconditional merge hid that the mfr+model name fallback never
     // applied in production (v0.2.5-v0.4.1).
     extendObject: (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
       const existing = objects.get(id);
@@ -67,7 +100,10 @@ function createMockAdapter(): {
           delete newCommon[prop];
         }
       }
-      existing.common = { ...existing.common, ...newCommon };
+      existing.common = deepExtend(existing.common ?? {}, newCommon);
+      if (obj.native !== undefined) {
+        existing.native = deepExtend(existing.native ?? {}, obj.native);
+      }
       return Promise.resolve();
     },
     setState: (id: string, state: MockState) => {
@@ -142,16 +178,21 @@ describe("StateManager", () => {
       expect(common?.statusStates?.onlineId).toBe("nut2.0.ups0.info.reachable");
     });
 
-    it("preserves the existing device name on re-discover (user names win — mcm1957 line)", async () => {
+    it("writes the adapter's name on re-discover — a rename in the object tree does not survive", async () => {
+      // The adapter owns name and description like type and role (krobi 2026-09-02); a user's
+      // place is 0_userdata. What the user DOES own — the recording — is untouched by a merge.
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Main UPS");
-      // The user may have renamed the device meanwhile; preserve keeps whatever
-      // name the object carries — a changed LIST UPS description does NOT win.
+      const device = objects.get("ups0")!;
+      device.common.name = "Renamed by hand";
+      device.common.custom = { "influxdb.0": { enabled: true } };
+
       await sm.ensureUpsDevice("ups0", "Updated UPS");
 
-      expect(objects.get("ups0")?.common.name).toBe("Main UPS");
+      expect(objects.get("ups0")?.common.name).toBe("Updated UPS");
+      expect(objects.get("ups0")?.common.custom).toEqual({ "influxdb.0": { enabled: true } });
     });
 
     it("should create multiple devices", async () => {
@@ -259,12 +300,12 @@ describe("StateManager", () => {
       expect(objects.get("ups0")?.common.name).toBe("Description unavailable");
     });
 
-    it("does NOT overwrite a user-modified device name (fallback only replaces the auto-set value)", async () => {
+    it("overwrites a hand-written device name — the adapter owns it", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureUpsDevice("ups0", "Description unavailable");
-      // User renamed the device in the admin meanwhile.
+      // Renamed in the object tree meanwhile; the adapter's derived name wins on the next sync.
       objects.get("ups0")!.common.name = "Keller-USV";
 
       await sm.updateDeviceName("ups0", "Description unavailable", [
@@ -272,7 +313,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "PRO 1600" },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("Keller-USV");
+      expect(objects.get("ups0")?.common.name).toBe("EATON PRO 1600");
     });
 
     it("runs the broker round-trip only once per runtime, not on every poll (v0.4.2)", async () => {
@@ -293,6 +334,9 @@ describe("StateManager", () => {
 
       await sm.ensureUpsDevice("ups0", "Description unavailable");
       const baselineExtend = extendCalls;
+      // Only the name fallback is under test — the device setup reads the two renamed
+      // predecessors once per runtime to carry their recording over.
+      getCalls = 0;
       const vars = [
         { name: "device.mfr", value: "EATON" },
         { name: "device.model", value: "PRO 1600" },
@@ -301,7 +345,8 @@ describe("StateManager", () => {
       await sm.updateDeviceName("ups0", "Description unavailable", vars);
       await sm.updateDeviceName("ups0", "Description unavailable", vars);
 
-      expect(getCalls).toBe(1);
+      // The derived name is remembered, so a steady poll reads and writes nothing at all.
+      expect(getCalls).toBe(0);
       expect(extendCalls).toBe(baselineExtend + 1);
     });
 
@@ -1170,39 +1215,150 @@ describe("StateManager", () => {
     });
   });
 
-  describe("preserve option", () => {
-    it("ensureUpsDevice passes preserve for common.name", async () => {
-      const { adapter } = createMockAdapter();
-      const calls: any[][] = [];
-      const origExtend = adapter.extendObject;
+  describe("a value list that shrinks", () => {
+    it("drops a value the device no longer offers instead of leaving it in the dropdown", async () => {
+      // extendObject merges key by key, so a dropped entry would linger and stay writable.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("ups0.device.type", {
+        type: "state",
+        common: { type: "string", role: "text", name: "Device type", states: { ups: "ups", pdu: "pdu", gone: "gone" } },
+        native: {},
+      });
+
+      await sm.updateVariables("ups0", [{ name: "device.type", value: "ups" }], new Set());
+
+      const states = objects.get("ups0.device.type")?.common.states as Record<string, string>;
+      expect(states).toBeDefined();
+      expect(Object.keys(states)).not.toContain("gone");
+    });
+
+    it("replaces the enum list from the NUT server instead of merging into the old one", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("ups0.output.voltage-nominal", {
+        type: "state",
+        common: {
+          type: "string",
+          role: "text",
+          name: "Nominal voltage",
+          states: { 200: "200", 230: "230", 240: "240" },
+        },
+        native: {},
+      });
+
+      await sm.enrichStateMetadata("ups0.output.voltage-nominal", { states: { 230: "230", 240: "240" } });
+
+      expect(objects.get("ups0.output.voltage-nominal")?.common.states).toEqual({ 230: "230", 240: "240" });
+    });
+
+    it("touches nothing when the state has no value list yet", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.enrichStateMetadata("ups0.ups.delay-shutdown", { min: 10, max: 300 });
+
+      const common = objects.get("ups0.ups.delay-shutdown")?.common;
+      expect(common?.min).toBe(10);
+      expect(common?.states).toBeUndefined();
+    });
+  });
+
+  describe("a renamed datapoint keeps the user's recording", () => {
+    it("carries the recording of info.online over to info.reachable before removing it", async () => {
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("ups0.info.online", {
+        type: "state",
+        common: { type: "boolean", role: "indicator", name: "Online", custom: { "influxdb.0": { enabled: true } } },
+        native: {},
+      });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      expect(deletedIds).toContain("ups0.info.online");
+      expect(objects.get("ups0.info.reachable")?.common.custom).toEqual({ "influxdb.0": { enabled: true } });
+    });
+
+    it("carries the recording of a v0.1.0 dot-style datapoint over to its new id", async () => {
+      // ups0.battery.charge.low is the SAME datapoint as ups0.battery.charge-low — a move.
+      const { adapter, objects, deletedIds } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("ups0", { type: "device", common: { name: "Main UPS" }, native: {} });
+      objects.set("ups0.battery.charge.low", {
+        type: "state",
+        common: { type: "number", role: "value", name: "Low", custom: { "history.0": { enabled: true } } },
+        native: {},
+      });
+
+      await sm.cleanupLegacyObjects(new Set(["ups0"]));
+      expect(deletedIds).toContain("ups0.battery.charge.low");
+      // The successor is built by the first poll — the recording waits for it.
+      await sm.updateVariables("ups0", [{ name: "battery.charge.low", value: "20" }], new Set());
+
+      expect(objects.get("ups0.battery.charge-low")?.common.custom).toEqual({ "history.0": { enabled: true } });
+    });
+
+    it("does not invent a recording where the predecessor had none — not even an empty one", async () => {
+      // An EMPTY custom is the case that matters: writing it through would leave an empty
+      // recording block on the successor and claim in the log that something was carried.
+      const { adapter, objects, logs } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("ups0.info.online", {
+        type: "state",
+        common: { type: "boolean", role: "indicator", name: "Online", custom: {} },
+        native: {},
+      });
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      const successor = objects.get("ups0.info.reachable")!;
+      expect("custom" in successor.common).toBe(false);
+      expect(logs.some(l => l.includes("Kept the recording"))).toBe(false);
+    });
+
+    it("does not touch the successor when the predecessor does not exist at all", async () => {
+      const { adapter, objects, logs } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+
+      expect("custom" in objects.get("ups0.info.reachable")!.common).toBe(false);
+      expect(logs.some(l => l.includes("Kept the recording"))).toBe(false);
+    });
+  });
+
+  describe("object ownership — the adapter owns name and description, the user owns the recording", () => {
+    it("passes no preserve option, so a hand-written name is overwritten on the next sync", async () => {
+      const seen: (Record<string, unknown> | undefined)[] = [];
+      const { adapter, objects } = createMockAdapter();
+      const orig = adapter.extendObject;
       adapter.extendObject = (...args: any[]) => {
-        calls.push(args);
-        return Promise.resolve(origExtend(...args));
+        seen.push(args[2]);
+        return Promise.resolve(orig(...args));
       };
       const sm = new StateManager(adapter);
 
-      await sm.ensureUpsDevice("ups0", "Test UPS");
+      await sm.ensureUpsDevice("ups0", "Main UPS");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
+      objects.get("ups0.battery.charge")!.common.name = "Renamed by hand";
+      (sm as unknown as { createdIds: Set<string> }).createdIds.delete("ups0.battery.charge");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
 
-      const deviceCall = calls.find(c => c[0] === "ups0");
-      expect(deviceCall).toBeDefined();
-      expect(deviceCall![2]).toEqual({ preserve: { common: ["name"] } });
+      expect(seen.every(o => o === undefined)).toBe(true);
+      expect(objects.get("ups0.battery.charge")?.common.name).not.toBe("Renamed by hand");
     });
 
-    it("ensureState passes preserve for common.name", async () => {
-      const { adapter } = createMockAdapter();
-      const calls: any[][] = [];
-      const origExtend = adapter.extendObject;
-      adapter.extendObject = (...args: any[]) => {
-        calls.push(args);
-        return Promise.resolve(origExtend(...args));
-      };
+    it("leaves a recording configuration untouched when the metadata is refreshed", async () => {
+      const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
+      objects.get("ups0.battery.charge")!.common.custom = { "influxdb.0": { enabled: true } };
+      (sm as unknown as { createdIds: Set<string> }).createdIds.delete("ups0.battery.charge");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "100" }], new Set());
 
-      const stateCall = calls.find(c => c[0] === "ups0.battery.charge");
-      expect(stateCall).toBeDefined();
-      expect(stateCall![2]).toEqual({ preserve: { common: ["name"] } });
+      expect(objects.get("ups0.battery.charge")?.common.custom).toEqual({ "influxdb.0": { enabled: true } });
     });
   });
 
@@ -1250,7 +1406,7 @@ describe("update migration — changed datapoints are updated in place", () => {
     const obj = objects.get("ups0.driver.flag-ignorelb");
     expect(obj?.common.type).toBe("boolean"); // datapoint type migrated in place
     expect(obj?.common.role).toBe("indicator");
-    expect(obj?.common.name).toBe("My flag"); // user rename preserved
+    expect(obj?.common.name).not.toBe("My flag"); // the adapter owns the name and rewrites it
   });
 
   it("adds common.states to an existing enum-less state on update (device.type)", async () => {

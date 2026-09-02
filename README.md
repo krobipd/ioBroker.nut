@@ -249,6 +249,9 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 - Fixed: a reply that is not a confirmation is no longer treated as success — a stray answer can no longer make a write, a login or an encrypted upgrade look like it worked
 - New: the connection test and the start message state whether the connection is encrypted and which user is logged in, so you can see what is really in use
 - New: a certificate file can be configured so strict certificate checking also works with your own certificate authority or a self-signed server certificate
+- Fixed: a value list the UPS no longer offers is really gone from a data point now, instead of keeping the dropped entry selectable forever
+- Fixed: renaming a data point during an update no longer costs the recording you attached to it — history and charts move over to the new name
+- Changed: data point names and descriptions belong to the adapter again and are restored on the next sync; your own names belong in 0_userdata
 
 ### 0.11.0 (2026-09-02)
 

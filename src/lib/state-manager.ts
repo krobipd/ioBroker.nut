@@ -170,6 +170,8 @@ export class StateManager {
   private readonly warnedGarbageVars = new Set<string>();
   /** Last device name derived from mfr+model per UPS — lets a transient/wrong fallback self-correct. */
   private readonly fallbackNames = new Map<string, string>();
+  /** Recording configurations of renamed datapoints whose successor is created later in this run. */
+  private readonly pendingRecording = new Map<string, Record<string, unknown>>();
   /**
    * stateId → original NUT variable/command name. The dot→dash id mapping is lossy for names
    * containing a literal dash (three-phase input.L1-L2.*), so onStateChange reads the real name
@@ -204,7 +206,10 @@ export class StateManager {
         },
         native: {},
       },
-      { preserve: { common: ["name"] } },
+      // No `preserve` for the name: the adapter owns common.name/desc like it owns type and
+      // role (krobi 2026-09-02 — a user's place is 0_userdata, not an adapter's datapoints).
+      // The recording configuration is the explicit exception and stays untouched: merging
+      // never removes what it does not carry (reference_iobroker_objekt_aendern_ohne_loeschen).
     );
     this.createdIds.add(upsName);
 
@@ -236,14 +241,12 @@ export class StateManager {
   /**
    * Update device common.name from LIST VAR data when LIST UPS description is unusable.
    *
-   * The fallback must NOT use `preserve: common.name` — the device object always has a
-   * name (set by ensureUpsDevice from the unusable description), so a preserved write
-   * would never apply (js-controller 7.x `removePreservedProperties` drops the new name
-   * whenever the old object has one; this silently killed the feature in v0.2.5-v0.4.1).
-   * User-modified names stay safe through the guard instead: the fallback only fires
-   * while the CURRENT name is still the auto-set placeholder or a value WE derived
-   * earlier — so a transient/wrong mfr+model that arrived first self-corrects, while a
-   * user-chosen name is left untouched. No broker round-trip while the derived name is stable.
+   * The adapter owns the name: the derived one is written whenever it differs from the one
+   * this adapter wrote last (memory-guarded, so a steady poll costs no broker round-trip).
+   * A rename in the object tree is reset on the next sync — that is the fleet line since
+   * 2026-09-02, not an oversight. `preserve: common.name` would additionally never apply
+   * here, since the device object always carries a name (v0.2.5-v0.4.1 lost the fallback
+   * that way).
    *
    * @param upsName UPS identifier
    * @param description UPS description from LIST UPS
@@ -265,19 +268,6 @@ export class StateManager {
     const name = [mfr, model].filter(Boolean).join(" ");
     // Already applied this exact fallback name → no broker round-trip on steady-state polls.
     if (this.fallbackNames.get(upsName) === name) {
-      return;
-    }
-
-    const obj = await this.adapter.getObjectAsync(upsName);
-    const currentName = obj?.common?.name;
-    // Replace the auto-set placeholder OR a name WE derived earlier (self-correct a
-    // transient/wrong mfr+model that arrived first). A user-chosen name stays (preserve, mcm1957).
-    const replaceable =
-      currentName === description ||
-      currentName === "Description unavailable" ||
-      currentName === "" ||
-      currentName === this.fallbackNames.get(upsName);
-    if (!replaceable) {
       return;
     }
 
@@ -573,6 +563,12 @@ export class StateManager {
 
     const sorted = dotStyleIds.sort((a, b) => b.split(".").length - a.split(".").length);
     for (const id of sorted) {
+      // The v0.1.0 id is the SAME datapoint under an older scheme (ups0.battery.charge.low →
+      // ups0.battery.charge-low), so this is a move, not a removal: the user's recording goes
+      // with it. Only a leaf carries one; a parent that merely holds children has none.
+      const parts = id.split(".");
+      const successor = `${parts[0]}.${parts[1]}.${parts.slice(2).join("-")}`;
+      await this.carryRecordingFrom(adapterObjects[`${this.adapter.namespace}.${id}`], successor);
       this.adapter.log.debug(`Removing v0.1.0 dot-style object: ${id}`);
       await this.adapter.delObjectAsync(id);
       this.createdIds.delete(id);
@@ -588,22 +584,31 @@ export class StateManager {
       return;
     }
     this.createdIds.add(cacheKey);
-    const deprecated = [
+    // Two of these are RENAMES — the datapoint lives on under a new id, so the user's
+    // recording moves with it before the old object goes (the successors already exist:
+    // ensureUpsDevice creates info.reachable above, the status flags come with the first poll).
+    const renamed: Record<string, string> = {
+      // 0.4.0: the old `online` leaf collided with the status.online / OL flag.
+      [`${upsName}.info.online`]: `${upsName}.info.reachable`,
+      // 0.6.0: the non-standard flag name was replaced by the real ECO token.
+      [`${upsName}.status.highEfficiency`]: `${upsName}.status.ecoMode`,
+    };
+    // Dropped for good — not real NUT status_set tokens (COMM/NOCOMM), or never a datapoint of
+    // ours. NB: `testing` is NOT here — TEST is a real token (apc_modbus, powercom, …) and is a
+    // current flag again. Without the delete the old state lingers frozen at its last value —
+    // ioBroker does not auto-remove states an adapter stops writing.
+    const dropped = [
       `${upsName}.info.name`,
       `${upsName}.info.description`,
-      // Renamed to info.reachable in 0.4.0 (the old `online` leaf collided with the
-      // status.online / OL flag). Without this delete the old state lingers frozen at its
-      // last value — ioBroker does not auto-remove states an adapter stops writing.
-      `${upsName}.info.online`,
-      // Dropped non-standard status flags — not real NUT status_set tokens (COMM/NOCOMM),
-      // or renamed (highEfficiency → ecoMode). NB: `testing` is NOT here — TEST is a real
-      // token (apc_modbus, powercom, …) and is a current flag again.
       `${upsName}.status.commEstablished`,
       `${upsName}.status.commLost`,
-      `${upsName}.status.highEfficiency`,
     ];
-    for (const id of deprecated) {
+    for (const id of [...Object.keys(renamed), ...dropped]) {
       try {
+        const successor = renamed[id];
+        if (successor) {
+          await this.carryRecording(id, successor);
+        }
         await this.adapter.delObjectAsync(id);
         this.adapter.log.debug(`Removed deprecated state: ${id}`);
       } catch {
@@ -665,16 +670,84 @@ export class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.extendObject(
-      id,
-      {
-        type: "state",
-        common,
-        native: {},
-      },
-      { preserve: { common: ["name"] } },
-    );
+    // A value list can SHRINK between adapter versions or driver updates. extendObject merges
+    // key by key, so a dropped entry would linger in the dropdown and stay writable — clear it
+    // first, then write the fresh list (two merges, never a delete).
+    if (common.states !== undefined) {
+      await this.clearStatesBeforeWrite(id);
+    }
+    await this.adapter.extendObject(id, {
+      type: "state",
+      common,
+      native: {},
+    });
     this.createdIds.add(id);
+    await this.applyCarriedRecording(id);
+  }
+
+  /**
+   * Empty `common.states` on an EXISTING object, so the fresh list that follows replaces it
+   * instead of merging into it (js-controller merges key by key; `null` overwrites).
+   *
+   * @param id State object id
+   */
+  private async clearStatesBeforeWrite(id: string): Promise<void> {
+    const existing = await this.adapter.getObjectAsync(id);
+    const common = existing?.common as { states?: unknown } | undefined;
+    if (common?.states === undefined || common.states === null) {
+      return;
+    }
+    await this.adapter.extendObject(id, { common: { states: null } });
+  }
+
+  /**
+   * Move a recording configuration from a renamed predecessor onto the state that replaces it.
+   * The adapter owns the datapoint, the user owns the recording — a rename by the adapter must
+   * not cost the user their charts.
+   *
+   * @param fromId The id that is about to disappear
+   * @param toId The id that continues the datapoint (may not exist yet)
+   */
+  private async carryRecording(fromId: string, toId: string): Promise<void> {
+    const old = await this.adapter.getObjectAsync(fromId);
+    await this.carryRecordingFrom(old, toId);
+  }
+
+  /**
+   * Same as {@link carryRecording}, for a predecessor already read from the object store.
+   *
+   * @param old The predecessor object (or null/undefined)
+   * @param toId The id that continues the datapoint (may not exist yet)
+   */
+  private async carryRecordingFrom(old: ioBroker.Object | null | undefined, toId: string): Promise<void> {
+    const custom = (old?.common as { custom?: Record<string, unknown> } | undefined)?.custom;
+    if (!custom || Object.keys(custom).length === 0) {
+      return;
+    }
+    const target = await this.adapter.getObjectAsync(toId);
+    if (!target) {
+      // The successor is created later in this run (the first poll builds the variable states)
+      // — hand it over then, the predecessor is gone by that point.
+      this.pendingRecording.set(toId, custom);
+      return;
+    }
+    await this.adapter.extendObject(toId, { common: { custom } });
+    this.adapter.log.info(`Kept the recording settings of the renamed datapoint on ${toId}`);
+  }
+
+  /**
+   * Apply a recording configuration held back for a state that did not exist yet.
+   *
+   * @param id The state that has just been created
+   */
+  private async applyCarriedRecording(id: string): Promise<void> {
+    const custom = this.pendingRecording.get(id);
+    if (!custom) {
+      return;
+    }
+    this.pendingRecording.delete(id);
+    await this.adapter.extendObject(id, { common: { custom } });
+    this.adapter.log.info(`Kept the recording settings of the renamed datapoint on ${id}`);
   }
 
   /**
@@ -720,7 +793,10 @@ export class StateManager {
       common.max = patch.max;
     }
     if (Object.keys(common).length > 0) {
-      await this.adapter.extendObject(id, { common }, { preserve: { common: ["name"] } });
+      if (patch.states) {
+        await this.clearStatesBeforeWrite(id);
+      }
+      await this.adapter.extendObject(id, { common });
     }
   }
 }

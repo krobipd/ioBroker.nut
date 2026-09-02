@@ -4,17 +4,17 @@
     "version": "0.11.0",
     "news": {
       "NEXT": {
-        "en": "The connection test really verifies the credentials now (it logs in), the adapter logs in whenever credentials are set, and the test shows whether the connection is encrypted",
-        "de": "Der Verbindungstest prüft die Zugangsdaten jetzt wirklich (er meldet sich an), der Adapter meldet sich bei hinterlegten Zugangsdaten immer an, und der Test zeigt, ob die Verbindung verschlüsselt ist",
-        "ru": "Проверка соединения теперь действительно проверяет учётные данные (выполняется вход), адаптер входит в систему при заданных данных, а тест показывает, зашифровано ли соединение",
-        "pt": "O teste de ligação verifica agora realmente as credenciais (faz login), o adaptador inicia sessão sempre que houver credenciais e o teste mostra se a ligação é encriptada",
-        "nl": "De verbindingstest controleert de inloggegevens nu echt (hij logt in), de adapter logt in zodra er gegevens zijn ingesteld en de test toont of de verbinding versleuteld is",
-        "fr": "Le test de connexion vérifie désormais réellement les identifiants (il se connecte), l'adaptateur se connecte dès que des identifiants sont configurés et le test indique si la connexion est chiffrée",
-        "it": "Il test di connessione ora verifica davvero le credenziali (esegue il login), l'adattatore accede sempre quando sono configurate credenziali e il test mostra se la connessione è cifrata",
-        "es": "La prueba de conexión ahora verifica realmente las credenciales (inicia sesión), el adaptador inicia sesión siempre que haya credenciales y la prueba muestra si la conexión está cifrada",
-        "pl": "Test połączenia naprawdę sprawdza teraz dane logowania (loguje się), adapter loguje się zawsze gdy dane są ustawione, a test pokazuje czy połączenie jest szyfrowane",
-        "uk": "Перевірка з'єднання тепер справді перевіряє облікові дані (виконує вхід), адаптер входить у систему щоразу за наявності даних, а тест показує, чи зашифроване з'єднання",
-        "zh-cn": "连接测试现在会真正验证凭据（执行登录），配置了凭据时适配器始终登录，测试还会显示连接是否加密"
+        "en": "The connection test really verifies the credentials now (it logs in), the adapter logs in whenever credentials are set, and a renamed data point keeps your recording",
+        "de": "Der Verbindungstest prüft die Zugangsdaten jetzt wirklich (er meldet sich an), der Adapter meldet sich immer an, und ein umbenannter Datenpunkt behält deine Aufzeichnung",
+        "ru": "Проверка соединения теперь действительно проверяет учётные данные (выполняется вход), адаптер входит в систему, а переименованная точка данных сохраняет запись",
+        "pt": "O teste de ligação verifica agora realmente as credenciais (faz login), o adaptador inicia sessão sempre e um ponto de dados renomeado mantém o seu registo",
+        "nl": "De verbindingstest controleert de inloggegevens nu echt (hij logt in), de adapter logt altijd in en een hernoemd datapunt behoudt je registratie",
+        "fr": "Le test de connexion vérifie réellement les identifiants (il se connecte), l'adaptateur se connecte toujours et un point de données renommé conserve votre enregistrement",
+        "it": "Il test di connessione ora verifica davvero le credenziali (esegue il login), l'adapter accede sempre e un datapoint rinominato mantiene la registrazione",
+        "es": "La prueba de conexión ahora verifica realmente las credenciales (inicia sesión), el adaptador inicia sesión siempre y un punto de datos renombrado conserva su registro",
+        "pl": "Test połączenia naprawdę sprawdza dane logowania (loguje się), adapter zawsze się loguje, a zmieniony punkt danych zachowuje twoje zapisy",
+        "uk": "Перевірка з'єднання тепер справді перевіряє облікові дані (виконує вхід), адаптер завжди входить у систему, а перейменована точка даних зберігає запис",
+        "zh-cn": "连接测试现在会真正验证凭据（执行登录），适配器始终登录，重命名的数据点也会保留你的记录"
       },
       "0.11.0": {
         "en": "A UPS added to or removed from the NUT server now appears or disappears at the next poll, without a restart; writes to the adapter's own states no longer end in a SET VAR error.",
