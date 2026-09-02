@@ -4,7 +4,7 @@
  * (per-UPS error dedup, DATA-STALE, one-shot enrichment, connection gating),
  * classifyError, onStateChange command/SET-VAR gates and onUnload.
  *
- * Fleet harness pattern: @iobroker/adapter-core is mocked with a stub Adapter
+ * Fleet harness pattern: `@iobroker/adapter-core` is mocked with a stub Adapter
  * class; the NutClient and StateManager are injected as fakes through the
  * factory seams (makeClient/makeStateManager) — their real implementations are
  * covered by their own suites against real sockets / the preserve-aware mock.
@@ -44,16 +44,19 @@ vi.mock("@iobroker/adapter-core", () => {
       return id.startsWith(`${this.namespace}.`) ? id : `${this.namespace}.${id}`;
     }
 
-    async setState(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
+    setState(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
       this.states.set(this.fullId(id), { val: state.val, ack: state.ack ?? false });
+      return Promise.resolve();
     }
 
-    async setStateChangedAsync(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
+    setStateChangedAsync(id: string, state: { val: unknown; ack?: boolean }): Promise<void> {
       this.states.set(this.fullId(id), { val: state.val, ack: state.ack ?? false });
+      return Promise.resolve();
     }
 
-    async subscribeStatesAsync(pattern: string): Promise<void> {
+    subscribeStatesAsync(pattern: string): Promise<void> {
       this.subscriptions.push(pattern);
+      return Promise.resolve();
     }
 
     setInterval(cb: () => void, ms: number): object {
@@ -76,7 +79,7 @@ vi.mock("@iobroker/adapter-core", () => {
       }
     }
 
-    getForeignObjectAsync = vi.fn(async (_id: string): Promise<unknown> => null);
+    getForeignObjectAsync = vi.fn((_id: string): Promise<unknown> => Promise.resolve(null));
     extendForeignObjectAsync = vi.fn(async (_id: string, _obj: unknown): Promise<void> => {});
 
     sendTo(): void {}
@@ -141,15 +144,17 @@ function makeFakeClient(upsList: UpsInfo[] = [{ name: "ups0", description: "Main
     shutdown: vi.fn(),
     authenticate: vi.fn(async () => {}),
     login: vi.fn(async () => {}),
-    listUps: vi.fn(async () => upsList),
-    listVar: vi.fn(async (): Promise<NutVariable[]> => [
-      { name: "battery.charge", value: "100" },
-      { name: "ups.status", value: "OL" },
-    ]),
-    listRw: vi.fn(async (): Promise<NutVariable[]> => []),
-    listCmd: vi.fn(async () => [{ name: "beeper.enable" }]),
-    listEnum: vi.fn(async () => []),
-    listRange: vi.fn(async () => []),
+    listUps: vi.fn(() => Promise.resolve(upsList)),
+    listVar: vi.fn((): Promise<NutVariable[]> =>
+      Promise.resolve([
+        { name: "battery.charge", value: "100" },
+        { name: "ups.status", value: "OL" },
+      ]),
+    ),
+    listRw: vi.fn((): Promise<NutVariable[]> => Promise.resolve([])),
+    listCmd: vi.fn(() => Promise.resolve([{ name: "beeper.enable" }])),
+    listEnum: vi.fn(() => Promise.resolve([])),
+    listRange: vi.fn(() => Promise.resolve([])),
     instCmd: vi.fn(async () => {}),
     setVar: vi.fn(async () => {}),
     setOnConnect: vi.fn((cb: () => void) => {
@@ -252,12 +257,17 @@ function setup(config: Partial<typeof BASE_CONFIG> = {}, upsList?: UpsInfo[]): S
   return { adapter, internal, stub, client, sm };
 }
 
-/** onReady + simulate the client's connect callback (the unified loop firing). */
+/**
+ * onReady + simulate the client's connect callback (the unified loop firing).
+ *
+ * @param config Instance settings that replace the base config
+ * @param upsList UPS list the fake client reports, defaults to one UPS
+ */
 async function setupConnected(config: Partial<typeof BASE_CONFIG> = {}, upsList?: UpsInfo[]): Promise<Setup> {
   const s = setup(config, upsList);
   await s.internal.onReady();
   expect(s.client.start).toHaveBeenCalledTimes(1);
-  await (s.internal.onConnected as () => Promise<void>)();
+  await s.internal.onConnected();
   return s;
 }
 
@@ -414,9 +424,7 @@ describe("onConnectFatal", () => {
     const { internal, stub, client } = setup({ useTls: true });
     await internal.onReady();
     client.onFatal!(new NutError("FEATURE-NOT-CONFIGURED"));
-    expect(logsOf(stub, "error").some(m => m.includes("TLS connection to NUT server 10.0.0.3:3493 failed"))).toBe(
-      true,
-    );
+    expect(logsOf(stub, "error").some(m => m.includes("TLS connection to NUT server 10.0.0.3:3493 failed"))).toBe(true);
     expect(client.destroy).toHaveBeenCalledTimes(1);
   });
 });
@@ -478,7 +486,7 @@ describe("UPS name sanitization", () => {
 });
 
 describe("classifyError", () => {
-  it("maps NutError to its code, network codes to NETWORK, timeouts to TIMEOUT", async () => {
+  it("maps NutError to its code, network codes to NETWORK, timeouts to TIMEOUT", () => {
     const { internal } = setup();
     expect(internal.classifyError(new NutError("DATA-STALE"))).toBe("DATA-STALE");
     expect(internal.classifyError(Object.assign(new Error("x"), { code: "ECONNREFUSED" }))).toBe("NETWORK");
@@ -598,7 +606,7 @@ describe("poll", () => {
     const callsAfterFirst = s.sm.enrichStateMetadata.mock.calls.length;
     expect(callsAfterFirst).toBeGreaterThan(0);
     expect(s.sm.enrichStateMetadata).toHaveBeenCalledWith("ups0.ups.delay-shutdown", {
-      states: { "20": "20", "30": "30" },
+      states: { 20: "20", 30: "30" },
     });
     expect(s.sm.enrichStateMetadata).toHaveBeenCalledWith("ups0.ups.delay-shutdown", { min: 10, max: 300 });
 
@@ -953,11 +961,11 @@ describe("UPS summary through the whole life cycle", () => {
       { name: "ups0", description: "One" },
       { name: "ups1", description: "Two" },
     ]);
-    s.client.listVar.mockImplementation(async (ups: string) => {
+    s.client.listVar.mockImplementation((ups: string) => {
       if (ups === "ups1") {
-        throw new Error("no answer");
+        return Promise.reject(new Error("no answer"));
       }
-      return [{ name: "ups.status", value: "OL" }];
+      return Promise.resolve([{ name: "ups.status", value: "OL" }]);
     });
     s.sm.writeUpsSummary.mockClear();
 
@@ -1079,7 +1087,7 @@ describe("the whole chain agrees in every state", () => {
     s.sm.writeUpsSummary.mockClear();
     s.client.authenticate.mockRejectedValue(new Error("ACCESS-DENIED"));
 
-    await (s.internal.onConnected as () => Promise<void>)();
+    await s.internal.onConnected();
 
     expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
     expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });

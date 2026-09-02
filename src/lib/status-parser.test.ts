@@ -269,8 +269,26 @@ describe("status-parser", () => {
 
     it("STATUS_FLAGS maps the documented tokens + real extras + HE alias", () => {
       for (const t of [
-        "OL", "OB", "LB", "HB", "RB", "CHRG", "DISCHRG", "BYPASS", "CAL", "OFF", "OVER",
-        "TRIM", "BOOST", "FSD", "ALARM", "WAIT", "ECO", "HE", "TEST", "OVERHEAT",
+        "OL",
+        "OB",
+        "LB",
+        "HB",
+        "RB",
+        "CHRG",
+        "DISCHRG",
+        "BYPASS",
+        "CAL",
+        "OFF",
+        "OVER",
+        "TRIM",
+        "BOOST",
+        "FSD",
+        "ALARM",
+        "WAIT",
+        "ECO",
+        "HE",
+        "TEST",
+        "OVERHEAT",
       ]) {
         expect(STATUS_FLAGS[t], `${t} should map to a flag`).toBeDefined();
       }

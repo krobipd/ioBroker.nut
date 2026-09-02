@@ -151,18 +151,22 @@ function createMockNutServer(handler?: MockHandler): {
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed) continue;
+        if (!trimmed) {
+          continue;
+        }
         commands.push(trimmed);
 
         const h = handler ?? defaultHandler;
         const response = h(trimmed);
-        if (response === null) return;
+        if (response === null) {
+          return;
+        }
         if (Array.isArray(response)) {
           for (const r of response) {
-            socket.write(r + "\n");
+            socket.write(`${r}\n`);
           }
         } else {
-          socket.write(response + "\n");
+          socket.write(`${response}\n`);
         }
       }
     });
@@ -212,11 +216,15 @@ function createStartTlsMockServer(handler: MockHandler): {
   const respond = (sock: net.Socket | tls.TLSSocket, cmd: string): void => {
     commands.push(cmd);
     const r = handler(cmd);
-    if (r === null) return;
+    if (r === null) {
+      return;
+    }
     if (Array.isArray(r)) {
-      for (const line of r) sock.write(line + "\n");
+      for (const line of r) {
+        sock.write(`${line}\n`);
+      }
     } else {
-      sock.write(r + "\n");
+      sock.write(`${r}\n`);
     }
   };
 
@@ -231,7 +239,9 @@ function createStartTlsMockServer(handler: MockHandler): {
       buf = lines.pop()!;
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed) continue;
+        if (!trimmed) {
+          continue;
+        }
         if (trimmed === "STARTTLS") {
           commands.push("STARTTLS");
           socket.removeListener("data", onPlain);
@@ -255,7 +265,9 @@ function createStartTlsMockServer(handler: MockHandler): {
             tbuf = tlines.pop()!;
             for (const tline of tlines) {
               const t = tline.trim();
-              if (t) respond(tlsSocket, t);
+              if (t) {
+                respond(tlsSocket, t);
+              }
             }
           });
           tlsSocket.on("error", () => {});
@@ -281,7 +293,9 @@ function createStartTlsMockServer(handler: MockHandler): {
       }),
     stop: () =>
       new Promise<void>(resolve => {
-        for (const c of connections) c.destroy();
+        for (const c of connections) {
+          c.destroy();
+        }
         server.close(() => resolve());
       }),
   };
@@ -359,7 +373,9 @@ describe("NutClient", () => {
       const server = net.createServer(sock => {
         sock.setEncoding("utf8");
         sock.on("data", (d: string) => {
-          if (d.includes("STARTTLS")) sock.write("OK STARTTLS\n");
+          if (d.includes("STARTTLS")) {
+            sock.write("OK STARTTLS\n");
+          }
           // …then nothing: no TLS handshake follows.
         });
         sock.on("error", () => {});
@@ -463,7 +479,9 @@ describe("NutClient", () => {
 
     it("should reject on unknown UPS", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd === "LIST VAR unknown") return "ERR UNKNOWN-UPS";
+        if (cmd === "LIST VAR unknown") {
+          return "ERR UNKNOWN-UPS";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -575,7 +593,9 @@ describe("NutClient", () => {
 
     it("should reject on VAR-NOT-SUPPORTED", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("GET VAR")) return "ERR VAR-NOT-SUPPORTED";
+        if (cmd.startsWith("GET VAR")) {
+          return "ERR VAR-NOT-SUPPORTED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -624,7 +644,9 @@ describe("NutClient", () => {
 
     it("should reject on SET-FAILED", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("SET VAR")) return "ERR SET-FAILED";
+        if (cmd.startsWith("SET VAR")) {
+          return "ERR SET-FAILED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -679,7 +701,9 @@ describe("NutClient", () => {
 
     it("should reject on INSTCMD-FAILED", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("INSTCMD")) return "ERR INSTCMD-FAILED";
+        if (cmd.startsWith("INSTCMD")) {
+          return "ERR INSTCMD-FAILED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -734,8 +758,12 @@ describe("NutClient", () => {
 
     it("should reject on INVALID-PASSWORD", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("USERNAME")) return "OK";
-        if (cmd.startsWith("PASSWORD")) return "ERR INVALID-PASSWORD";
+        if (cmd.startsWith("USERNAME")) {
+          return "OK";
+        }
+        if (cmd.startsWith("PASSWORD")) {
+          return "ERR INVALID-PASSWORD";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -753,7 +781,9 @@ describe("NutClient", () => {
 
     it("should reject on INVALID-USERNAME", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("USERNAME")) return "ERR INVALID-USERNAME";
+        if (cmd.startsWith("USERNAME")) {
+          return "ERR INVALID-USERNAME";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -790,7 +820,9 @@ describe("NutClient", () => {
 
     it("should handle ALREADY-LOGGED-IN gracefully", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("LOGIN")) return "ERR ALREADY-LOGGED-IN";
+        if (cmd.startsWith("LOGIN")) {
+          return "ERR ALREADY-LOGGED-IN";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -813,7 +845,9 @@ describe("NutClient", () => {
   describe("error handling", () => {
     it("should parse NUT error codes", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("GET VAR")) return "ERR ACCESS-DENIED";
+        if (cmd.startsWith("GET VAR")) {
+          return "ERR ACCESS-DENIED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -835,7 +869,9 @@ describe("NutClient", () => {
 
     it("should handle DATA-STALE error", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("LIST VAR")) return "ERR DATA-STALE";
+        if (cmd.startsWith("LIST VAR")) {
+          return "ERR DATA-STALE";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -921,7 +957,9 @@ describe("NutClient", () => {
       const mock = createMockNutServer(cmd => {
         if (cmd.startsWith("GET VAR")) {
           callCount++;
-          if (callCount === 1) return "ERR VAR-NOT-SUPPORTED";
+          if (callCount === 1) {
+            return "ERR VAR-NOT-SUPPORTED";
+          }
           return 'VAR ups0 ups.load "15"';
         }
         return "ERR UNKNOWN-COMMAND";
@@ -978,51 +1016,55 @@ describe("NutClient", () => {
         await mock.stop();
       }
     });
-    it("does not time out a queued command for the time it waits behind an active one", { timeout: 10000 }, async () => {
-      // Every response is delayed by DELAY ms. Two commands go out via Promise.all (as poll()
-      // does): LIST VAR is active from t=0 (done ~DELAY); LIST RW waits in the queue and only
-      // becomes active at ~DELAY (done ~2·DELAY). With the timeout armed at ENQUEUE it fires at
-      // commandTimeout from t=0 and kills LIST RW even though it barely had any *active* time.
-      const DELAY = 200;
-      const server = net.createServer(sock => {
-        sock.setEncoding("utf8");
-        let buf = "";
-        sock.on("data", (d: string) => {
-          buf += d;
-          const lines = buf.split("\n");
-          buf = lines.pop() ?? "";
-          for (const line of lines) {
-            const cmd = line.trim();
-            setTimeout(() => {
-              if (cmd.startsWith("LIST VAR")) {
-                sock.write('BEGIN LIST VAR ups0\nVAR ups0 battery.charge "100"\nEND LIST VAR ups0\n');
-              } else if (cmd.startsWith("LIST RW")) {
-                sock.write("BEGIN LIST RW ups0\nEND LIST RW ups0\n");
-              } else {
-                sock.write("ERR UNKNOWN-COMMAND\n");
-              }
-            }, DELAY);
-          }
+    it(
+      "does not time out a queued command for the time it waits behind an active one",
+      { timeout: 10000 },
+      async () => {
+        // Every response is delayed by DELAY ms. Two commands go out via Promise.all (as poll()
+        // does): LIST VAR is active from t=0 (done ~DELAY); LIST RW waits in the queue and only
+        // becomes active at ~DELAY (done ~2·DELAY). With the timeout armed at ENQUEUE it fires at
+        // commandTimeout from t=0 and kills LIST RW even though it barely had any *active* time.
+        const DELAY = 200;
+        const server = net.createServer(sock => {
+          sock.setEncoding("utf8");
+          let buf = "";
+          sock.on("data", (d: string) => {
+            buf += d;
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              const cmd = line.trim();
+              setTimeout(() => {
+                if (cmd.startsWith("LIST VAR")) {
+                  sock.write('BEGIN LIST VAR ups0\nVAR ups0 battery.charge "100"\nEND LIST VAR ups0\n');
+                } else if (cmd.startsWith("LIST RW")) {
+                  sock.write("BEGIN LIST RW ups0\nEND LIST RW ups0\n");
+                } else {
+                  sock.write("ERR UNKNOWN-COMMAND\n");
+                }
+              }, DELAY);
+            }
+          });
+          sock.on("error", () => {});
         });
-        sock.on("error", () => {});
-      });
-      const port = await new Promise<number>(r =>
-        server.listen(0, "127.0.0.1", () => r((server.address() as net.AddressInfo).port)),
-      );
-      try {
-        const client = new NutClient("127.0.0.1", port, { commandTimeout: 300 });
-        await client.connect();
-        // LIST RW needs > commandTimeout of wall-clock (queue-wait + run) but < commandTimeout
-        // of *active* time. It must NOT be timed out and drop the connection.
-        const [vars, rw] = await Promise.all([client.listVar("ups0"), client.listRw("ups0")]);
-        expect(vars.length).toBeGreaterThan(0);
-        expect(Array.isArray(rw)).toBe(true);
-        expect(client.isConnected).toBe(true);
-        client.destroy();
-      } finally {
-        await new Promise<void>(r => server.close(() => r()));
-      }
-    });
+        const port = await new Promise<number>(r =>
+          server.listen(0, "127.0.0.1", () => r((server.address() as net.AddressInfo).port)),
+        );
+        try {
+          const client = new NutClient("127.0.0.1", port, { commandTimeout: 300 });
+          await client.connect();
+          // LIST RW needs > commandTimeout of wall-clock (queue-wait + run) but < commandTimeout
+          // of *active* time. It must NOT be timed out and drop the connection.
+          const [vars, rw] = await Promise.all([client.listVar("ups0"), client.listRw("ups0")]);
+          expect(vars.length).toBeGreaterThan(0);
+          expect(Array.isArray(rw)).toBe(true);
+          expect(client.isConnected).toBe(true);
+          client.destroy();
+        } finally {
+          await new Promise<void>(r => server.close(() => r()));
+        }
+      },
+    );
   });
 
   // -----------------------------------------------------------------------
@@ -1109,30 +1151,34 @@ describe("NutClient", () => {
   // Socket close drains the whole queue (not just the active command)
   // -----------------------------------------------------------------------
   describe("socket close", () => {
-    it("rejects queued commands too when the connection drops (no orphaned queue entry)", { timeout: 10000 }, async () => {
-      const mock = createMockNutServer(() => null); // never responds → commands stay pending
-      const port = await mock.start();
-      try {
-        // High commandTimeout so the only way a queued command can settle is the close-drain,
-        // not its own timer firing.
-        const client = new NutClient("127.0.0.1", port, { commandTimeout: 10000 });
-        await client.connect();
+    it(
+      "rejects queued commands too when the connection drops (no orphaned queue entry)",
+      { timeout: 10000 },
+      async () => {
+        const mock = createMockNutServer(() => null); // never responds → commands stay pending
+        const port = await mock.start();
+        try {
+          // High commandTimeout so the only way a queued command can settle is the close-drain,
+          // not its own timer firing.
+          const client = new NutClient("127.0.0.1", port, { commandTimeout: 10000 });
+          await client.connect();
 
-        const active = client.listUps(); // becomes active (mock hangs)
-        const queued = client.listVar("ups0"); // waits in the queue behind it
+          const active = client.listUps(); // becomes active (mock hangs)
+          const queued = client.listVar("ups0"); // waits in the queue behind it
 
-        // Drop the connection from underneath both commands.
-        // @ts-expect-error accessing private socket for a deterministic disconnect
-        client.socket!.destroy();
+          // Drop the connection from underneath both commands.
+          // @ts-expect-error accessing private socket for a deterministic disconnect
+          client.socket!.destroy();
 
-        await expect(active).rejects.toThrow(); // active — handled even before the fix
-        await expect(queued).rejects.toThrow(); // queued — was orphaned (never settled) before the fix
+          await expect(active).rejects.toThrow(); // active — handled even before the fix
+          await expect(queued).rejects.toThrow(); // queued — was orphaned (never settled) before the fix
 
-        client.destroy();
-      } finally {
-        await mock.stop();
-      }
-    });
+          client.destroy();
+        } finally {
+          await mock.stop();
+        }
+      },
+    );
   });
 
   // -----------------------------------------------------------------------
@@ -1195,7 +1241,9 @@ describe("NutClient", () => {
 
     it("stops on a fatal TLS-config error (onFatal, no retry)", { timeout: 10000 }, async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd === "STARTTLS") return "ERR FEATURE-NOT-CONFIGURED";
+        if (cmd === "STARTTLS") {
+          return "ERR FEATURE-NOT-CONFIGURED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -1385,7 +1433,9 @@ describe("NutClient", () => {
 
     it("should reject login without prior auth", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd.startsWith("LOGIN")) return "ERR USERNAME-REQUIRED";
+        if (cmd.startsWith("LOGIN")) {
+          return "ERR USERNAME-REQUIRED";
+        }
         return "OK";
       });
       const port = await mock.start();
@@ -1434,38 +1484,34 @@ describe("NutClient", () => {
   // STARTTLS
   // -----------------------------------------------------------------------
   describe("STARTTLS", () => {
-    it(
-      "upgrades to TLS and runs commands over the encrypted channel",
-      { timeout: 10000 },
-      async () => {
-        const mock = createStartTlsMockServer(cmd => {
-          if (cmd === "LIST UPS") {
-            return ["BEGIN LIST UPS", 'UPS ups0 "Secure UPS"', "END LIST UPS"];
-          }
-          if (cmd.startsWith("GET VAR")) {
-            return 'VAR ups0 battery.charge "88"';
-          }
-          return "ERR UNKNOWN-COMMAND";
-        });
-        const port = await mock.start();
-        try {
-          const client = new NutClient("127.0.0.1", port, { useTls: true, tlsRejectUnauthorized: false });
-          await client.connect();
-          expect(client.isTls).toBe(true);
-
-          // Commands after the upgrade must travel over TLS and still parse correctly.
-          const ups = await client.listUps();
-          expect(ups).toEqual([{ name: "ups0", description: "Secure UPS" }]);
-          const charge = await client.getVar("ups0", "battery.charge");
-          expect(charge).toBe("88");
-          expect(mock.commands).toContain("STARTTLS");
-
-          client.destroy();
-        } finally {
-          await mock.stop();
+    it("upgrades to TLS and runs commands over the encrypted channel", { timeout: 10000 }, async () => {
+      const mock = createStartTlsMockServer(cmd => {
+        if (cmd === "LIST UPS") {
+          return ["BEGIN LIST UPS", 'UPS ups0 "Secure UPS"', "END LIST UPS"];
         }
-      },
-    );
+        if (cmd.startsWith("GET VAR")) {
+          return 'VAR ups0 battery.charge "88"';
+        }
+        return "ERR UNKNOWN-COMMAND";
+      });
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port, { useTls: true, tlsRejectUnauthorized: false });
+        await client.connect();
+        expect(client.isTls).toBe(true);
+
+        // Commands after the upgrade must travel over TLS and still parse correctly.
+        const ups = await client.listUps();
+        expect(ups).toEqual([{ name: "ups0", description: "Secure UPS" }]);
+        const charge = await client.getVar("ups0", "battery.charge");
+        expect(charge).toBe("88");
+        expect(mock.commands).toContain("STARTTLS");
+
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
 
     it("offers no server-name for an IP address (RFC 6066)", { timeout: 10000 }, async () => {
       const mock = createStartTlsMockServer(() => "ERR UNKNOWN-COMMAND");
@@ -1485,7 +1531,9 @@ describe("NutClient", () => {
 
     it("rejects connect when the server has no TLS support", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd === "STARTTLS") return "ERR FEATURE-NOT-CONFIGURED";
+        if (cmd === "STARTTLS") {
+          return "ERR FEATURE-NOT-CONFIGURED";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -1541,7 +1589,9 @@ describe("NutClient", () => {
   describe("logout", () => {
     it("sends LOGOUT", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd === "LOGOUT") return "OK Goodbye";
+        if (cmd === "LOGOUT") {
+          return "OK Goodbye";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();
@@ -1558,7 +1608,9 @@ describe("NutClient", () => {
 
     it("swallows errors during logout", async () => {
       const mock = createMockNutServer(cmd => {
-        if (cmd === "LOGOUT") return "ERR UNKNOWN-COMMAND";
+        if (cmd === "LOGOUT") {
+          return "ERR UNKNOWN-COMMAND";
+        }
         return "ERR UNKNOWN-COMMAND";
       });
       const port = await mock.start();

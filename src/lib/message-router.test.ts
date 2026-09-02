@@ -43,16 +43,18 @@ function makeHarness(
       createdClients.push({ host, port });
       createdOptions.push(options);
       return {
-        connect: async () => {
+        connect: () => {
           if (connectError) {
-            throw connectError;
+            return Promise.reject(connectError);
           }
+          return Promise.resolve();
         },
-        listUps: async () => listUpsResult ?? [{ name: "ups0", description: "Eaton" }],
-        authenticate: async () => {
+        listUps: () => Promise.resolve(listUpsResult ?? [{ name: "ups0", description: "Eaton" }]),
+        authenticate: () => {
           if (authError) {
-            throw authError;
+            return Promise.reject(authError);
           }
+          return Promise.resolve();
         },
         login: async () => {},
         destroy: () => {},
@@ -69,7 +71,7 @@ function buildMessage(overrides: Partial<ioBroker.Message>): ioBroker.Message {
   return {
     command: "checkConnection",
     from: "system.adapter.test.0",
-    callback: { id: 1, message: "x", time: 0, ack: false } as ioBroker.MessageCallbackInfo,
+    callback: { id: 1, message: "x", time: 0, ack: false },
     message: undefined,
     ...overrides,
   } as ioBroker.Message;
@@ -276,7 +278,6 @@ describe("dispatchMessage", () => {
       expect(h.registered).toHaveLength(1);
       expect(h.completed).toHaveLength(1);
     });
-
   });
 
   // -----------------------------------------------------------------------
@@ -285,7 +286,7 @@ describe("dispatchMessage", () => {
   describe("obj.message coercion", () => {
     it("should treat null obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(buildMessage({ message: null as unknown as ioBroker.Message["message"] }), h.deps);
+      await dispatchMessage(buildMessage({ message: null }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect(h.sends[0].response).toEqual({ error: "Host is required" });
@@ -293,7 +294,7 @@ describe("dispatchMessage", () => {
 
     it("should treat string obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(buildMessage({ message: "junk" as unknown as ioBroker.Message["message"] }), h.deps);
+      await dispatchMessage(buildMessage({ message: "junk" }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
@@ -301,7 +302,7 @@ describe("dispatchMessage", () => {
 
     it("should treat array obj.message as missing host", async () => {
       const h = makeHarness();
-      await dispatchMessage(buildMessage({ message: [] as unknown as ioBroker.Message["message"] }), h.deps);
+      await dispatchMessage(buildMessage({ message: [] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
       expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
@@ -326,8 +327,8 @@ describe("dispatchMessage", () => {
       const registered: NutClient[] = [];
       const completed: NutClient[] = [];
       const failingClient = {
-        connect: async () => {
-          throw new Error("boom");
+        connect: () => {
+          return Promise.reject(new Error("boom"));
         },
         destroy: () => {},
       } as unknown as NutClient;

@@ -57,7 +57,9 @@ describe("i18n completeness", () => {
     // TRANSLATED_VARIABLES) + admin/jsonConfig labels/help/text.
     const referenced = new Set<string>();
     const add = (re: RegExp, text: string): void => {
-      for (const m of text.matchAll(re)) referenced.add(m[1]);
+      for (const m of text.matchAll(re)) {
+        referenced.add(m[1]);
+      }
     };
     const srcDir = join(__dirname, "..");
     for (const rel of readdirSync(srcDir, { recursive: true })) {

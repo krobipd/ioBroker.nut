@@ -43,22 +43,23 @@ function createMockAdapter(): {
       warn: (msg: string) => logs.push(`WARN: ${msg}`),
       error: (msg: string) => logs.push(`ERROR: ${msg}`),
     },
-    setObjectNotExistsAsync: async (id: string, obj: MockObj) => {
+    setObjectNotExistsAsync: (id: string, obj: MockObj) => {
       if (!objects.has(id)) {
         objects.set(id, obj);
       }
+      return Promise.resolve();
     },
-    getObjectAsync: async (id: string) => objects.get(id) ?? null,
+    getObjectAsync: (id: string) => Promise.resolve(objects.get(id) ?? null),
     // Mirrors the REAL js-controller preserve semantics (7.0.7
     // removePreservedProperties): a preserved attribute that exists on the OLD
     // object wins — the new value is dropped. The earlier mock merged
     // unconditionally and thereby hid that the mfr+model name fallback never
     // applied in production (v0.2.5-v0.4.1).
-    extendObject: async (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
+    extendObject: (id: string, obj: MockObj, options?: { preserve?: { common?: string[] } }) => {
       const existing = objects.get(id);
       if (!existing) {
         objects.set(id, obj);
-        return;
+        return Promise.resolve();
       }
       const newCommon = { ...obj.common };
       for (const prop of options?.preserve?.common ?? []) {
@@ -67,27 +68,31 @@ function createMockAdapter(): {
         }
       }
       existing.common = { ...existing.common, ...newCommon };
+      return Promise.resolve();
     },
-    setState: async (id: string, state: MockState) => {
+    setState: (id: string, state: MockState) => {
       states.set(id, state);
+      return Promise.resolve();
     },
-    setStateChangedAsync: async (id: string, state: MockState) => {
+    setStateChangedAsync: (id: string, state: MockState) => {
       states.set(id, state);
+      return Promise.resolve();
     },
-    getAdapterObjectsAsync: async () => {
+    getAdapterObjectsAsync: () => {
       const result: Record<string, MockObj> = {};
       for (const [id, obj] of objects) {
         result[`nut2.0.${id}`] = obj;
       }
-      return result;
+      return Promise.resolve(result);
     },
-    delObjectAsync: async (id: string, _opts?: { recursive?: boolean }) => {
+    delObjectAsync: (id: string, _opts?: { recursive?: boolean }) => {
       deletedIds.push(id);
       for (const key of objects.keys()) {
         if (key === id || key.startsWith(`${id}.`)) {
           objects.delete(key);
         }
       }
+      return Promise.resolve();
     },
   };
 
@@ -274,15 +279,15 @@ describe("StateManager", () => {
       const { adapter } = createMockAdapter();
       let getCalls = 0;
       const origGet = adapter.getObjectAsync;
-      adapter.getObjectAsync = async (...args: any[]) => {
+      adapter.getObjectAsync = (...args: any[]) => {
         getCalls++;
-        return origGet(...args);
+        return Promise.resolve(origGet(...args));
       };
       let extendCalls = 0;
       const origExtend = adapter.extendObject;
-      adapter.extendObject = async (...args: any[]) => {
+      adapter.extendObject = (...args: any[]) => {
         extendCalls++;
-        return origExtend(...args);
+        return Promise.resolve(origExtend(...args));
       };
       const sm = new StateManager(adapter);
 
@@ -673,9 +678,9 @@ describe("StateManager", () => {
       let callCount = 0;
       const { adapter } = createMockAdapter();
       const originalSetObj = adapter.setObjectNotExistsAsync;
-      adapter.setObjectNotExistsAsync = async (...args: any[]) => {
+      adapter.setObjectNotExistsAsync = (...args: any[]) => {
         callCount++;
-        return originalSetObj(...args);
+        return Promise.resolve(originalSetObj(...args));
       };
 
       const sm = new StateManager(adapter);
@@ -1123,11 +1128,11 @@ describe("StateManager", () => {
       });
 
       await sm.enrichStateMetadata("ups0.output.voltage-nominal", {
-        states: { "200": "200", "208": "208", "220": "220", "230": "230", "240": "240" },
+        states: { 200: "200", 208: "208", 220: "220", 230: "230", 240: "240" },
       });
 
       const common = objects.get("ups0.output.voltage-nominal")?.common as any;
-      expect(common.states).toEqual({ "200": "200", "208": "208", "220": "220", "230": "230", "240": "240" });
+      expect(common.states).toEqual({ 200: "200", 208: "208", 220: "220", 230: "230", 240: "240" });
     });
 
     it("should set common.min and common.max via extendObject", async () => {
@@ -1151,9 +1156,9 @@ describe("StateManager", () => {
       let extendCalled = false;
       const { adapter } = createMockAdapter();
       const origExtend = adapter.extendObject;
-      adapter.extendObject = async (...args: any[]) => {
+      adapter.extendObject = (...args: any[]) => {
         extendCalled = true;
-        return origExtend(...args);
+        return Promise.resolve(origExtend(...args));
       };
       const sm = new StateManager(adapter);
 
@@ -1168,9 +1173,9 @@ describe("StateManager", () => {
       const { adapter } = createMockAdapter();
       const calls: any[][] = [];
       const origExtend = adapter.extendObject;
-      adapter.extendObject = async (...args: any[]) => {
+      adapter.extendObject = (...args: any[]) => {
         calls.push(args);
-        return origExtend(...args);
+        return Promise.resolve(origExtend(...args));
       };
       const sm = new StateManager(adapter);
 
@@ -1185,9 +1190,9 @@ describe("StateManager", () => {
       const { adapter } = createMockAdapter();
       const calls: any[][] = [];
       const origExtend = adapter.extendObject;
-      adapter.extendObject = async (...args: any[]) => {
+      adapter.extendObject = (...args: any[]) => {
         calls.push(args);
-        return origExtend(...args);
+        return Promise.resolve(origExtend(...args));
       };
       const sm = new StateManager(adapter);
 
