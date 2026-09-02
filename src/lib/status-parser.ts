@@ -16,8 +16,6 @@ interface StatusFlagDef {
   token: string;
   /** ioBroker boolean state id (leaf under status.) */
   flag: string;
-  /** Human-readable display label */
-  label: string;
   /** admin/i18n key for the state name */
   i18nKey: I18nKey;
   /** ioBroker state role */
@@ -35,37 +33,35 @@ interface StatusFlagDef {
 // intentionally NOT mapped: per new-drivers.txt clients MAY ignore unidentified tokens, and
 // any such token still appears verbatim in status.raw / status.display.
 const STATUS_CATALOG: StatusFlagDef[] = [
-  { token: "OL", flag: "online", label: "On line power", i18nKey: "flagOnline", role: "indicator" },
-  { token: "OB", flag: "onBattery", label: "On Battery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
-  { token: "LB", flag: "lowBattery", label: "Low Battery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
-  { token: "HB", flag: "highBattery", label: "High Battery", i18nKey: "flagHighBattery", role: "indicator" },
+  { token: "OL", flag: "online", i18nKey: "flagOnline", role: "indicator" },
+  { token: "OB", flag: "onBattery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
+  { token: "LB", flag: "lowBattery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
+  { token: "HB", flag: "highBattery", i18nKey: "flagHighBattery", role: "indicator" },
   {
     token: "RB",
     flag: "replaceBattery",
-    label: "Replace Battery",
     i18nKey: "flagReplaceBattery",
     role: "indicator.maintenance",
   },
-  { token: "CHRG", flag: "charging", label: "Charging", i18nKey: "flagCharging", role: "indicator" },
-  { token: "DISCHRG", flag: "discharging", label: "Discharging", i18nKey: "flagDischarging", role: "indicator" },
-  { token: "BYPASS", flag: "bypass", label: "Bypass", i18nKey: "flagBypass", role: "indicator" },
-  { token: "CAL", flag: "calibrating", label: "Calibrating", i18nKey: "flagCalibrating", role: "indicator" },
-  { token: "OFF", flag: "off", label: "Off", i18nKey: "flagOff", role: "indicator" },
-  { token: "OVER", flag: "overloaded", label: "Overloaded", i18nKey: "flagOverloaded", role: "indicator.alarm" },
-  { token: "TRIM", flag: "trimming", label: "Trimming", i18nKey: "flagTrimming", role: "indicator" },
-  { token: "BOOST", flag: "boosting", label: "Boosting", i18nKey: "flagBoosting", role: "indicator" },
+  { token: "CHRG", flag: "charging", i18nKey: "flagCharging", role: "indicator" },
+  { token: "DISCHRG", flag: "discharging", i18nKey: "flagDischarging", role: "indicator" },
+  { token: "BYPASS", flag: "bypass", i18nKey: "flagBypass", role: "indicator" },
+  { token: "CAL", flag: "calibrating", i18nKey: "flagCalibrating", role: "indicator" },
+  { token: "OFF", flag: "off", i18nKey: "flagOff", role: "indicator" },
+  { token: "OVER", flag: "overloaded", i18nKey: "flagOverloaded", role: "indicator.alarm" },
+  { token: "TRIM", flag: "trimming", i18nKey: "flagTrimming", role: "indicator" },
+  { token: "BOOST", flag: "boosting", i18nKey: "flagBoosting", role: "indicator" },
   {
     token: "FSD",
     flag: "forcedShutdown",
-    label: "Forced Shutdown",
     i18nKey: "flagForcedShutdown",
     role: "indicator.alarm",
   },
-  { token: "ALARM", flag: "alarm", label: "Alarm", i18nKey: "flagAlarm", role: "indicator.alarm" },
-  { token: "WAIT", flag: "waiting", label: "Waiting", i18nKey: "flagWaiting", role: "indicator" },
-  { token: "ECO", flag: "ecoMode", label: "ECO Mode", i18nKey: "flagEcoMode", role: "indicator" },
-  { token: "TEST", flag: "testing", label: "Testing", i18nKey: "flagTesting", role: "indicator" },
-  { token: "OVERHEAT", flag: "overheat", label: "Overheated", i18nKey: "flagOverheat", role: "indicator.alarm" },
+  { token: "ALARM", flag: "alarm", i18nKey: "flagAlarm", role: "indicator.alarm" },
+  { token: "WAIT", flag: "waiting", i18nKey: "flagWaiting", role: "indicator" },
+  { token: "ECO", flag: "ecoMode", i18nKey: "flagEcoMode", role: "indicator" },
+  { token: "TEST", flag: "testing", i18nKey: "flagTesting", role: "indicator" },
+  { token: "OVERHEAT", flag: "overheat", i18nKey: "flagOverheat", role: "indicator.alarm" },
 ];
 
 /** Legacy / alternative tokens mapped to a catalog token (e.g. legacy "HE" → "ECO"). */
@@ -75,18 +71,22 @@ const STATUS_ALIASES: Record<string, string> = {
 
 /** token → flag id (incl. aliases). */
 export const STATUS_FLAGS: Record<string, string> = {};
-/** token → display label (incl. aliases). */
-const DISPLAY_LABELS: Record<string, string> = {};
-/** flag id → { i18nKey, role } (for state-manager). */
-export const FLAG_META: Record<string, { i18nKey: I18nKey; role: string }> = {};
+/**
+ * flag id → { i18nKey, descKey, role } (for state-manager). The description key is derived from
+ * the name key (`flagOnline` → `descFlagOnline`) so the catalog above stays the single place a
+ * flag is declared; `admin/i18n/en.json` is what decides whether the key really exists.
+ */
+export const FLAG_META: Record<string, { i18nKey: I18nKey; descKey: I18nKey; role: string }> = {};
 for (const d of STATUS_CATALOG) {
   STATUS_FLAGS[d.token] = d.flag;
-  DISPLAY_LABELS[d.token] = d.label;
-  FLAG_META[d.flag] = { i18nKey: d.i18nKey, role: d.role };
+  FLAG_META[d.flag] = {
+    i18nKey: d.i18nKey,
+    descKey: `desc${d.i18nKey.charAt(0).toUpperCase()}${d.i18nKey.slice(1)}` as I18nKey,
+    role: d.role,
+  };
 }
 for (const [alias, token] of Object.entries(STATUS_ALIASES)) {
   STATUS_FLAGS[alias] = STATUS_FLAGS[token];
-  DISPLAY_LABELS[alias] = DISPLAY_LABELS[token];
 }
 
 /** All known flag keys for creating default-false states (catalog order). */
@@ -135,18 +135,36 @@ export function parseStatus(rawStatus: string, chargerStatus?: string): StatusRe
   return { raw: rawStatus, flags, severity };
 }
 
+/** One entry of the readable status line: the catalog key when known, else the raw token. */
+export interface DisplayEntry {
+  /** admin/i18n key of the flag label, absent for a token this adapter does not map. */
+  i18nKey?: I18nKey;
+  /** The raw NUT token — the fallback text for an unmapped token. */
+  token: string;
+}
+
+/** token → the flag's admin/i18n key (incl. aliases), for the readable status line. */
+const DISPLAY_I18N: Record<string, I18nKey> = {};
+for (const d of STATUS_CATALOG) {
+  DISPLAY_I18N[d.token] = d.i18nKey;
+}
+for (const [alias, token] of Object.entries(STATUS_ALIASES)) {
+  DISPLAY_I18N[alias] = DISPLAY_I18N[token];
+}
+
 /**
- * Convert raw ups.status to human-readable display string.
+ * Split raw ups.status into the entries of the readable status line. Kept as keys rather than
+ * text because the line is user-facing and has to follow the system language — the caller
+ * resolves the keys (this module stays pure and testable without adapter-core).
  *
  * @param rawStatus Raw ups.status value (e.g. "OL CHRG")
  */
-export function getDisplayString(rawStatus: string): string {
+export function getDisplayEntries(rawStatus: string): DisplayEntry[] {
   return rawStatus
     .trim()
     .split(/\s+/)
     .filter(t => t.length > 0)
-    .map(t => DISPLAY_LABELS[t] ?? t)
-    .join(", ");
+    .map(token => (DISPLAY_I18N[token] ? { i18nKey: DISPLAY_I18N[token], token } : { token }));
 }
 
 // Severity reflects the POWER-SOURCE state only (OL → trimming → on battery → critical →

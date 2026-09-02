@@ -27,6 +27,14 @@ const KNOWN_STRING_SUFFIXES = new Set([
 /** Known-string exact prefixes — always string. */
 const KNOWN_STRING_PREFIXES = ["driver.parameter.port", "driver.parameter.synchronous", "driver.version."];
 
+/**
+ * Countdown timers (`ups.timer.*`, `outlet[.n].timer.*`, `outlet.group.n.timer.*`). Drivers
+ * disagree on how they say "no countdown running": the HID drivers report the raw `-1` (measured
+ * on an Eaton Ellipse PRO 1600), apc_modbus converts it to the words `NotActive` and
+ * `CountdownExpired` (drivers/apc_modbus.c). Both are mapped onto one meaning below.
+ */
+const TIMER_VARIABLE_RE = /(^|\.)timer\.(shutdown|start|reboot)$/;
+
 /** Result of type detection for a NUT variable. */
 export interface TypeDetectResult {
   /** ioBroker state type */
@@ -39,8 +47,8 @@ export interface TypeDetectResult {
   read: true;
   /** Whether the variable is writable via SET VAR */
   write: boolean;
-  /** Parsed value (number, string or boolean) */
-  parsedValue: number | string | boolean;
+  /** Parsed value (number, string or boolean; null for a countdown that is not running) */
+  parsedValue: number | string | boolean | null;
   /**
    * True when the variable name denotes a numeric quantity (carries a unit) but
    * the raw value is not a strict number (garbage / non-finite). The caller
@@ -57,6 +65,11 @@ export interface TypeDetectResult {
  * @param isWritable Whether the variable appears in LIST RW
  */
 export function detectType(varName: string, rawValue: string, isWritable: boolean): TypeDetectResult {
+  // Trim at the boundary: NUT pads some fields (measured on an Eaton Ellipse PRO 1600, whose
+  // device.model reads "Ellipse PRO 1600 " with a trailing space). A padded string would show up
+  // in every UI and break every comparison; the numeric and yes/no parsers trim anyway, so this
+  // only ever changes text values.
+  rawValue = rawValue.trim();
   // driver.flag.* is a NUT-core on/off flag (nut-names.txt: "Flag xxx"), reported by drivers as
   // enabled/disabled or 0/1. Model it as a real boolean instead of dead text. Kept read-only: the
   // only writable one (allow_killpower, ST_FLAG_NUMBER) is a dangerous kill-power switch whose SET
@@ -86,6 +99,18 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
       write: false,
       parsedValue: rawValue,
     };
+  }
+
+  // A countdown that is not running is EMPTY, not "minus one second" — and the apc_modbus wording
+  // must not be discarded as garbage in a numeric field (it would warn on every poll).
+  if (TIMER_VARIABLE_RE.test(varName)) {
+    const idle = rawValue.toLowerCase();
+    if (idle === "notactive" || rawValue === "-1") {
+      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: null };
+    }
+    if (idle === "countdownexpired") {
+      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: 0 };
+    }
   }
 
   if (isKnownString(varName)) {

@@ -236,6 +236,7 @@ const BASE_CONFIG = {
   password: "",
   useTls: false,
   tlsRejectUnauthorized: false,
+  tlsCaFile: "",
   commandTimeout: 5,
   enableCommands: false,
   enableSetVar: false,
@@ -246,6 +247,10 @@ interface Setup {
   internal: Internal;
   stub: StubSurface;
   client: FakeClient;
+  /** The short-lived connection that verifies the credentials (second client the adapter builds). */
+  probe: FakeClient;
+  /** Constructor arguments of every client the adapter built, in order. */
+  clientArgs: unknown[][];
   sm: FakeStateManager;
 }
 
@@ -255,10 +260,18 @@ function setup(config: Partial<typeof BASE_CONFIG> = {}, upsList?: UpsInfo[]): S
   const internal = adapter as unknown as Internal;
   stub.config = { ...BASE_CONFIG, ...config };
   const client = makeFakeClient(upsList);
+  const probe = makeFakeClient(upsList);
+  const clientArgs: unknown[][] = [];
   const sm = makeFakeStateManager();
-  internal.makeClient = () => client as unknown as NutClient;
+  // The adapter builds TWO clients: the live one, and a short-lived connection that verifies the
+  // credentials with LOGIN and is closed again (upsd counts logins — see verifyCredentials).
+  let built = 0;
+  internal.makeClient = (...args: unknown[]) => {
+    clientArgs.push(args);
+    return (built++ === 0 ? client : probe) as unknown as NutClient;
+  };
   internal.makeStateManager = () => sm as unknown as StateManager;
-  return { adapter, internal, stub, client, sm };
+  return { adapter, internal, stub, client, probe, clientArgs, sm };
 }
 
 /**
@@ -368,17 +381,18 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(stub, "info").some(m => m.includes("Reconnected to NUT server"))).toBe(true);
   });
 
-  it("logs in ONCE per connection — LOGIN on the first UPS verifies the credentials for all of them", async () => {
-    // upsd stores USERNAME/PASSWORD without checking; LOGIN is where it verifies them. One LOGIN
-    // per connection is what upsd allows (a second answers ALREADY-LOGGED-IN) and it covers every
-    // UPS read over the same link — the 0.4.5 per-UPS loop was the mistake, not LOGIN itself.
-    const { client, stub, internal } = await setupConnected({ username: "admin", password: "secret" }, [
+  it("verifies ONCE per connection — one LOGIN on the first UPS covers the whole server", async () => {
+    // upsd stores USERNAME/PASSWORD without checking; LOGIN is where it verifies them, and one
+    // LOGIN answers for every UPS of that server. It happens on the throwaway connection, which
+    // is closed right after — a lasting login would sit in upsd's shutdown counter.
+    const { client, probe, stub, internal } = await setupConnected({ username: "admin", password: "secret" }, [
       { name: "ups0", description: "Main" },
       { name: "ups1", description: "Backup" },
     ]);
     expect(client.authenticate).toHaveBeenCalledWith("admin", "secret");
-    expect(client.login).toHaveBeenCalledTimes(1);
-    expect(client.login).toHaveBeenCalledWith("ups0");
+    expect(probe.login).toHaveBeenCalledTimes(1);
+    expect(probe.login).toHaveBeenCalledWith("ups0");
+    expect(probe.destroy).toHaveBeenCalledTimes(1);
     expect(internal.authenticated).toBe(true);
     const started = logsOf(stub, "info").find(m => m.includes("NUT adapter started"));
     expect(started).toContain("logged in as admin");
@@ -403,27 +417,129 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(s.client.destroy).not.toHaveBeenCalled();
   });
 
-  it("refused LOGIN → error names both causes, client destroyed, yellow, NO poll timer", async () => {
+  it("refused credentials → warning names both causes, but reading goes on", async () => {
     const s = setup({ username: "admin", password: "wrong" });
-    s.client.login.mockRejectedValue(new NutError("ACCESS-DENIED"));
+    s.probe.login.mockRejectedValue(new NutError("ACCESS-DENIED"));
     await s.internal.onReady();
     await s.internal.onConnected();
 
-    const error = logsOf(s.stub, "error").find(m => m.includes("Login to NUT server"));
-    expect(error).toContain("wrong password");
-    expect(error).toContain("upsd.users");
-    expect(logsOf(s.stub, "info").some(m => m.includes("adapter is idle"))).toBe(true);
-    expect(s.client.destroy).toHaveBeenCalledTimes(1);
-    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
-    expect(s.stub.timeouts).toHaveLength(0);
+    const warn = logsOf(s.stub, "warn").find(m => m.includes("rejected the credentials"));
+    expect(warn).toContain("wrong password");
+    expect(warn).toContain("upsd.users");
+    expect(logsOf(s.stub, "warn").some(m => m.includes("Reading UPS values continues"))).toBe(true);
+    // Reading needs no login — the live connection stays up, the poll timer is armed and values land.
+    expect(s.client.destroy).not.toHaveBeenCalled();
+    expect(s.stub.timeouts.length).toBeGreaterThan(0);
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 1);
+    // The instance stays GREEN: the connection to the NUT server is up and values are flowing.
+    // An orange instance next to live data would tell the user two contradicting things.
+    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: true, ack: true });
+    // The credentials still went to the live connection: per-command rights work without LOGIN.
+    expect(s.client.authenticate).toHaveBeenCalledWith("admin", "wrong");
+    // And the verification connection is closed again, so upsd's login count stays clean.
+    expect(s.probe.destroy).toHaveBeenCalledTimes(1);
   });
 
-  it("creates command buttons only when authenticated AND enableCommands", async () => {
+  it("warns once about refused credentials, then keeps it at debug until they work again", async () => {
+    // Every reconnect re-checks. Warning each time would fill the log on a flaky link with a
+    // standing configuration problem.
+    const s = setup({ username: "u", password: "p" });
+    s.probe.login.mockRejectedValue(new NutError("ACCESS-DENIED"));
+    await s.internal.onReady();
+    await s.internal.onConnected();
+    await s.internal.onConnected();
+
+    expect(logsOf(s.stub, "warn").filter(m => m.includes("rejected the credentials"))).toHaveLength(1);
+    expect(logsOf(s.stub, "debug").some(m => m.includes("rejected the credentials"))).toBe(true);
+
+    // Corrected — the recovery is worth one line, at the level the complaint went out.
+    s.probe.login.mockResolvedValue(undefined);
+    await s.internal.onConnected();
+    expect(logsOf(s.stub, "info").some(m => m.includes("accepted the credentials"))).toBe(true);
+  });
+
+  it("verifies the credentials on a SEPARATE connection and closes it — never on the live one", async () => {
+    // upsd only releases a login when the connection closes, and a primary upsmon waits for the
+    // login count to drop before shutting down on battery. A monitoring client must not sit in it.
+    const s = setup({ username: "u", password: "p" });
+    await s.internal.onReady();
+    await s.internal.onConnected();
+
+    expect(s.probe.connect).toHaveBeenCalledTimes(1);
+    expect(s.probe.login).toHaveBeenCalledWith("ups0");
+    expect(s.probe.destroy).toHaveBeenCalledTimes(1);
+    expect(s.client.login).not.toHaveBeenCalled();
+    expect(s.client.authenticate).toHaveBeenCalledWith("u", "p");
+  });
+
+  it("the verification connection uses the SAME options as the live one", async () => {
+    // Otherwise the probe takes a different route than production — a different source address on
+    // a multi-homed host, or plaintext where the live connection is encrypted — and its verdict
+    // would say nothing about the connection that actually carries the data.
+    const s = setup({
+      username: "u",
+      password: "p",
+      networkInterface: "10.0.0.9",
+      useTls: true,
+      tlsRejectUnauthorized: true,
+      tlsCaFile: "/etc/nut/ca.pem",
+      commandTimeout: 9,
+    });
+    await s.internal.onReady();
+    await s.internal.onConnected();
+
+    expect(s.clientArgs).toHaveLength(2);
+    const [live, probeOpts] = s.clientArgs.map(args => args[2] as Record<string, unknown>);
+    for (const key of ["localAddress", "commandTimeout", "useTls", "tlsRejectUnauthorized", "tlsCaFile"]) {
+      expect(probeOpts[key]).toEqual(live[key]);
+    }
+    expect(probeOpts.localAddress).toBe("10.0.0.9");
+    expect(probeOpts.commandTimeout).toBe(9000);
+    expect(probeOpts.useTls).toBe(true);
+  });
+
+  it("an unload during discovery stops the verification connection from opening", async () => {
+    // onUnload sweeps testClients before verifyCredentials would add the probe, and the injected
+    // connect deadline refuses to arm during shutdown — the socket would hang until process exit.
+    const s = setup({ username: "u", password: "p" });
+    await s.internal.onReady();
+    s.sm.ensureUpsDevice.mockImplementation(() => {
+      (s.internal as unknown as { unloaded: boolean }).unloaded = true;
+      return Promise.resolve();
+    });
+
+    await s.internal.onConnected();
+
+    expect(s.probe.connect).not.toHaveBeenCalled();
+  });
+
+  it("no credentials configured → no verification connection at all", async () => {
+    const s = setup();
+    await s.internal.onReady();
+    await s.internal.onConnected();
+
+    expect(s.probe.connect).not.toHaveBeenCalled();
+    expect(s.client.authenticate).not.toHaveBeenCalled();
+  });
+
+  it("creates command buttons when the credentials were SENT and enableCommands", async () => {
     const withCmd = await setupConnected({ username: "u", password: "p", enableCommands: true });
     expect(withCmd.sm.createCommandButtons).toHaveBeenCalledWith("ups0", [{ name: "beeper.enable" }]);
 
-    const noAuth = await setupConnected({ enableCommands: true });
-    expect(noAuth.sm.createCommandButtons).not.toHaveBeenCalled();
+    const noCreds = await setupConnected({ enableCommands: true });
+    expect(noCreds.sm.createCommandButtons).not.toHaveBeenCalled();
+  });
+
+  it("keeps the command buttons when LOGIN was refused — instcmds is a separate right", async () => {
+    // upsd checks `instcmds` per command; a user with command rights but no `upsmon` line in
+    // upsd.users cannot LOGIN and would lose every button if the buttons hung on the login.
+    const s = setup({ username: "u", password: "p", enableCommands: true });
+    s.probe.login.mockRejectedValue(new NutError("ACCESS-DENIED"));
+    await s.internal.onReady();
+    await s.internal.onConnected();
+
+    expect(s.sm.createCommandButtons).toHaveBeenCalledWith("ups0", [{ name: "beeper.enable" }]);
   });
 
   it("a failing LIST CMD for one UPS is non-fatal (debug only)", async () => {
@@ -1070,18 +1186,20 @@ describe("onUnload", () => {
     expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
   });
 
-  it("hard-destroys when not authenticated", async () => {
+  it("says goodbye gracefully even without credentials", async () => {
+    // The live connection never carries a LOGIN any more, so the teardown must not depend on one:
+    // upsd answers LOGOUT with "OK Goodbye" either way, and the half-close flushes the last write.
     const s = await setupConnected();
     const callback = vi.fn();
     s.internal.onUnload(callback);
     await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
-    expect(s.client.destroy).toHaveBeenCalledTimes(1);
-    expect(s.client.shutdown).not.toHaveBeenCalled();
+    expect(s.client.shutdown).toHaveBeenCalledTimes(1);
+    expect(s.client.destroy).not.toHaveBeenCalled();
   });
 
   it("calls the callback even when teardown throws", async () => {
     const s = await setupConnected();
-    s.client.destroy.mockImplementation(() => {
+    s.client.shutdown.mockImplementation(() => {
       throw new Error("teardown exploded");
     });
     const callback = vi.fn();
@@ -1261,18 +1379,19 @@ describe("device markers follow a wholesale poll failure", () => {
 });
 
 describe("the whole chain agrees in every state", () => {
-  it("marks the UPSes unreachable when authentication fails on a reconnect", async () => {
+  it("keeps the UPSes readable when the credentials are refused on a reconnect", async () => {
+    // Refused credentials are not a dead end: reading needs no login, so the chain must NOT go
+    // to "0 of 1 reachable" — that would claim the UPS is gone when only the login was rejected.
     const s = await setupConnected({ username: "u", password: "p" });
-    // First connect worked — the UPS is green and counted.
     expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
     s.sm.writeUpsSummary.mockClear();
     s.client.authenticate.mockRejectedValue(new Error("ACCESS-DENIED"));
 
     await s.internal.onConnected();
 
-    expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
-    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
-    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 1);
+    expect(logsOf(s.stub, "warn").some(m => m.includes("Could not send the credentials"))).toBe(true);
   });
 
   it("marks the UPSes unreachable when the encrypted connection fails fatally", async () => {

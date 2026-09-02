@@ -1,4 +1,9 @@
 # Older changes
+## 0.9.0 (2026-08-27)
+
+- New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.
+- Fixed: a UPS kept showing as reachable while the adapter was stopped — it now goes offline there, on installations that were updated as well.
+
 ## 0.8.0 (2026-08-27)
 
 - New: the adapter now reports crashes to the developer — only if error reporting is enabled in the ioBroker diagnostics settings, and only anonymously without personal data.

@@ -1,5 +1,6 @@
 import { authFailureText, type NutClient } from "./nut-client";
 import { coerceCommandTimeoutMs, coerceHost, coercePort, errText, localAddressOf } from "./coerce";
+import { tText, tTextArgs } from "./i18n";
 import type { AdapterConfig, NutClientOptions, NutLogger } from "./types";
 
 /**
@@ -68,7 +69,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
 
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
-          deps.sendTo(obj.from, obj.command, { error: "Host is required" }, obj.callback);
+          deps.sendTo(obj.from, obj.command, { error: tText("testHostRequired") }, obj.callback);
           return;
         }
 
@@ -97,16 +98,13 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           // Every word of the answer is backed by a check on this very connection: "via TLS" only
           // after the handshake, "logged in" only after upsd accepted LOGIN — USERNAME/PASSWORD are
           // merely stored by upsd (server/netuser.c), LOGIN is where it verifies them.
-          const transport = testClient.isTls ? "via TLS" : "unencrypted";
+          // The answer is shown in the admin, so it follows the system language like every other
+          // user-facing text; only the log stays English (fleet rule).
+          const transport = testClient.isTls ? tText("testTls") : tText("testPlain");
           if (username && password) {
             const first = upsList[0];
             if (!first) {
-              deps.sendTo(
-                obj.from,
-                obj.command,
-                { result: `Connected ${transport} — no UPS found; credentials not verified (nothing to log in to)` },
-                obj.callback,
-              );
+              deps.sendTo(obj.from, obj.command, { result: tTextArgs("testConnectedNoUps", transport) }, obj.callback);
             } else {
               await testClient.authenticate(username, password);
               await testClient.login(first.name);
@@ -114,7 +112,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
               deps.sendTo(
                 obj.from,
                 obj.command,
-                { result: `Connected ${transport}, logged in as ${username} — ${upsList.length} UPS(es): ${names}` },
+                { result: tTextArgs("testConnectedLoggedIn", transport, username, upsList.length, names) },
                 obj.callback,
               );
             }
@@ -122,7 +120,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
             deps.sendTo(
               obj.from,
               obj.command,
-              { result: `Connected ${transport} — ${upsList.length} UPS(es): ${names} (no credentials configured)` },
+              { result: tTextArgs("testConnectedNoCreds", transport, upsList.length, names) },
               obj.callback,
             );
           }

@@ -1,6 +1,6 @@
 import type * as utils from "@iobroker/adapter-core";
-import { tName, type I18nKey } from "./i18n";
-import { ALL_FLAG_KEYS, FLAG_META, getDisplayString, parseStatus } from "./status-parser";
+import { tDesc, tName, tRaw, tText, type I18nKey } from "./i18n";
+import { ALL_FLAG_KEYS, FLAG_META, getDisplayEntries, parseStatus } from "./status-parser";
 import { detectStates, detectType } from "./type-detector";
 import type { NutCommand, NutVariable } from "./types";
 
@@ -162,6 +162,134 @@ export function nutVarToReadableName(nutVarName: string): string {
   return leaf.replace(/\./g, " ").replace(/^./, c => c.toUpperCase());
 }
 
+/**
+ * Labels for the values of an enum datapoint (`common.states`). ioBroker has no translation
+ * object there — a states map is plain strings — so these follow the system language at write
+ * time, like every other user-facing label the adapter produces.
+ */
+const VALUE_I18N: Record<string, I18nKey> = {
+  charging: "valCharging",
+  discharging: "valDischarging",
+  floating: "valFloating",
+  resting: "valResting",
+  enabled: "valEnabled",
+  disabled: "valDisabled",
+  muted: "valMuted",
+  on: "valOn",
+  off: "valOff",
+  good: "valGood",
+  "warning-low": "valWarningLow",
+  "warning-high": "valWarningHigh",
+  "critical-low": "valCriticalLow",
+  "critical-high": "valCriticalHigh",
+  "out-of-range": "valOutOfRange",
+  open: "valOpen",
+  closed: "valClosed",
+  active: "valActive",
+  inactive: "valInactive",
+  ups: "valUps",
+  pdu: "valPdu",
+  scd: "valScd",
+  psu: "valPsu",
+  ats: "valAts",
+};
+
+/**
+ * Explanations for the NUT variables where the name alone leaves a user guessing. Deliberately
+ * NOT one per variable: `device.serial` explains itself, and an invented sentence is worse than
+ * none (fleet rule — `common.desc` stays empty where there is nothing to explain).
+ */
+const VAR_DESC_I18N: Record<string, I18nKey> = {
+  "battery.charge": "descBatteryCharge",
+  "battery.charge.low": "descBatteryChargeLow",
+  "battery.runtime": "descBatteryRuntime",
+  "battery.type": "descBatteryType",
+  "battery.charger.status": "descBatteryChargerStatus",
+  "device.type": "descDeviceType",
+  "driver.flag.ignorelb": "descDriverFlagIgnorelb",
+  "driver.parameter.pollfreq": "descDriverParameterPollfreq",
+  "driver.parameter.pollinterval": "descDriverParameterPollinterval",
+  "input.transfer.high": "descInputTransferHigh",
+  "input.transfer.low": "descInputTransferLow",
+  "input.voltage": "descInputVoltage",
+  "input.frequency": "descInputFrequency",
+  "input.voltage.extended": "descInputVoltageExtended",
+  "output.voltage": "descOutputVoltage",
+  "output.voltage.nominal": "descOutputVoltageNominal",
+  "output.frequency.nominal": "descOutputFrequencyNominal",
+  "ups.status": "descUpsStatus",
+  "ups.load": "descUpsLoad",
+  "ups.power": "descUpsPower",
+  "ups.realpower": "descUpsRealpower",
+  "ups.power.nominal": "descUpsPowerNominal",
+  "ups.delay.shutdown": "descUpsDelayShutdown",
+  "ups.delay.start": "descUpsDelayStart",
+  "ups.timer.shutdown": "descUpsTimerShutdown",
+  "ups.timer.start": "descUpsTimerStart",
+  "ups.beeper.status": "descUpsBeeperStatus",
+  "ups.temperature": "descUpsTemperature",
+  "outlet.switchable": "descOutletSwitchable",
+  "outlet.status": "descOutletStatus",
+  "ambient.temperature": "descAmbientTemperature",
+  "ambient.humidity": "descAmbientHumidity",
+};
+
+/** Explanations for the channels — what kind of readings live below them. */
+const CHANNEL_DESC_I18N: Record<string, I18nKey> = {
+  battery: "descChannelBattery",
+  device: "descChannelDevice",
+  driver: "descChannelDriver",
+  input: "descChannelInput",
+  output: "descChannelOutput",
+  ups: "descChannelUps",
+  outlet: "descChannelOutlet",
+  ambient: "descChannelAmbient",
+  status: "descChannelStatus",
+  commands: "descChannelCommands",
+  info: "descChannelUpsInfo",
+};
+
+/**
+ * The explanation for a NUT variable, or undefined when the name says it all. Same
+ * base-name collapse as {@link varTranslation} so three-phase and multi-sensor variants
+ * reuse the explanation of their base variable.
+ *
+ * @param nutVarName NUT variable name
+ */
+function varDescription(nutVarName: string): LocalizedName | undefined {
+  const key = VAR_DESC_I18N[nutVarName];
+  if (key) {
+    return tDesc(key);
+  }
+  const generic = nutVarName.replace(/\.(\d+|L\d(-(L\d|N))?|N)\./, ".");
+  const genericKey = VAR_DESC_I18N[generic];
+  return genericKey ? tDesc(genericKey) : undefined;
+}
+
+/** Severity level → its label key (0 = OK … 4 = emergency). */
+const SEVERITY_I18N: I18nKey[] = ["sev0", "sev1", "sev2", "sev3", "sev4"];
+
+/**
+ * Translate the labels of a value list; a value without a catalog entry keeps the server's own
+ * token as its label.
+ *
+ * @param states The value list as detected from the NUT variable
+ */
+function localizeStates(states: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!states) {
+    return undefined;
+  }
+  const out: Record<string, string> = {};
+  for (const [value, fallback] of Object.entries(states)) {
+    const key = VALUE_I18N[value];
+    out[value] = key ? tText(key) : fallback;
+  }
+  return out;
+}
+
+/** LIST UPS says this when the NUT server has no `desc` configured for a UPS in ups.conf. */
+const NO_DESCRIPTION = "Description unavailable";
+
 /** Manages creation, update and cleanup of ioBroker objects and states for NUT UPS devices. */
 export class StateManager {
   private readonly adapter: utils.AdapterInstance;
@@ -194,12 +322,16 @@ export class StateManager {
    */
   async ensureUpsDevice(upsName: string, description: string): Promise<void> {
     this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
+    // The server's own text, wrapped as a translation object like every other name (core-team
+    // line, #15). Without a `desc` in ups.conf the server answers a placeholder — the UPS name
+    // is the better label then, and the first poll replaces it with manufacturer + model.
+    const label = description && description !== NO_DESCRIPTION ? description : upsName;
     await this.adapter.extendObject(
       upsName,
       {
         type: "device",
         common: {
-          name: description,
+          name: tRaw(label),
           statusStates: {
             onlineId: `${this.adapter.namespace}.${upsName}.info.reachable`,
           },
@@ -221,6 +353,7 @@ export class StateManager {
       read: true,
       write: false,
       name: tName("upsReachable"),
+      desc: tDesc("descUpsReachable"),
       def: false,
     });
 
@@ -233,6 +366,7 @@ export class StateManager {
       read: true,
       write: false,
       name: tName("upsLastNotify"),
+      desc: tDesc("descUpsLastNotify"),
     });
 
     await this.cleanupDeprecatedInfoStates(upsName);
@@ -257,7 +391,7 @@ export class StateManager {
     description: string,
     variables: Array<{ name: string; value: string }>,
   ): Promise<void> {
-    if (description && description !== "Description unavailable") {
+    if (description && description !== NO_DESCRIPTION) {
       return;
     }
     const mfr = variables.find(v => v.name === "device.mfr")?.value?.trim();
@@ -272,7 +406,7 @@ export class StateManager {
     }
 
     this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
-    await this.adapter.extendObject(upsName, { common: { name } });
+    await this.adapter.extendObject(upsName, { common: { name: tRaw(name) } });
     this.fallbackNames.set(upsName, name);
   }
 
@@ -285,11 +419,12 @@ export class StateManager {
   async ensureChannel(upsName: string, channelName: string): Promise<void> {
     const id = `${upsName}.${channelName}`;
     const i18nKey = CHANNEL_I18N[channelName];
-    const name: LocalizedName = i18nKey ? tName(i18nKey) : channelName;
+    const name: LocalizedName = i18nKey ? tName(i18nKey) : tRaw(channelName);
+    const descKey = CHANNEL_DESC_I18N[channelName];
 
     await this.ensureObject(id, {
       type: "channel",
-      common: { name },
+      common: descKey ? { name, desc: tDesc(descKey) } : { name },
       native: {},
     });
   }
@@ -337,14 +472,15 @@ export class StateManager {
 
       const stateId = nutVarToStateId(upsName, v.name);
       this.nutNames.set(stateId, v.name);
-      const states = detectStates(v.name);
+      const states = localizeStates(detectStates(v.name));
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: varTranslation(v.name) ?? nutVarToReadableName(v.name),
+        name: varTranslation(v.name) ?? tRaw(nutVarToReadableName(v.name)),
+        desc: varDescription(v.name),
         states,
       });
 
@@ -370,7 +506,14 @@ export class StateManager {
 
     await this.ensureAndSet(
       `${upsName}.status.raw`,
-      { type: "string", role: "text", read: true, write: false, name: tName("statusRaw") },
+      {
+        type: "string",
+        role: "text",
+        read: true,
+        write: false,
+        name: tName("statusRaw"),
+        desc: tDesc("descStatusRaw"),
+      },
       result.raw,
     );
 
@@ -382,15 +525,25 @@ export class StateManager {
         read: true,
         write: false,
         name: tName("statusSeverity"),
-        states: { 0: "OK", 1: "Info", 2: "Warning", 3: "Critical", 4: "Emergency" },
+        desc: tDesc("descStatusSeverity"),
+        states: Object.fromEntries(SEVERITY_I18N.map((key, level) => [level, tText(key)])),
       },
       result.severity,
     );
 
     await this.ensureAndSet(
       `${upsName}.status.display`,
-      { type: "string", role: "text", read: true, write: false, name: tName("statusDisplay") },
-      getDisplayString(rawStatus),
+      {
+        type: "string",
+        role: "text",
+        read: true,
+        write: false,
+        name: tName("statusDisplay"),
+        desc: tDesc("descStatusDisplay"),
+      },
+      getDisplayEntries(rawStatus)
+        .map(entry => (entry.i18nKey ? tText(entry.i18nKey) : entry.token))
+        .join(", "),
     );
 
     for (const flagKey of ALL_FLAG_KEYS) {
@@ -402,7 +555,8 @@ export class StateManager {
           role: meta?.role ?? "indicator",
           read: true,
           write: false,
-          name: meta ? tName(meta.i18nKey) : flagKey,
+          name: meta ? tName(meta.i18nKey) : tRaw(flagKey),
+          desc: meta ? tDesc(meta.descKey) : undefined,
         },
         result.flags[flagKey],
       );
@@ -427,7 +581,12 @@ export class StateManager {
         role: "button",
         read: false,
         write: true,
-        name: cmdI18nKey ? tName(cmdI18nKey) : cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase()),
+        name: cmdI18nKey ? tName(cmdI18nKey) : tRaw(cmd.name.replace(/\./g, " ").replace(/^./, c => c.toUpperCase())),
+        // Every command the catalog knows gets its explanation; an unmapped one keeps none —
+        // the adapter cannot know what a driver-private command does.
+        desc: cmdI18nKey
+          ? tDesc(`desc${cmdI18nKey.charAt(0).toUpperCase()}${cmdI18nKey.slice(1)}` as I18nKey)
+          : undefined,
         def: false,
       });
     }
@@ -646,7 +805,11 @@ export class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.setObjectNotExistsAsync(id, {
+    // extendObject, not setObjectNotExists: a channel created by an older version keeps whatever
+    // name that version wrote, and "create if missing" would never correct it — the adapter owns
+    // the name (design #31), so it has to reach EXISTING trees too. Once per runtime per id
+    // (createdIds), so a steady poll costs no extra write.
+    await this.adapter.extendObject(id, {
       type: obj.type,
       common: obj.common as ioBroker.ObjectCommon,
       native: obj.native,
@@ -662,6 +825,8 @@ export class StateManager {
       read: boolean;
       write: boolean;
       name: LocalizedName;
+      /** Short explanation; omitted where the name already says everything. */
+      desc?: LocalizedName;
       unit?: string;
       def?: boolean;
       states?: Record<string, string>;

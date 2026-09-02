@@ -46,7 +46,9 @@ const KNOWN_STRING_SUFFIXES = /* @__PURE__ */ new Set([
   "groupid"
 ]);
 const KNOWN_STRING_PREFIXES = ["driver.parameter.port", "driver.parameter.synchronous", "driver.version."];
+const TIMER_VARIABLE_RE = /(^|\.)timer\.(shutdown|start|reboot)$/;
 function detectType(varName, rawValue, isWritable) {
+  rawValue = rawValue.trim();
   if (varName.startsWith("driver.flag.")) {
     const flag = parseFlagValue(rawValue);
     if (flag !== void 0) {
@@ -67,6 +69,15 @@ function detectType(varName, rawValue, isWritable) {
       write: false,
       parsedValue: rawValue
     };
+  }
+  if (TIMER_VARIABLE_RE.test(varName)) {
+    const idle = rawValue.toLowerCase();
+    if (idle === "notactive" || rawValue === "-1") {
+      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: null };
+    }
+    if (idle === "countdownexpired") {
+      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: 0 };
+    }
   }
   if (isKnownString(varName)) {
     return {

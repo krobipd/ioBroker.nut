@@ -53,6 +53,9 @@ class NutAdapter extends utils.Adapter {
   failedUps = /* @__PURE__ */ new Set();
   discoveredUps = /* @__PURE__ */ new Map();
   authenticated = false;
+  credentialsSent = false;
+  /** Credentials were reported as refused — warn once, then debug until they work again. */
+  warnedCredentialsRejected = false;
   enrichedUps = /* @__PURE__ */ new Set();
   testClients = /* @__PURE__ */ new Set();
   subscribed = false;
@@ -75,6 +78,30 @@ class NutAdapter extends utils.Adapter {
   // onConnected and poll can run without sockets or a js-controller.
   makeClient = (...args) => new import_nut_client.NutClient(...args);
   makeStateManager = () => new import_state_manager.StateManager(this);
+  /**
+   * Connection options for every client this adapter builds — the live one and the short-lived
+   * verification connection. One source, so the probe really exercises the same path (source bind
+   * on a multi-homed host, TLS settings, command deadline).
+   */
+  clientOptions() {
+    const config = this.nutConfig();
+    return {
+      localAddress: (0, import_coerce.localAddressOf)(config.networkInterface),
+      commandTimeout: (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout),
+      useTls: !!config.useTls,
+      tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+      tlsCaFile: typeof config.tlsCaFile === "string" ? config.tlsCaFile : "",
+      // Inject the adapter-managed timers so the client's command/reconnect timeouts are
+      // tracked and auto-cleared on unload (no native setTimeout leaks).
+      setTimer: (cb, ms) => this.setTimeout(cb, ms),
+      clearTimer: (h) => {
+        if (h != null) {
+          this.clearTimeout(h);
+        }
+      },
+      logger: this.nutLogger
+    };
+  }
   // Single source for the {debug,warn,info} logger passed to the NUT client, the test-client
   // factory and the message router — avoids rebuilding the same wrapper at three call sites.
   get nutLogger() {
@@ -167,23 +194,7 @@ class NutAdapter extends utils.Adapter {
       const port = (0, import_coerce.coercePort)(config.port);
       const commandTimeoutMs = (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout);
       this.log.debug(`commandTimeout: raw=${JSON.stringify(config.commandTimeout)} resolved=${commandTimeoutMs}ms`);
-      const localAddress = (0, import_coerce.localAddressOf)(config.networkInterface);
-      this.client = this.makeClient(host, port, {
-        localAddress,
-        commandTimeout: commandTimeoutMs,
-        useTls: !!config.useTls,
-        tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
-        tlsCaFile: typeof config.tlsCaFile === "string" ? config.tlsCaFile : "",
-        // Inject the adapter-managed timers so the client's command/reconnect timeouts are
-        // tracked and auto-cleared on unload (no native setTimeout leaks).
-        setTimer: (cb, ms) => this.setTimeout(cb, ms),
-        clearTimer: (h) => {
-          if (h != null) {
-            this.clearTimeout(h);
-          }
-        },
-        logger: this.nutLogger
-      });
+      this.client = this.makeClient(host, port, this.clientOptions());
       this.client.setOnConnect(() => {
         void this.onConnected().catch((err) => this.log.error(`onConnected failed: ${(0, import_coerce.errText)(err)}`));
       });
@@ -195,9 +206,10 @@ class NutAdapter extends utils.Adapter {
   }
   /**
    * Idempotent post-connect setup, run on the initial connect AND every reconnect (the client's
-   * single retry loop drives both): discover UPSes, (re-)authenticate, refresh command buttons,
-   * poll, and arm the poll timer + subscription once. Auth failure goes yellow and stops the
-   * loop via destroy(). Making "initial == reconnect" one path keeps the two from drifting.
+   * single retry loop drives both): discover UPSes, send the credentials + verify them, refresh
+   * command buttons, poll, and arm the poll timer + subscription once. Rejected credentials warn
+   * but never stop the polling — reading needs no login. Making "initial == reconnect" one path
+   * keeps the two from drifting.
    */
   async onConnected() {
     var _a, _b;
@@ -211,9 +223,7 @@ class NutAdapter extends utils.Adapter {
     try {
       this.enrichedUps.clear();
       await this.discover();
-      if (!await this.authenticateIfConfigured(host, port)) {
-        return;
-      }
+      await this.verifyCredentials(host, port);
       await this.setupCommandButtons();
       await this.poll();
       this.armPollTimer(config.pollInterval, pollSec);
@@ -226,7 +236,7 @@ class NutAdapter extends utils.Adapter {
         this.log.info(`Reconnected to NUT server ${host}:${port} (${transport}) \u2014 ${this.discoveredUps.size} UPS(es)`);
       } else {
         this.everConnected = true;
-        const authStatus = this.authenticated ? `logged in as ${config.username}` : "no credentials";
+        const authStatus = this.credentialsSent ? this.authenticated ? `logged in as ${config.username}` : `credentials for ${config.username} rejected \u2014 reading only` : "no credentials";
         this.log.info(
           `NUT adapter started \u2014 ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus}, ${transport})`
         );
@@ -237,57 +247,91 @@ class NutAdapter extends utils.Adapter {
     }
   }
   /**
-   * Log in when credentials are configured. USERNAME/PASSWORD alone prove nothing: upsd only
-   * stores them and checks them on LOGIN, SET, INSTCMD and FSD (server/netuser.c, user.c). So
-   * the adapter LOGINs on the first UPS of the connection — ONE LOGIN per connection is what
-   * upsd allows (a second answers ALREADY-LOGGED-IN), and it verifies the credentials for the
-   * whole connection; every other UPS is read and written over the same, now verified, link.
-   * The NUT user therefore needs an `upsmon secondary` (or `upsmon primary`) line in upsd.users;
-   * a user with only `actions`/`instcmds` cannot LOGIN and is reported as rejected.
+   * Send the credentials on the live connection and verify them on a SEPARATE, short-lived one.
+   *
+   * `USERNAME`/`PASSWORD` are only stored by upsd (`server/netuser.c`) — they prove nothing. The
+   * command that really checks them is `LOGIN` (`user_checkaction`, `user.c`), and that is what
+   * the verification connection sends, so a wrong password or a missing `upsmon secondary`
+   * /`upsmon primary` line in `upsd.users` is reported instead of surfacing much later on the
+   * first write.
+   *
+   * ⚠️ Why the login does NOT stay on the live connection (measured in the NUT 2.8.5 sources):
+   * upsd counts every login (`ups->numlogins`, `server/netuser.c`) and only decrements it when the
+   * connection closes (`declogins` in `server/upsd.c`, called from `client_disconnect` — `LOGOUT`
+   * itself just ends the session). A PRIMARY `upsmon` reads that counter during a power failure
+   * and waits until nothing but its own login is left before shutting the machine down, up to
+   * `HOSTSYNC` seconds (`clients/upsmon.c`). A permanently logged-in monitoring client would delay
+   * that shutdown on battery. The official read-only tools (`upsc`, `upscmd`, `upsrw`) never send
+   * `LOGIN` for the same reason; only `upsmon` does, because there the login IS the signal.
+   *
+   * A rejection never stops the adapter: reading needs no login at all, so the poll keeps running
+   * and only the log, the start line and the connection test say that the credentials were refused.
    *
    * @param host NUT server host (for logging)
    * @param port NUT server port (for logging)
-   * @returns true to continue setup; false when authentication failed and the client was destroyed
    */
-  async authenticateIfConfigured(host, port) {
+  async verifyCredentials(host, port) {
     var _a;
     this.authenticated = false;
+    this.credentialsSent = false;
     const config = this.nutConfig();
     if (!config.username || !config.password || !this.client) {
-      return true;
+      return;
+    }
+    try {
+      await this.client.authenticate(config.username, config.password);
+      this.credentialsSent = true;
+    } catch (err) {
+      this.log.warn(`Could not send the credentials to NUT server ${host}:${port}: ${(0, import_coerce.errText)(err)}`);
+      return;
     }
     const first = this.discoveredUps.values().next().value;
     if (!first) {
       this.log.warn(
         `Credentials are configured but NUT server ${host}:${port} lists no UPS \u2014 nothing to log in to, credentials not verified`
       );
-      return true;
+      return;
     }
+    if (this.unloaded) {
+      return;
+    }
+    const probe = this.makeClient(host, port, this.clientOptions());
+    this.testClients.add(probe);
     try {
-      await this.client.authenticate(config.username, config.password);
-      await this.client.login(first.name);
+      await probe.connect();
+      await probe.authenticate(config.username, config.password);
+      await probe.login(first.name);
       this.authenticated = true;
-      this.log.debug(`Logged in to NUT server ${host}:${port} as ${config.username} (LOGIN ${first.name})`);
-      return true;
+      if (this.warnedCredentialsRejected) {
+        this.warnedCredentialsRejected = false;
+        this.log.info(`NUT server ${host}:${port} accepted the credentials for ${config.username} again`);
+      }
+      this.log.debug(`Credentials for ${config.username} verified on ${host}:${port} (LOGIN ${first.name})`);
     } catch (err) {
-      this.log.error(
-        `Login to NUT server ${host}:${port} as ${config.username} failed: ${(_a = (0, import_nut_client.authFailureText)(err)) != null ? _a : (0, import_coerce.errText)(err)}`
-      );
-      this.log.info(
-        `Login required \u2014 adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`
-      );
-      this.client.destroy();
-      await this.setStateChangedAsync("info.connection", { val: false, ack: true });
-      await this.markAllUpsUnreachable();
-      return false;
+      const message = `NUT server ${host}:${port} rejected the credentials for ${config.username}: ${(_a = (0, import_nut_client.authFailureText)(err)) != null ? _a : (0, import_coerce.errText)(err)}`;
+      if (this.warnedCredentialsRejected) {
+        this.log.debug(message);
+      } else {
+        this.warnedCredentialsRejected = true;
+        this.log.warn(message);
+        this.log.warn(
+          "Reading UPS values continues \u2014 it needs no login. Switching a UPS or writing a variable will be refused until the credentials are corrected."
+        );
+      }
+    } finally {
+      probe.destroy();
+      this.testClients.delete(probe);
     }
   }
   /**
-   * Create instant-command button states for every discovered UPS. Only runs when we authenticated
-   * and commands are enabled; each UPS is best-effort.
+   * Create instant-command button states for every discovered UPS. Runs whenever the credentials
+   * were sent and commands are enabled — NOT only after a successful LOGIN: upsd checks a user's
+   * `instcmds` right per command, and a user with command rights but without an `upsmon` line
+   * cannot LOGIN yet may still switch the UPS (`docs/man/upsd.users.txt`). Each UPS is
+   * best-effort; a genuinely unauthorised command is refused by the server and logged.
    */
   async setupCommandButtons() {
-    if (!this.authenticated || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+    if (!this.credentialsSent || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
       return;
     }
     for (const [upsId, ups] of this.discoveredUps) {
@@ -708,18 +752,14 @@ class NutAdapter extends utils.Adapter {
     }
   }
   onUnload(callback) {
-    var _a, _b;
+    var _a;
     try {
       this.unloaded = true;
       if (this.pollTimer) {
         this.clearTimeout(this.pollTimer);
         this.pollTimer = void 0;
       }
-      if (this.authenticated) {
-        (_a = this.client) == null ? void 0 : _a.shutdown();
-      } else {
-        (_b = this.client) == null ? void 0 : _b.destroy();
-      }
+      (_a = this.client) == null ? void 0 : _a.shutdown();
       for (const tc of this.testClients) {
         tc.destroy();
       }

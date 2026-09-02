@@ -21,57 +21,56 @@ __export(status_parser_exports, {
   ALL_FLAG_KEYS: () => ALL_FLAG_KEYS,
   FLAG_META: () => FLAG_META,
   STATUS_FLAGS: () => STATUS_FLAGS,
-  getDisplayString: () => getDisplayString,
+  getDisplayEntries: () => getDisplayEntries,
   parseStatus: () => parseStatus
 });
 module.exports = __toCommonJS(status_parser_exports);
 const STATUS_CATALOG = [
-  { token: "OL", flag: "online", label: "On line power", i18nKey: "flagOnline", role: "indicator" },
-  { token: "OB", flag: "onBattery", label: "On Battery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
-  { token: "LB", flag: "lowBattery", label: "Low Battery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
-  { token: "HB", flag: "highBattery", label: "High Battery", i18nKey: "flagHighBattery", role: "indicator" },
+  { token: "OL", flag: "online", i18nKey: "flagOnline", role: "indicator" },
+  { token: "OB", flag: "onBattery", i18nKey: "flagOnBattery", role: "indicator.alarm" },
+  { token: "LB", flag: "lowBattery", i18nKey: "flagLowBattery", role: "indicator.lowbat" },
+  { token: "HB", flag: "highBattery", i18nKey: "flagHighBattery", role: "indicator" },
   {
     token: "RB",
     flag: "replaceBattery",
-    label: "Replace Battery",
     i18nKey: "flagReplaceBattery",
     role: "indicator.maintenance"
   },
-  { token: "CHRG", flag: "charging", label: "Charging", i18nKey: "flagCharging", role: "indicator" },
-  { token: "DISCHRG", flag: "discharging", label: "Discharging", i18nKey: "flagDischarging", role: "indicator" },
-  { token: "BYPASS", flag: "bypass", label: "Bypass", i18nKey: "flagBypass", role: "indicator" },
-  { token: "CAL", flag: "calibrating", label: "Calibrating", i18nKey: "flagCalibrating", role: "indicator" },
-  { token: "OFF", flag: "off", label: "Off", i18nKey: "flagOff", role: "indicator" },
-  { token: "OVER", flag: "overloaded", label: "Overloaded", i18nKey: "flagOverloaded", role: "indicator.alarm" },
-  { token: "TRIM", flag: "trimming", label: "Trimming", i18nKey: "flagTrimming", role: "indicator" },
-  { token: "BOOST", flag: "boosting", label: "Boosting", i18nKey: "flagBoosting", role: "indicator" },
+  { token: "CHRG", flag: "charging", i18nKey: "flagCharging", role: "indicator" },
+  { token: "DISCHRG", flag: "discharging", i18nKey: "flagDischarging", role: "indicator" },
+  { token: "BYPASS", flag: "bypass", i18nKey: "flagBypass", role: "indicator" },
+  { token: "CAL", flag: "calibrating", i18nKey: "flagCalibrating", role: "indicator" },
+  { token: "OFF", flag: "off", i18nKey: "flagOff", role: "indicator" },
+  { token: "OVER", flag: "overloaded", i18nKey: "flagOverloaded", role: "indicator.alarm" },
+  { token: "TRIM", flag: "trimming", i18nKey: "flagTrimming", role: "indicator" },
+  { token: "BOOST", flag: "boosting", i18nKey: "flagBoosting", role: "indicator" },
   {
     token: "FSD",
     flag: "forcedShutdown",
-    label: "Forced Shutdown",
     i18nKey: "flagForcedShutdown",
     role: "indicator.alarm"
   },
-  { token: "ALARM", flag: "alarm", label: "Alarm", i18nKey: "flagAlarm", role: "indicator.alarm" },
-  { token: "WAIT", flag: "waiting", label: "Waiting", i18nKey: "flagWaiting", role: "indicator" },
-  { token: "ECO", flag: "ecoMode", label: "ECO Mode", i18nKey: "flagEcoMode", role: "indicator" },
-  { token: "TEST", flag: "testing", label: "Testing", i18nKey: "flagTesting", role: "indicator" },
-  { token: "OVERHEAT", flag: "overheat", label: "Overheated", i18nKey: "flagOverheat", role: "indicator.alarm" }
+  { token: "ALARM", flag: "alarm", i18nKey: "flagAlarm", role: "indicator.alarm" },
+  { token: "WAIT", flag: "waiting", i18nKey: "flagWaiting", role: "indicator" },
+  { token: "ECO", flag: "ecoMode", i18nKey: "flagEcoMode", role: "indicator" },
+  { token: "TEST", flag: "testing", i18nKey: "flagTesting", role: "indicator" },
+  { token: "OVERHEAT", flag: "overheat", i18nKey: "flagOverheat", role: "indicator.alarm" }
 ];
 const STATUS_ALIASES = {
   HE: "ECO"
 };
 const STATUS_FLAGS = {};
-const DISPLAY_LABELS = {};
 const FLAG_META = {};
 for (const d of STATUS_CATALOG) {
   STATUS_FLAGS[d.token] = d.flag;
-  DISPLAY_LABELS[d.token] = d.label;
-  FLAG_META[d.flag] = { i18nKey: d.i18nKey, role: d.role };
+  FLAG_META[d.flag] = {
+    i18nKey: d.i18nKey,
+    descKey: `desc${d.i18nKey.charAt(0).toUpperCase()}${d.i18nKey.slice(1)}`,
+    role: d.role
+  };
 }
 for (const [alias, token] of Object.entries(STATUS_ALIASES)) {
   STATUS_FLAGS[alias] = STATUS_FLAGS[token];
-  DISPLAY_LABELS[alias] = DISPLAY_LABELS[token];
 }
 const ALL_FLAG_KEYS = STATUS_CATALOG.map((d) => d.flag);
 function parseStatus(rawStatus, chargerStatus) {
@@ -99,11 +98,15 @@ function parseStatus(rawStatus, chargerStatus) {
   const severity = computeSeverity(activeTokens);
   return { raw: rawStatus, flags, severity };
 }
-function getDisplayString(rawStatus) {
-  return rawStatus.trim().split(/\s+/).filter((t) => t.length > 0).map((t) => {
-    var _a;
-    return (_a = DISPLAY_LABELS[t]) != null ? _a : t;
-  }).join(", ");
+const DISPLAY_I18N = {};
+for (const d of STATUS_CATALOG) {
+  DISPLAY_I18N[d.token] = d.i18nKey;
+}
+for (const [alias, token] of Object.entries(STATUS_ALIASES)) {
+  DISPLAY_I18N[alias] = DISPLAY_I18N[token];
+}
+function getDisplayEntries(rawStatus) {
+  return rawStatus.trim().split(/\s+/).filter((t) => t.length > 0).map((token) => DISPLAY_I18N[token] ? { i18nKey: DISPLAY_I18N[token], token } : { token });
 }
 function computeSeverity(tokens) {
   if (tokens.has("FSD")) {
@@ -125,7 +128,7 @@ function computeSeverity(tokens) {
   ALL_FLAG_KEYS,
   FLAG_META,
   STATUS_FLAGS,
-  getDisplayString,
+  getDisplayEntries,
   parseStatus
 });
 //# sourceMappingURL=status-parser.js.map

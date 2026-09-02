@@ -3,6 +3,7 @@ import { vi } from "vitest";
 vi.mock("@iobroker/adapter-core", () => ({
   I18n: {
     getTranslatedObject: vi.fn((key: string) => ({ en: key, de: `${key}_de` })),
+    translate: vi.fn((key: string) => key),
   },
 }));
 
@@ -139,6 +140,17 @@ function createMockAdapter(): {
 // Tests
 // ---------------------------------------------------------------------------
 
+/**
+ * The English text of a name that is written as a translation object (every name the adapter
+ * writes is one — including texts the NUT server supplied, see design #31).
+ *
+ * @param obj The object whose common.name is read
+ */
+function nameEn(obj: { common: { name?: unknown } } | undefined): string | undefined {
+  const name = obj?.common.name;
+  return typeof name === "object" && name !== null ? (name as Record<string, string>).en : (name as string);
+}
+
 describe("StateManager", () => {
   // -----------------------------------------------------------------------
   // Device creation
@@ -191,8 +203,23 @@ describe("StateManager", () => {
 
       await sm.ensureUpsDevice("ups0", "Updated UPS");
 
-      expect(objects.get("ups0")?.common.name).toBe("Updated UPS");
+      expect(nameEn(objects.get("ups0"))).toBe("Updated UPS");
       expect(objects.get("ups0")?.common.custom).toEqual({ "influxdb.0": { enabled: true } });
+    });
+
+    it("writes the server's own text as a translation object, never a bare string", async () => {
+      // Core-team line (#15): common.name is a translation object for every object type. The
+      // text the NUT server supplies has nothing to translate, so it goes under every language.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Rack UPS");
+
+      const name = objects.get("ups0")?.common.name as Record<string, string>;
+      expect(typeof name).toBe("object");
+      expect(Object.keys(name)).toHaveLength(11);
+      expect(name.en).toBe("Rack UPS");
+      expect(name.de).toBe("Rack UPS");
     });
 
     it("should create multiple devices", async () => {
@@ -238,7 +265,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "Ellipse PRO 1600" },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("My Custom UPS");
+      expect(nameEn(objects.get("ups0"))).toBe("My Custom UPS");
     });
 
     it("should update name from mfr+model when description is unavailable", async () => {
@@ -251,7 +278,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "Ellipse PRO 1600 " },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("EATON Ellipse PRO 1600");
+      expect(nameEn(objects.get("ups0"))).toBe("EATON Ellipse PRO 1600");
     });
 
     it("should trim trailing spaces from model", async () => {
@@ -264,7 +291,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "  PRO 1600  " },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("EATON PRO 1600");
+      expect(nameEn(objects.get("ups0"))).toBe("EATON PRO 1600");
     });
 
     it("should use only model when mfr is missing", async () => {
@@ -274,7 +301,7 @@ describe("StateManager", () => {
       await sm.ensureUpsDevice("ups0", "Description unavailable");
       await sm.updateDeviceName("ups0", "Description unavailable", [{ name: "device.model", value: "Smart-UPS 1500" }]);
 
-      expect(objects.get("ups0")?.common.name).toBe("Smart-UPS 1500");
+      expect(nameEn(objects.get("ups0"))).toBe("Smart-UPS 1500");
     });
 
     it("should update name when description is empty", async () => {
@@ -287,7 +314,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "Back-UPS 600" },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("APC Back-UPS 600");
+      expect(nameEn(objects.get("ups0"))).toBe("APC Back-UPS 600");
     });
 
     it("should not update if neither mfr nor model available", async () => {
@@ -297,7 +324,9 @@ describe("StateManager", () => {
       await sm.ensureUpsDevice("ups0", "Description unavailable");
       await sm.updateDeviceName("ups0", "Description unavailable", [{ name: "battery.charge", value: "100" }]);
 
-      expect(objects.get("ups0")?.common.name).toBe("Description unavailable");
+      // Without mfr/model there is nothing better than the UPS name — and the server's
+      // placeholder text must never end up as the device label.
+      expect(nameEn(objects.get("ups0"))).toBe("ups0");
     });
 
     it("overwrites a hand-written device name — the adapter owns it", async () => {
@@ -313,7 +342,7 @@ describe("StateManager", () => {
         { name: "device.model", value: "PRO 1600" },
       ]);
 
-      expect(objects.get("ups0")?.common.name).toBe("EATON PRO 1600");
+      expect(nameEn(objects.get("ups0"))).toBe("EATON PRO 1600");
     });
 
     it("runs the broker round-trip only once per runtime, not on every poll (v0.4.2)", async () => {
@@ -360,21 +389,130 @@ describe("StateManager", () => {
         { name: "device.mfr", value: "Dummy Manufacturer" },
         { name: "device.model", value: "Dummy UPS" },
       ]);
-      expect(objects.get("ups0")?.common.name).toBe("Dummy Manufacturer Dummy UPS");
+      expect(nameEn(objects.get("ups0"))).toBe("Dummy Manufacturer Dummy UPS");
 
       // later poll: the real values arrive → name self-corrects (no freeze)
       await sm.updateDeviceName("ups0", "Description unavailable", [
         { name: "device.mfr", value: "Eaton" },
         { name: "device.model", value: "5PX 1500" },
       ]);
-      expect(objects.get("ups0")?.common.name).toBe("Eaton 5PX 1500");
+      expect(nameEn(objects.get("ups0"))).toBe("Eaton 5PX 1500");
     });
   });
 
   // -----------------------------------------------------------------------
   // Channel creation
   // -----------------------------------------------------------------------
+  describe("user-facing texts follow the system language", () => {
+    it("names the severity levels from the translation catalogue, not in fixed English", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateStatusFlags("ups0", "OL");
+
+      // The stub resolves a key to itself — so a catalogue key here proves the text is looked up
+      // instead of being hard-coded English.
+      expect(objects.get("ups0.status.severity")?.common.states).toEqual({
+        0: "sev0",
+        1: "sev1",
+        2: "sev2",
+        3: "sev3",
+        4: "sev4",
+      });
+    });
+
+    it("writes the readable status line through the catalogue too", async () => {
+      const { adapter, states } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateStatusFlags("ups0", "OL CHRG");
+
+      expect(states.get("ups0.status.display")?.val).toBe("flagOnline, flagCharging");
+    });
+
+    it("keeps a status token the adapter does not know as it came from the server", async () => {
+      const { adapter, states } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateStatusFlags("ups0", "OL VENDORTOKEN");
+
+      expect(states.get("ups0.status.display")?.val).toBe("flagOnline, VENDORTOKEN");
+    });
+  });
+
+  describe("descriptions", () => {
+    it("explains a datapoint whose name leaves a user guessing", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "battery.charge.low", value: "15" }], new Set());
+
+      const desc = objects.get("ups0.battery.charge-low")?.common.desc;
+      expect(typeof desc).toBe("object");
+      expect(desc).toHaveProperty("en");
+      expect(desc).toHaveProperty("de");
+    });
+
+    it("leaves the description empty where the name already says everything", async () => {
+      // An invented sentence is worse than none — the fleet rule keeps desc empty there.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "device.serial", value: "G364T29133" }], new Set());
+
+      expect(objects.get("ups0.device.serial")?.common.desc).toBeUndefined();
+    });
+
+    it("reuses the base explanation for a three-phase variant", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables("ups0", [{ name: "input.L1.voltage", value: "230" }], new Set());
+
+      expect(objects.get("ups0.input.L1-voltage")?.common.desc).toBeDefined();
+    });
+
+    it("explains every status flag and every channel", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateStatusFlags("ups0", "OL");
+
+      expect(objects.get("ups0.status")?.common.desc).toBeDefined();
+      expect(objects.get("ups0.status.online")?.common.desc).toBeDefined();
+      expect(objects.get("ups0.status.severity")?.common.desc).toBeDefined();
+    });
+
+    it("explains a command button", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.createCommandButtons("ups0", [{ name: "beeper.mute" }, { name: "vendor.private" }]);
+
+      expect(objects.get("ups0.commands.beeper-mute")?.common.desc).toBeDefined();
+      // A driver-private command the catalog does not know gets none — nothing to explain.
+      expect(objects.get("ups0.commands.vendor-private")?.common.desc).toBeUndefined();
+    });
+  });
+
   describe("ensureChannel", () => {
+    it("corrects the name of a channel an older version already created", async () => {
+      // Channels used to be written with "create if missing", so a name from an older version
+      // was never touched again — the adapter owns the name (design #31), which only holds if
+      // the write reaches EXISTING trees as well.
+      const { adapter, objects } = createMockAdapter();
+      objects.set("ups0.battery", { type: "channel", common: { name: "battery" }, native: {} });
+      const sm = new StateManager(adapter);
+
+      await sm.ensureChannel("ups0", "battery");
+
+      // The bare string from the old version is gone; the catalogue name (a translation object)
+      // took its place.
+      const name = objects.get("ups0.battery")?.common.name;
+      expect(typeof name).toBe("object");
+      expect(nameEn(objects.get("ups0.battery"))).not.toBe("battery");
+    });
+
     it("should create channel with i18n name", async () => {
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
@@ -389,13 +527,20 @@ describe("StateManager", () => {
       expect(name).toHaveProperty("de");
     });
 
-    it("should use plain name for unknown channels", async () => {
+    it("wraps an unknown channel name as a translation object, never a bare string", async () => {
+      // The server's own word is the only text there is, but common.name must be a translation
+      // object for every object type (core-team line, #15) — so the same text goes under every
+      // language key instead of leaving the object browser with an untranslated name.
       const { adapter, objects } = createMockAdapter();
       const sm = new StateManager(adapter);
 
       await sm.ensureChannel("ups0", "custom");
 
-      expect(objects.get("ups0.custom")?.common.name).toBe("custom");
+      const name = objects.get("ups0.custom")?.common.name as Record<string, string>;
+      expect(typeof name).toBe("object");
+      expect(name.en).toBe("custom");
+      expect(name.de).toBe("custom");
+      expect(Object.keys(name)).toHaveLength(11);
     });
 
     it("should create all standard NUT channels", async () => {
@@ -908,12 +1053,13 @@ describe("StateManager", () => {
       expect(states.get("ups0.battery.charge-low")?.val).toBe(15);
       expect(states.get("ups0.input.voltage")?.val).toBe(221.0);
       expect(states.get("ups0.ups.realpower")?.val).toBe(147);
-      expect(states.get("ups0.ups.timer-shutdown")?.val).toBe(-1);
+      // -1 means "no countdown running" — the datapoint is empty, not minus one second.
+      expect(states.get("ups0.ups.timer-shutdown")?.val).toBeNull();
       expect(states.get("ups0.output.frequency-nominal")?.val).toBe(50);
 
       // Strings — trailing space, leading zeros, hex-looking id, known-string suffix/prefix
       expect(states.get("ups0.battery.type")?.val).toBe("PbAc");
-      expect(states.get("ups0.device.model")?.val).toBe("Ellipse PRO 1600 ");
+      expect(states.get("ups0.device.model")?.val).toBe("Ellipse PRO 1600"); // padding trimmed
       expect(states.get("ups0.ups.status")?.val).toBe("OL");
       expect(states.get("ups0.ups.vendorid")?.val).toBe("0463");
       expect(states.get("ups0.ups.productid")?.val).toBe("ffff");
@@ -1421,7 +1567,14 @@ describe("update migration — changed datapoints are updated in place", () => {
     await sm.updateVariables("ups0", [{ name: "device.type", value: "ups" }], new Set());
 
     const obj = objects.get("ups0.device.type");
-    expect(obj?.common.states).toEqual({ ups: "ups", pdu: "pdu", scd: "scd", psu: "psu", ats: "ats" });
+    // The values stay the NUT tokens; only their LABELS follow the system language.
+    expect(obj?.common.states).toEqual({
+      ups: "valUps",
+      pdu: "valPdu",
+      scd: "valScd",
+      psu: "valPsu",
+      ats: "valAts",
+    });
   });
 });
 

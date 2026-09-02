@@ -1,4 +1,4 @@
-import { ALL_FLAG_KEYS, FLAG_META, getDisplayString, parseStatus, STATUS_FLAGS } from "./status-parser";
+import { ALL_FLAG_KEYS, FLAG_META, getDisplayEntries, parseStatus, STATUS_FLAGS } from "./status-parser";
 
 describe("status-parser", () => {
   // -----------------------------------------------------------------------
@@ -308,6 +308,15 @@ describe("status-parser", () => {
       expect(new Set(ALL_FLAG_KEYS).size).toBe(ALL_FLAG_KEYS.length);
     });
 
+    it("every flag role is an indicator role — the flags are booleans", () => {
+      // The state-role gate cannot resolve `meta?.role ?? "indicator"` statically (it reports the
+      // spot as "please check by hand"). This nails the property instead: a boolean state may
+      // only carry an indicator* role, so every catalogue entry has to be one.
+      for (const flag of ALL_FLAG_KEYS) {
+        expect(FLAG_META[flag].role, `${flag} role`).toMatch(/^indicator(\.|$)/);
+      }
+    });
+
     it("FLAG_META has i18nKey + role for every flag", () => {
       for (const flag of ALL_FLAG_KEYS) {
         expect(FLAG_META[flag], `${flag} meta`).toBeDefined();
@@ -320,45 +329,31 @@ describe("status-parser", () => {
   // -----------------------------------------------------------------------
   // Display string
   // -----------------------------------------------------------------------
-  describe("getDisplayString", () => {
-    it("should convert OL to On line power", () => {
-      expect(getDisplayString("OL")).toBe("On line power");
+  describe("getDisplayEntries", () => {
+    // The readable line is user-facing, so this module hands out KEYS and the caller resolves
+    // them in the system language — the raw token stays as the fallback for an unmapped one.
+    it("maps a known token to its catalogue key", () => {
+      expect(getDisplayEntries("OL")).toEqual([{ i18nKey: "flagOnline", token: "OL" }]);
     });
 
-    it("should convert OL CHRG to On line power, Charging", () => {
-      expect(getDisplayString("OL CHRG")).toBe("On line power, Charging");
+    it("keeps the order of the tokens", () => {
+      expect(getDisplayEntries("OL CHRG").map(e => e.i18nKey)).toEqual(["flagOnline", "flagCharging"]);
     });
 
-    it("should convert OB LB to On Battery, Low Battery", () => {
-      expect(getDisplayString("OB LB")).toBe("On Battery, Low Battery");
+    it("passes an unknown token through without a key", () => {
+      expect(getDisplayEntries("OL UNKNOWN")).toEqual([{ i18nKey: "flagOnline", token: "OL" }, { token: "UNKNOWN" }]);
     });
 
-    it("should pass through unknown tokens", () => {
-      expect(getDisplayString("OL UNKNOWN")).toBe("On line power, UNKNOWN");
+    it("returns nothing for an empty status", () => {
+      expect(getDisplayEntries("")).toEqual([]);
     });
 
-    it("should handle empty string", () => {
-      expect(getDisplayString("")).toBe("");
+    it("resolves the legacy HE alias to the ECO key", () => {
+      expect(getDisplayEntries("HE")).toEqual([{ i18nKey: "flagEcoMode", token: "HE" }]);
     });
 
-    it("should handle OL ECO", () => {
-      expect(getDisplayString("OL ECO")).toBe("On line power, ECO Mode");
-    });
-
-    it("should display legacy HE as ECO Mode", () => {
-      expect(getDisplayString("HE")).toBe("ECO Mode");
-    });
-
-    it("should display WAIT as Waiting", () => {
-      expect(getDisplayString("WAIT")).toBe("Waiting");
-    });
-
-    it("should display TEST as Testing", () => {
-      expect(getDisplayString("TEST")).toBe("Testing");
-    });
-
-    it("should display OVERHEAT as Overheated", () => {
-      expect(getDisplayString("OB OVERHEAT")).toBe("On Battery, Overheated");
+    it("knows the WAIT token", () => {
+      expect(getDisplayEntries("WAIT")).toEqual([{ i18nKey: "flagWaiting", token: "WAIT" }]);
     });
   });
 

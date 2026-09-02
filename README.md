@@ -16,12 +16,13 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 - Dynamic state creation from `LIST VAR` — whatever your UPS reports appears as ioBroker states
 - Proper data types: numeric values as numbers (not strings), with units (V, Hz, A, Ah, %, W, VA, s, °C)
 - Parsed `ups.status` flags as individual booleans (online, onBattery, lowBattery, charging, ...) plus computed severity (0–4)
+- Every data point comes with a short explanation, and status texts, severity levels and selection lists appear in your ioBroker language (11 languages)
 - Instant commands (INSTCMD) via button states — beeper control, load management, self-test
 - Writable variables (SET VAR) — change UPS settings directly from ioBroker
 - Instant updates on UPS events — a writable `notify` trigger state lets upsmon push ONBATT/LOWBATT/SHUTDOWN the moment they happen
 - Persistent TCP connection with automatic reconnect and exponential backoff
 - Network interface selector for multi-homed servers
-- Connection test button in the admin UI
+- Connection test button in the admin UI — it really logs in, and says what it checked
 
 ---
 
@@ -52,20 +53,27 @@ For details and how to disable it, see the [Sentry plugin documentation](https:/
 | **Port**                      | NUT server port                                                                                                                                        | `3493`  |
 | **Network Interface**         | Bind outgoing connections to a specific local IP (optional)                                                                                            | all     |
 | **Poll Interval (s)**         | How often to query the NUT server (2–300)                                                                                                              | `15`    |
-| **Username**                  | NUT username (optional — the adapter logs in with it; needed for commands and writable variables)                                                      | —       |
+| **Username**                  | NUT username (optional — needed for commands and writable variables; the adapter also verifies it once at startup)                                     | —       |
 | **Password**                  | NUT password                                                                                                                                           | —       |
 | **Use TLS (STARTTLS)**        | Encrypt the connection via STARTTLS                                                                                                                    | off     |
 | **Require valid certificate** | Reject self-signed/invalid certificates (only shown when TLS is on)                                                                                    | off     |
 | **CA certificate file**       | PEM file to trust for the strict check — your own certificate authority or the self-signed server certificate (only shown when the strict check is on) | —       |
 
 Use the **Test Connection** button to verify the server is reachable and see discovered UPS devices. With a username
-and password it also logs in, so the result tells you whether the credentials really work — and whether the connection
-is encrypted.
+and password it also logs in and out again, so the result tells you whether the credentials really work — and whether
+the connection is encrypted.
 
-**About the login:** the NUT server only checks a username and password when a client logs in — sending them alone
-proves nothing. The adapter therefore logs in once per connection as soon as credentials are configured. This requires
-an `upsmon secondary` (or `upsmon primary`) line for that user in the server's `upsd.users`; a user that only has
-`actions` or `instcmds` entries cannot log in and is reported as rejected.
+**About the credentials:** the NUT server only _stores_ a username and password when they are sent — it checks them
+when a client logs in. The adapter therefore logs in once at startup, on a short extra connection that is closed again,
+purely to tell you whether the credentials work; the connection test does the same on demand. A login needs an
+`upsmon secondary` (or `upsmon primary`) line for that user in the server's `upsd.users`.
+
+Reading UPS values needs no login at all, so **refused credentials never stop the monitoring**: the adapter logs a
+warning, keeps polling, and only switching a UPS or writing a variable is refused. The instance stays green, because
+the connection to the NUT server is up and the values are current — `info.connection` reports that connection, not the
+credentials. That matches NUT's own tools: `upsc`, `upscmd` and `upsrw` never log in either. The reason the adapter does not simply stay logged in is that the
+server counts logins: during a power failure a primary `upsmon` waits until every other login is gone before it shuts
+its machine down, so a monitoring client sitting in that count would delay the shutdown while running on battery.
 
 **About TLS:** enabling STARTTLS encrypts the connection so your NUT username and password are no longer sent in clear text over the network. With the default settings it protects against passive eavesdropping, but **not** against an active man-in-the-middle, because most NUT servers use a self-signed certificate that cannot be verified. For full protection, configure a certificate the client can validate on the NUT server and enable **Require valid certificate**. The NUT server must be built with TLS support (`upsd` with `CERTFILE`/`CERTPATH`); otherwise the connection test reports a TLS error.
 
@@ -98,33 +106,33 @@ nut2.0.
     │   ├── reachable                  — UPS responds / data is fresh (bool)
     │   └── notify                     — Last upsmon event routed to this UPS (string)
     ├── battery/
-    │   ├── battery.charge             — Battery level (%, number)
-    │   ├── battery.charge-low         — Low battery threshold (%)
-    │   ├── battery.runtime            — Remaining runtime (s)
-    │   ├── battery.type               — Battery chemistry (string)
+    │   ├── charge                     — Battery level (%, number)
+    │   ├── charge-low                 — Low battery threshold (%)
+    │   ├── runtime                    — Remaining runtime (s)
+    │   ├── type                       — Battery chemistry (string)
     │   └── ...
     ├── device/
-    │   ├── device.mfr                 — Manufacturer (string)
-    │   ├── device.model               — Model name (string)
-    │   ├── device.serial              — Serial number (string)
+    │   ├── mfr                        — Manufacturer (string)
+    │   ├── model                      — Model name (string)
+    │   ├── serial                     — Serial number (string)
     │   └── ...
     ├── driver/
-    │   ├── driver.name                — NUT driver name
-    │   ├── driver.version             — Driver version
+    │   ├── name                       — NUT driver name
+    │   ├── version                    — Driver version
     │   └── ...
     ├── input/
-    │   ├── input.voltage              — Input voltage (V, number)
-    │   ├── input.frequency            — Input frequency (Hz, number)
+    │   ├── voltage                    — Input voltage (V, number)
+    │   ├── frequency                  — Input frequency (Hz, number)
     │   └── ...
     ├── output/
-    │   ├── output.voltage             — Output voltage (V, number)
-    │   ├── output.frequency           — Output frequency (Hz, number)
+    │   ├── voltage                    — Output voltage (V, number)
+    │   ├── frequency                  — Output frequency (Hz, number)
     │   └── ...
     ├── ups/
-    │   ├── ups.load                   — UPS load (%, number)
-    │   ├── ups.power                  — Apparent power (VA, number)
-    │   ├── ups.realpower              — Real power (W, number)
-    │   ├── ups.status                 — Raw status string (e.g. "OL CHRG")
+    │   ├── load                       — UPS load (%, number)
+    │   ├── power                      — Apparent power (VA, number)
+    │   ├── realpower                  — Real power (W, number)
+    │   ├── status                     — Raw status string (e.g. "OL CHRG")
     │   └── ...
     ├── status/                        — Parsed status flags
     │   ├── raw                        — Original status string
@@ -210,11 +218,12 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 - Check firewall rules for TCP port 3493
 - Use the Test Connection button in the admin UI
 
-### Login rejected
+### Credentials rejected
 
+- Reading the UPS data continues regardless — only commands and writable variables are affected
 - The NUT server answers the same way for a wrong password and for a user that may not log in — check both
-- The user needs an `upsmon secondary` (or `upsmon primary`) line in the server's `upsd.users`
-- Without a username and password the adapter reads the UPS data without logging in; commands and writable variables then stay unavailable
+- The user needs an `upsmon secondary` (or `upsmon primary`) line in the server's `upsd.users` to be verifiable; a user with only `actions` or `instcmds` entries cannot log in, yet its commands still work
+- Without a username and password the adapter reads the UPS data anonymously; commands and writable variables then stay unavailable
 
 ### Commands not working
 
@@ -229,7 +238,7 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 
 ### States not updating
 
-- Check `info.connection` — if `false`, the connection is down (a rejected login also leaves it `false`)
+- Check `info.connection` — if `false`, the connection to the NUT server is down (rejected credentials do not affect it)
 - Check the ioBroker log for NUT error codes (e.g. `DATA-STALE` means the UPS driver lost contact)
 - Verify the poll interval is appropriate for your setup
 
@@ -241,6 +250,17 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.13.0 (2026-09-02)
+
+- New: every data point now carries a short explanation in your language — what it means, not just what it is called
+- New: status text, severity levels and selection lists are shown in your language instead of English
+- Changed: wrong credentials no longer stop the monitoring — the adapter warns, keeps reading the UPS values, and only refuses commands and writable variables
+- Fixed: during a power failure, machines protected by the same UPS now shut down without waiting for this adapter
+- Fixed: a countdown that is not running is now empty instead of showing "-1 seconds", on every UPS brand
+- Fixed: model and other text values no longer carry the padding some UPS models send along
+- Fixed: channel names from older adapter versions are corrected instead of staying as they were
+- Fixed: the connection test answers in your language now, like the rest of the settings page
+
 ### 0.12.1 (2026-09-02)
 
 - Fixed: the "Test connection" button in the settings stayed silent — clicking it produced no result at all. It answers again, on every instance updated from 0.9.0 or later
@@ -267,11 +287,6 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 
 - New: writable `notify` trigger state — upsmon (or any script) pushes events like ONBATT or SHUTDOWN for an instant refresh, and a matched event also lands on that UPS device (#14)
 - Improved: a password accidentally saved with a stray line break is now rejected cleanly instead of silently breaking the connection to the NUT server
-
-### 0.9.0 (2026-08-27)
-
-- New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.
-- Fixed: a UPS kept showing as reachable while the adapter was stopped — it now goes offline there, on installations that were updated as well.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

@@ -156,6 +156,101 @@ function nutVarToReadableName(nutVarName) {
   const leaf = firstDot >= 0 ? nutVarName.slice(firstDot + 1) : nutVarName;
   return leaf.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase());
 }
+const VALUE_I18N = {
+  charging: "valCharging",
+  discharging: "valDischarging",
+  floating: "valFloating",
+  resting: "valResting",
+  enabled: "valEnabled",
+  disabled: "valDisabled",
+  muted: "valMuted",
+  on: "valOn",
+  off: "valOff",
+  good: "valGood",
+  "warning-low": "valWarningLow",
+  "warning-high": "valWarningHigh",
+  "critical-low": "valCriticalLow",
+  "critical-high": "valCriticalHigh",
+  "out-of-range": "valOutOfRange",
+  open: "valOpen",
+  closed: "valClosed",
+  active: "valActive",
+  inactive: "valInactive",
+  ups: "valUps",
+  pdu: "valPdu",
+  scd: "valScd",
+  psu: "valPsu",
+  ats: "valAts"
+};
+const VAR_DESC_I18N = {
+  "battery.charge": "descBatteryCharge",
+  "battery.charge.low": "descBatteryChargeLow",
+  "battery.runtime": "descBatteryRuntime",
+  "battery.type": "descBatteryType",
+  "battery.charger.status": "descBatteryChargerStatus",
+  "device.type": "descDeviceType",
+  "driver.flag.ignorelb": "descDriverFlagIgnorelb",
+  "driver.parameter.pollfreq": "descDriverParameterPollfreq",
+  "driver.parameter.pollinterval": "descDriverParameterPollinterval",
+  "input.transfer.high": "descInputTransferHigh",
+  "input.transfer.low": "descInputTransferLow",
+  "input.voltage": "descInputVoltage",
+  "input.frequency": "descInputFrequency",
+  "input.voltage.extended": "descInputVoltageExtended",
+  "output.voltage": "descOutputVoltage",
+  "output.voltage.nominal": "descOutputVoltageNominal",
+  "output.frequency.nominal": "descOutputFrequencyNominal",
+  "ups.status": "descUpsStatus",
+  "ups.load": "descUpsLoad",
+  "ups.power": "descUpsPower",
+  "ups.realpower": "descUpsRealpower",
+  "ups.power.nominal": "descUpsPowerNominal",
+  "ups.delay.shutdown": "descUpsDelayShutdown",
+  "ups.delay.start": "descUpsDelayStart",
+  "ups.timer.shutdown": "descUpsTimerShutdown",
+  "ups.timer.start": "descUpsTimerStart",
+  "ups.beeper.status": "descUpsBeeperStatus",
+  "ups.temperature": "descUpsTemperature",
+  "outlet.switchable": "descOutletSwitchable",
+  "outlet.status": "descOutletStatus",
+  "ambient.temperature": "descAmbientTemperature",
+  "ambient.humidity": "descAmbientHumidity"
+};
+const CHANNEL_DESC_I18N = {
+  battery: "descChannelBattery",
+  device: "descChannelDevice",
+  driver: "descChannelDriver",
+  input: "descChannelInput",
+  output: "descChannelOutput",
+  ups: "descChannelUps",
+  outlet: "descChannelOutlet",
+  ambient: "descChannelAmbient",
+  status: "descChannelStatus",
+  commands: "descChannelCommands",
+  info: "descChannelUpsInfo"
+};
+function varDescription(nutVarName) {
+  const key = VAR_DESC_I18N[nutVarName];
+  if (key) {
+    return (0, import_i18n.tDesc)(key);
+  }
+  const generic = nutVarName.replace(/\.(\d+|L\d(-(L\d|N))?|N)\./, ".");
+  const genericKey = VAR_DESC_I18N[generic];
+  return genericKey ? (0, import_i18n.tDesc)(genericKey) : void 0;
+}
+const SEVERITY_I18N = ["sev0", "sev1", "sev2", "sev3", "sev4"];
+function localizeStates(states) {
+  if (!states) {
+    return void 0;
+  }
+  const out = {};
+  for (const [value, fallback] of Object.entries(states)) {
+    const key = VALUE_I18N[value];
+    out[value] = key ? (0, import_i18n.tText)(key) : fallback;
+  }
+  return out;
+}
+const NO_DESCRIPTION = "Description unavailable";
 class StateManager {
   adapter;
   createdIds = /* @__PURE__ */ new Set();
@@ -185,12 +280,13 @@ class StateManager {
    */
   async ensureUpsDevice(upsName, description) {
     this.adapter.log.debug(`ensureUpsDevice: ${upsName} desc='${description}'`);
+    const label = description && description !== NO_DESCRIPTION ? description : upsName;
     await this.adapter.extendObject(
       upsName,
       {
         type: "device",
         common: {
-          name: description,
+          name: (0, import_i18n.tRaw)(label),
           statusStates: {
             onlineId: `${this.adapter.namespace}.${upsName}.info.reachable`
           }
@@ -210,6 +306,7 @@ class StateManager {
       read: true,
       write: false,
       name: (0, import_i18n.tName)("upsReachable"),
+      desc: (0, import_i18n.tDesc)("descUpsReachable"),
       def: false
     });
     await this.ensureState(`${upsName}.info.notify`, {
@@ -217,7 +314,8 @@ class StateManager {
       role: "text",
       read: true,
       write: false,
-      name: (0, import_i18n.tName)("upsLastNotify")
+      name: (0, import_i18n.tName)("upsLastNotify"),
+      desc: (0, import_i18n.tDesc)("descUpsLastNotify")
     });
     await this.cleanupDeprecatedInfoStates(upsName);
   }
@@ -237,7 +335,7 @@ class StateManager {
    */
   async updateDeviceName(upsName, description, variables) {
     var _a, _b, _c, _d;
-    if (description && description !== "Description unavailable") {
+    if (description && description !== NO_DESCRIPTION) {
       return;
     }
     const mfr = (_b = (_a = variables.find((v) => v.name === "device.mfr")) == null ? void 0 : _a.value) == null ? void 0 : _b.trim();
@@ -250,7 +348,7 @@ class StateManager {
       return;
     }
     this.adapter.log.debug(`updateDeviceName ${upsName}: using fallback '${name}' (mfr+model)`);
-    await this.adapter.extendObject(upsName, { common: { name } });
+    await this.adapter.extendObject(upsName, { common: { name: (0, import_i18n.tRaw)(name) } });
     this.fallbackNames.set(upsName, name);
   }
   /**
@@ -262,10 +360,11 @@ class StateManager {
   async ensureChannel(upsName, channelName) {
     const id = `${upsName}.${channelName}`;
     const i18nKey = CHANNEL_I18N[channelName];
-    const name = i18nKey ? (0, import_i18n.tName)(i18nKey) : channelName;
+    const name = i18nKey ? (0, import_i18n.tName)(i18nKey) : (0, import_i18n.tRaw)(channelName);
+    const descKey = CHANNEL_DESC_I18N[channelName];
     await this.ensureObject(id, {
       type: "channel",
-      common: { name },
+      common: descKey ? { name, desc: (0, import_i18n.tDesc)(descKey) } : { name },
       native: {}
     });
   }
@@ -304,14 +403,15 @@ class StateManager {
       }
       const stateId = nutVarToStateId(upsName, v.name);
       this.nutNames.set(stateId, v.name);
-      const states = (0, import_type_detector.detectStates)(v.name);
+      const states = localizeStates((0, import_type_detector.detectStates)(v.name));
       await this.ensureState(stateId, {
         type: detected.type,
         role: detected.role,
         unit: detected.unit,
         read: detected.read,
         write: detected.write,
-        name: (_a = varTranslation(v.name)) != null ? _a : nutVarToReadableName(v.name),
+        name: (_a = varTranslation(v.name)) != null ? _a : (0, import_i18n.tRaw)(nutVarToReadableName(v.name)),
+        desc: varDescription(v.name),
         states
       });
       await this.adapter.setStateChangedAsync(stateId, { val: detected.parsedValue, ack: true });
@@ -334,7 +434,14 @@ class StateManager {
     );
     await this.ensureAndSet(
       `${upsName}.status.raw`,
-      { type: "string", role: "text", read: true, write: false, name: (0, import_i18n.tName)("statusRaw") },
+      {
+        type: "string",
+        role: "text",
+        read: true,
+        write: false,
+        name: (0, import_i18n.tName)("statusRaw"),
+        desc: (0, import_i18n.tDesc)("descStatusRaw")
+      },
       result.raw
     );
     await this.ensureAndSet(
@@ -345,14 +452,22 @@ class StateManager {
         read: true,
         write: false,
         name: (0, import_i18n.tName)("statusSeverity"),
-        states: { 0: "OK", 1: "Info", 2: "Warning", 3: "Critical", 4: "Emergency" }
+        desc: (0, import_i18n.tDesc)("descStatusSeverity"),
+        states: Object.fromEntries(SEVERITY_I18N.map((key, level) => [level, (0, import_i18n.tText)(key)]))
       },
       result.severity
     );
     await this.ensureAndSet(
       `${upsName}.status.display`,
-      { type: "string", role: "text", read: true, write: false, name: (0, import_i18n.tName)("statusDisplay") },
-      (0, import_status_parser.getDisplayString)(rawStatus)
+      {
+        type: "string",
+        role: "text",
+        read: true,
+        write: false,
+        name: (0, import_i18n.tName)("statusDisplay"),
+        desc: (0, import_i18n.tDesc)("descStatusDisplay")
+      },
+      (0, import_status_parser.getDisplayEntries)(rawStatus).map((entry) => entry.i18nKey ? (0, import_i18n.tText)(entry.i18nKey) : entry.token).join(", ")
     );
     for (const flagKey of import_status_parser.ALL_FLAG_KEYS) {
       const meta = import_status_parser.FLAG_META[flagKey];
@@ -363,7 +478,8 @@ class StateManager {
           role: (_a = meta == null ? void 0 : meta.role) != null ? _a : "indicator",
           read: true,
           write: false,
-          name: meta ? (0, import_i18n.tName)(meta.i18nKey) : flagKey
+          name: meta ? (0, import_i18n.tName)(meta.i18nKey) : (0, import_i18n.tRaw)(flagKey),
+          desc: meta ? (0, import_i18n.tDesc)(meta.descKey) : void 0
         },
         result.flags[flagKey]
       );
@@ -386,7 +502,10 @@ class StateManager {
         role: "button",
         read: false,
         write: true,
-        name: cmdI18nKey ? (0, import_i18n.tName)(cmdI18nKey) : cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase()),
+        name: cmdI18nKey ? (0, import_i18n.tName)(cmdI18nKey) : (0, import_i18n.tRaw)(cmd.name.replace(/\./g, " ").replace(/^./, (c) => c.toUpperCase())),
+        // Every command the catalog knows gets its explanation; an unmapped one keeps none —
+        // the adapter cannot know what a driver-private command does.
+        desc: cmdI18nKey ? (0, import_i18n.tDesc)(`desc${cmdI18nKey.charAt(0).toUpperCase()}${cmdI18nKey.slice(1)}`) : void 0,
         def: false
       });
     }
@@ -560,7 +679,7 @@ class StateManager {
     if (this.createdIds.has(id)) {
       return;
     }
-    await this.adapter.setObjectNotExistsAsync(id, {
+    await this.adapter.extendObject(id, {
       type: obj.type,
       common: obj.common,
       native: obj.native

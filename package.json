@@ -1,6 +1,6 @@
 {
   "name": "iobroker.nut2",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "ioBroker adapter for Network UPS Tools (NUT) monitoring",
   "author": {
     "name": "krobi",
@@ -70,8 +70,8 @@
     "coverage": "vitest run --coverage",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write . \"!build/**\" \"!io-package.json\" \"!.github/dependabot.yml\"",
+    "format:check": "prettier --check . \"!build/**\" \"!io-package.json\" \"!.github/dependabot.yml\"",
     "release": "release-script",
     "translate": "translate-adapter"
   },

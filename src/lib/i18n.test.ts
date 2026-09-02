@@ -68,6 +68,19 @@ describe("i18n completeness", () => {
       }
       const text = readFileSync(join(srcDir, rel), "utf8");
       add(/tName\("([^"]+)"\)/g, text);
+      add(/tText\("([^"]+)"\)/g, text);
+      add(/tDesc\("([^"]+)"\)/g, text);
+      add(/tTextArgs\("([^"]+)"\)/g, text);
+      add(/tTextArgs\("([^"]+)"[,)]/g, text);
+      add(/"(val[A-Z][A-Za-z]*|sev\d|desc[A-Z][A-Za-z]*)"/g, text);
+      // Derived description keys: the flag catalog and the command table name only the LABEL key,
+      // the explanation key is built from it (flagOnline → descFlagOnline). Mirror that here, or
+      // every explanation would look dead to this test.
+      for (const key of [...referenced]) {
+        if (/^(flag|cmd)[A-Z]/.test(key)) {
+          referenced.add(`desc${key.charAt(0).toUpperCase()}${key.slice(1)}`);
+        }
+      }
       add(/i18nKey:\s*"([^"]+)"/g, text);
       add(/"(channel[A-Za-z]+|cmd[A-Za-z]+)"/g, text);
       const block = text.match(/TRANSLATED_VARIABLES = new Set[\s\S]*?\] as I18nKey\[\]/);
@@ -81,15 +94,15 @@ describe("i18n completeness", () => {
 
     const en = JSON.parse(readRoot("admin/i18n/en.json")) as Record<string, string>;
 
-    // Build-time keys: io-package.json instanceObjects names are generated from i18n keys by
-    // sync-iopackage-from-i18n.py, so a key whose English text equals an instanceObjects name
-    // is used at build time (e.g. connectionStatus → info.connection) — not dead.
+    // Build-time keys: io-package.json instanceObjects names AND descriptions are generated from
+    // i18n keys by sync-iopackage-from-i18n.py, so a key whose English text equals one of them is
+    // used at build time (e.g. connectionStatus → info.connection) — not dead.
     const ioPkg = JSON.parse(readRoot("io-package.json")) as {
-      instanceObjects: { common: { name?: string | Record<string, string> } }[];
+      instanceObjects: { common: { name?: string | Record<string, string>; desc?: string | Record<string, string> } }[];
     };
     const buildTimeNames = new Set(
       ioPkg.instanceObjects
-        .map(o => o.common?.name)
+        .flatMap(o => [o.common?.name, o.common?.desc])
         .map(n => (typeof n === "object" && n ? n.en : n))
         .filter((n): n is string => typeof n === "string"),
     );

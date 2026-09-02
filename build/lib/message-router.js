@@ -24,6 +24,7 @@ __export(message_router_exports, {
 module.exports = __toCommonJS(message_router_exports);
 var import_nut_client = require("./nut-client");
 var import_coerce = require("./coerce");
+var import_i18n = require("./i18n");
 function makeTestClientFactory(NutClientClass, logger) {
   return (host, port, options) => new NutClientClass(host, port, { ...options, logger });
 }
@@ -41,7 +42,7 @@ async function dispatchMessage(obj, deps) {
         const host = (0, import_coerce.coerceHost)(config.host);
         if (!host) {
           deps.log.debug("checkConnection: missing host in message");
-          deps.sendTo(obj.from, obj.command, { error: "Host is required" }, obj.callback);
+          deps.sendTo(obj.from, obj.command, { error: (0, import_i18n.tText)("testHostRequired") }, obj.callback);
           return;
         }
         const port = (0, import_coerce.coercePort)(config.port);
@@ -62,16 +63,11 @@ async function dispatchMessage(obj, deps) {
           const upsList = await testClient.listUps();
           const names = upsList.map((u) => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
-          const transport = testClient.isTls ? "via TLS" : "unencrypted";
+          const transport = testClient.isTls ? (0, import_i18n.tText)("testTls") : (0, import_i18n.tText)("testPlain");
           if (username && password) {
             const first = upsList[0];
             if (!first) {
-              deps.sendTo(
-                obj.from,
-                obj.command,
-                { result: `Connected ${transport} \u2014 no UPS found; credentials not verified (nothing to log in to)` },
-                obj.callback
-              );
+              deps.sendTo(obj.from, obj.command, { result: (0, import_i18n.tTextArgs)("testConnectedNoUps", transport) }, obj.callback);
             } else {
               await testClient.authenticate(username, password);
               await testClient.login(first.name);
@@ -79,7 +75,7 @@ async function dispatchMessage(obj, deps) {
               deps.sendTo(
                 obj.from,
                 obj.command,
-                { result: `Connected ${transport}, logged in as ${username} \u2014 ${upsList.length} UPS(es): ${names}` },
+                { result: (0, import_i18n.tTextArgs)("testConnectedLoggedIn", transport, username, upsList.length, names) },
                 obj.callback
               );
             }
@@ -87,7 +83,7 @@ async function dispatchMessage(obj, deps) {
             deps.sendTo(
               obj.from,
               obj.command,
-              { result: `Connected ${transport} \u2014 ${upsList.length} UPS(es): ${names} (no credentials configured)` },
+              { result: (0, import_i18n.tTextArgs)("testConnectedNoCreds", transport, upsList.length, names) },
               obj.callback
             );
           }

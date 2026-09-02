@@ -6,9 +6,9 @@ describe("type-detector", () => {
   // -----------------------------------------------------------------------
   describe("known-string variables", () => {
     it("should detect *.model as string", () => {
-      const r = detectType("device.model", "Ellipse PRO 1600 ", false);
+      const r = detectType("device.model", "Ellipse PRO 1600", false);
       expect(r.type).toBe("string");
-      expect(r.parsedValue).toBe("Ellipse PRO 1600 ");
+      expect(r.parsedValue).toBe("Ellipse PRO 1600");
     });
 
     it("should detect *.mfr as string", () => {
@@ -155,8 +155,28 @@ describe("type-detector", () => {
       expect(r.parsedValue).toBe(221.0);
     });
 
+    it("a string state always gets the text role — never a value.* one", () => {
+      // Same reason as the flag-role test in status-parser: the gate sees `detectRole(...)` and
+      // asks for a manual look. The property it cannot see is that the string branch returns
+      // "text" for every input — a value.* role on a string would be an E1009 finding.
+      for (const [name, value] of [
+        ["device.model", "X"],
+        ["ups.status", "OL"],
+        ["some.unknown.var", "enabled"],
+        ["battery.type", "PbAc"],
+        ["driver.parameter.port", "auto"],
+      ] as const) {
+        const r = detectType(name, value, false);
+        expect(r.type, `${name} type`).toBe("string");
+        expect(r.role, `${name} role`).toBe("text");
+      }
+      // …including the writable case, which must not turn into a level role either.
+      expect(detectType("device.model", "X", true).role).toBe("text");
+    });
+
     it("should detect negative values as number", () => {
-      const r = detectType("ups.timer.shutdown", "-1", false);
+      // Not a timer variable — a plain negative reading stays the number it is.
+      const r = detectType("ups.temperature", "-1", false);
       expect(r.type).toBe("number");
       expect(r.parsedValue).toBe(-1);
     });
@@ -481,10 +501,42 @@ describe("type-detector", () => {
       expect(r.type).toBe("string");
     });
 
-    it("should handle device.model with trailing space", () => {
+    it("trims the padding NUT puts around a text value", () => {
+      // Measured on an Eaton Ellipse PRO 1600: device.model comes back with a trailing space,
+      // which would otherwise sit in every UI and break every comparison.
       const r = detectType("device.model", "Ellipse PRO 1600 ", false);
       expect(r.type).toBe("string");
-      expect(r.parsedValue).toBe("Ellipse PRO 1600 ");
+      expect(r.parsedValue).toBe("Ellipse PRO 1600");
+    });
+
+    it("an idle countdown is empty, not minus one second (HID drivers)", () => {
+      // Measured on an Eaton Ellipse PRO 1600: ups.timer.shutdown reads -1 while nothing runs.
+      const r = detectType("ups.timer.shutdown", "-1", false);
+      expect(r.type).toBe("number");
+      expect(r.unit).toBe("s");
+      expect(r.parsedValue).toBeNull();
+    });
+
+    it("an idle countdown in the apc_modbus wording is empty too — and not discarded", () => {
+      // apc_modbus converts the same -1 into the word "NotActive" (drivers/apc_modbus.c). As a
+      // plain string in a seconds field it used to be dropped with a warning on every poll.
+      const r = detectType("ups.timer.start", "NotActive", false);
+      expect(r.type).toBe("number");
+      expect(r.parsedValue).toBeNull();
+      expect(r.expectedNumeric).toBeUndefined();
+    });
+
+    it("an expired countdown is zero", () => {
+      const r = detectType("outlet.1.timer.shutdown", "CountdownExpired", false);
+      expect(r.type).toBe("number");
+      expect(r.parsedValue).toBe(0);
+    });
+
+    it("a running countdown stays the number it is", () => {
+      const r = detectType("ups.timer.reboot", "45", false);
+      expect(r.type).toBe("number");
+      expect(r.parsedValue).toBe(45);
+      expect(r.unit).toBe("s");
     });
 
     it("should handle driver.parameter.pollfreq as number", () => {

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.12.1",
+    "version": "0.13.0",
     "news": {
+      "0.13.0": {
+        "en": "Every data point now explains itself in your language, status texts and lists are translated, and wrong credentials no longer stop the monitoring",
+        "de": "Jeder Datenpunkt erklärt sich jetzt in deiner Sprache, Statustexte und Listen sind übersetzt, und falsche Zugangsdaten stoppen die Überwachung nicht mehr",
+        "ru": "Каждый параметр теперь поясняется на вашем языке, тексты состояния и списки переведены, а неверные учётные данные больше не останавливают мониторинг",
+        "pt": "Cada ponto de dados explica-se agora na sua língua, os textos de estado e as listas estão traduzidos e credenciais erradas já não param a monitorização",
+        "nl": "Elk datapunt legt zichzelf nu uit in jouw taal, statusteksten en lijsten zijn vertaald, en verkeerde inloggegevens stoppen de bewaking niet meer",
+        "fr": "Chaque point de données s'explique désormais dans votre langue, les textes d'état et les listes sont traduits, et des identifiants erronés n'arrêtent plus la surveillance",
+        "it": "Ogni punto dati ora si spiega nella tua lingua, i testi di stato e gli elenchi sono tradotti e credenziali errate non fermano più il monitoraggio",
+        "es": "Cada punto de datos ahora se explica en tu idioma, los textos de estado y las listas están traducidos, y unas credenciales erróneas ya no detienen la supervisión",
+        "pl": "Każdy punkt danych objaśnia się teraz w Twoim języku, teksty stanu i listy są przetłumaczone, a błędne dane logowania nie zatrzymują monitorowania",
+        "uk": "Кожна точка даних тепер пояснює себе вашою мовою, тексти стану та списки перекладені, а неправильні облікові дані більше не зупиняють моніторинг",
+        "zh-cn": "每个数据点现在都会用你的语言给出说明，状态文字与选项列表已翻译，凭据错误也不再中断监控"
+      },
       "0.12.1": {
         "en": "The \"Test connection\" button in the settings answers again — clicking it produced no result at all on every instance updated from 0.9.0 or later",
         "de": "Der Knopf „Verbindung testen\" in den Einstellungen antwortet wieder — ein Klick lieferte auf jeder ab 0.9.0 aktualisierten Instanz überhaupt kein Ergebnis",
@@ -80,19 +93,6 @@
         "pl": "Zasilacz UPS nie jest już pokazywany jako online, gdy adapter jest zatrzymany lub nie łączy się z serwerem NUT, a awarie można teraz anonimowo zgłaszać przez Sentry.",
         "uk": "ДБЖ більше не показується як онлайн, коли адаптер зупинено або він не може зв'язатися із сервером NUT, а збої тепер можна анонімно надсилати через Sentry.",
         "zh-cn": "当适配器已停止或无法连接 NUT 服务器时，UPS 不再显示为在线；此外崩溃信息现在可以通过 Sentry 匿名上报。"
-      },
-      "0.7.0": {
-        "en": "Mains frequency, status severity and humidity now use their dedicated ioBroker role, so charts and device detection pick them up correctly.",
-        "de": "Netzfrequenz, Status-Schweregrad und Luftfeuchte nutzen jetzt ihre eigene ioBroker-Rolle, sodass Diagramme und Geräteerkennung sie korrekt erfassen.",
-        "ru": "Частота сети, уровень серьёзности статуса и влажность теперь используют собственную роль ioBroker, поэтому графики и распознавание устройств учитывают их правильно.",
-        "pt": "Frequência da rede, gravidade do estado e humidade passam a usar a sua própria função ioBroker, para gráficos e deteção de dispositivos corretos.",
-        "nl": "Netfrequentie, statusernst en luchtvochtigheid gebruiken nu hun eigen ioBroker-rol, zodat grafieken en apparaatdetectie ze correct herkennen.",
-        "fr": "La fréquence secteur, la gravité de l'état et l'humidité utilisent désormais leur propre rôle ioBroker, pour des graphiques et une détection d'appareils corrects.",
-        "it": "Frequenza di rete, gravità dello stato e umidità ora usano il proprio ruolo ioBroker, così grafici e rilevamento dispositivi li riconoscono correttamente.",
-        "es": "La frecuencia de red, la gravedad del estado y la humedad ahora usan su propio rol de ioBroker, para gráficos y detección de dispositivos correctos.",
-        "pl": "Częstotliwość sieci, poziom ważności statusu i wilgotność używają teraz własnej roli ioBroker, dzięki czemu wykresy i wykrywanie urządzeń działają poprawnie.",
-        "uk": "Частота мережі, рівень серйозності статусу та вологість тепер використовують власну роль ioBroker, тож графіки та розпізнавання пристроїв визначають їх правильно.",
-        "zh-cn": "市电频率、状态严重程度和湿度现在使用各自专用的 ioBroker 角色，因此图表和设备检测能正确识别它们。"
       }
     },
     "plugins": {
@@ -208,6 +208,19 @@
           "pl": "Informacje o adapterze",
           "uk": "Інформація про адаптер",
           "zh-cn": "适配器信息"
+        },
+        "desc": {
+          "en": "How this adapter is doing",
+          "de": "Wie es diesem Adapter geht",
+          "ru": "Состояние самого адаптера",
+          "pt": "Como está este adaptador",
+          "nl": "Hoe het met deze adapter gaat",
+          "fr": "État de cet adaptateur",
+          "it": "Come sta questo adattatore",
+          "es": "Cómo está este adaptador",
+          "pl": "Jak się ma ten adapter",
+          "uk": "Як почувається цей адаптер",
+          "zh-cn": "本适配器的运行情况"
         }
       },
       "native": {}
@@ -233,7 +246,20 @@
         "role": "indicator.connected",
         "read": true,
         "write": false,
-        "def": false
+        "def": false,
+        "desc": {
+          "en": "The adapter is talking to the NUT server — this does not say whether the credentials are accepted",
+          "de": "Der Adapter spricht mit dem NUT-Server — über die Zugangsdaten sagt das nichts",
+          "ru": "Адаптер общается с сервером NUT — об учётных данных это ничего не говорит",
+          "pt": "O adaptador comunica com o servidor NUT — nada diz sobre as credenciais",
+          "nl": "De adapter praat met de NUT-server — dit zegt niets over de inloggegevens",
+          "fr": "L'adaptateur dialogue avec le serveur NUT — cela ne dit rien des identifiants",
+          "it": "L'adattatore comunica con il server NUT — non dice nulla sulle credenziali",
+          "es": "El adaptador habla con el servidor NUT — no dice nada de las credenciales",
+          "pl": "Adapter rozmawia z serwerem NUT — nic nie mówi o danych logowania",
+          "uk": "Адаптер спілкується із сервером NUT — про облікові дані це нічого не каже",
+          "zh-cn": "适配器正与 NUT 服务器通信——与凭据是否有效无关"
+        }
       },
       "native": {}
     },
@@ -258,7 +284,20 @@
         "role": "value",
         "read": true,
         "write": false,
-        "def": 0
+        "def": 0,
+        "desc": {
+          "en": "How many UPS devices the NUT server offers",
+          "de": "Wie viele USVen der NUT-Server anbietet",
+          "ru": "Сколько ИБП предлагает сервер NUT",
+          "pt": "Quantos UPS o servidor NUT oferece",
+          "nl": "Hoeveel UPS'en de NUT-server aanbiedt",
+          "fr": "Nombre d'onduleurs proposés par le serveur NUT",
+          "it": "Quanti UPS offre il server NUT",
+          "es": "Cuántos SAI ofrece el servidor NUT",
+          "pl": "Ile UPS udostępnia serwer NUT",
+          "uk": "Скільки ДБЖ пропонує сервер NUT",
+          "zh-cn": "NUT 服务器提供的 UPS 数量"
+        }
       },
       "native": {}
     },
@@ -283,7 +322,20 @@
         "role": "value",
         "read": true,
         "write": false,
-        "def": 0
+        "def": 0,
+        "desc": {
+          "en": "How many of them answered the last poll",
+          "de": "Wie viele davon die letzte Abfrage beantwortet haben",
+          "ru": "Сколько из них ответили на последний опрос",
+          "pt": "Quantos deles responderam à última consulta",
+          "nl": "Hoeveel daarvan de laatste peiling beantwoordden",
+          "fr": "Combien d'entre eux ont répondu à la dernière interrogation",
+          "it": "Quanti di essi hanno risposto all'ultima interrogazione",
+          "es": "Cuántos de ellos respondieron al último sondeo",
+          "pl": "Ile z nich odpowiedziało na ostatnie odpytanie",
+          "uk": "Скільки з них відповіли на останнє опитування",
+          "zh-cn": "其中有多少台响应了最近一次轮询"
+        }
       },
       "native": {}
     },
@@ -308,7 +360,20 @@
         "role": "indicator",
         "read": true,
         "write": false,
-        "def": false
+        "def": false,
+        "desc": {
+          "en": "One line to watch instead of every device — false while nothing was found at all",
+          "de": "Eine Zeile statt jedes Geräts — falsch, solange gar nichts gefunden wurde",
+          "ru": "Одна строка вместо каждого устройства — ложь, пока ничего не найдено",
+          "pt": "Uma linha em vez de cada aparelho — falso enquanto nada for encontrado",
+          "nl": "Eén regel in plaats van elk apparaat — onwaar zolang er niets is gevonden",
+          "fr": "Une seule ligne au lieu de chaque appareil — faux tant que rien n'est trouvé",
+          "it": "Una riga al posto di ogni dispositivo — falso finché non si trova nulla",
+          "es": "Una línea en vez de cada equipo — falso mientras no se encuentre nada",
+          "pl": "Jedna linia zamiast każdego urządzenia — fałsz, dopóki nic nie znaleziono",
+          "uk": "Один рядок замість кожного пристрою — хибно, поки нічого не знайдено",
+          "zh-cn": "用一行代替逐台查看——尚未发现任何设备时为否"
+        }
       },
       "native": {}
     },
@@ -333,7 +398,20 @@
         "role": "text",
         "read": true,
         "write": true,
-        "def": ""
+        "def": "",
+        "desc": {
+          "en": "Write here to poll at once — upsmon can push its events into this state",
+          "de": "Hier schreiben löst sofort eine Abfrage aus — upsmon kann seine Ereignisse hierher schicken",
+          "ru": "Запись сюда сразу запускает опрос — upsmon может слать сюда свои события",
+          "pt": "Escrever aqui consulta de imediato — o upsmon pode enviar aqui os seus eventos",
+          "nl": "Hier schrijven peilt meteen — upsmon kan zijn gebeurtenissen hierheen sturen",
+          "fr": "Écrire ici déclenche une interrogation — upsmon peut y pousser ses événements",
+          "it": "Scrivere qui avvia subito un'interrogazione — upsmon può inviarci i suoi eventi",
+          "es": "Escribir aquí sondea al instante — upsmon puede enviar aquí sus eventos",
+          "pl": "Zapis tutaj natychmiast odpytuje — upsmon może tu wysyłać swoje zdarzenia",
+          "uk": "Запис сюди одразу запускає опитування — upsmon може надсилати сюди свої події",
+          "zh-cn": "写入此处立即轮询——upsmon 可将事件推送到这里"
+        }
       },
       "native": {}
     }

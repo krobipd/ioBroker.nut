@@ -1,3 +1,14 @@
+import { vi } from "vitest";
+
+// message-router resolves the answers through admin/i18n now; the real adapter-core exits the
+// process outside an adapter, so the translation surface is stubbed (key → key, args appended).
+vi.mock("@iobroker/adapter-core", () => ({
+  I18n: {
+    getTranslatedObject: vi.fn((key: string) => ({ en: key, de: `${key}_de` })),
+    translate: vi.fn((key: string, ...args: unknown[]) => (args.length ? `${key}:${args.join("|")}` : key)),
+  },
+}));
+
 import { NutError, type NutClient } from "./nut-client";
 import { dispatchMessage, type MessageRouterDeps } from "./message-router";
 import type { NutClientOptions } from "./types";
@@ -154,7 +165,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ command: "checkConnection", message: { host: "", port: 3493 } }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect(h.sends[0].response).toEqual({ error: "Host is required" });
+      expect(h.sends[0].response).toEqual({ error: "testHostRequired" });
       expect(h.createdClients).toHaveLength(0);
     });
 
@@ -171,7 +182,8 @@ describe("dispatchMessage", () => {
       expect(h.createdClients).toEqual([{ host: "192.168.1.100", port: 3493 }]);
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).toContain("2 UPS(es)");
+      // The stub renders "<key>:<arg>|<arg>" — this asserts the catalogue text AND its values.
+      expect(resp.result).toBe("testConnectedNoCreds:testPlain|2|ups0, ups1");
       expect(resp.result).toContain("ups0");
       expect(resp.result).toContain("ups1");
     });
@@ -257,8 +269,7 @@ describe("dispatchMessage", () => {
       expect(h.steps).toEqual(["authenticate", "login:ups0", "logout"]);
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).toContain("logged in as admin");
-      expect(resp.result).toContain("2 UPS(es)");
+      expect(resp.result).toBe("testConnectedLoggedIn:testPlain|admin|2|ups0, ups1");
     });
 
     it("does not claim a login when no credentials are provided", async () => {
@@ -274,8 +285,8 @@ describe("dispatchMessage", () => {
       expect(h.steps).toEqual([]);
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).not.toContain("logged in");
-      expect(resp.result).toContain("no credentials configured");
+      expect(resp.result).not.toContain("LoggedIn");
+      expect(resp.result).toContain("testConnectedNoCreds");
     });
 
     it("says the credentials are unverified when the server lists no UPS to log in to", async () => {
@@ -290,8 +301,8 @@ describe("dispatchMessage", () => {
 
       expect(h.steps).toEqual([]);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).toContain("credentials not verified");
-      expect(resp.result).not.toContain("logged in");
+      expect(resp.result).toContain("testConnectedNoUps");
+      expect(resp.result).not.toContain("LoggedIn");
     });
 
     it("names both causes when upsd refuses the LOGIN", async () => {
@@ -323,14 +334,14 @@ describe("dispatchMessage", () => {
         buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
         tlsHarness.deps,
       );
-      expect((tlsHarness.sends[0].response as { result: string }).result).toContain("via TLS");
+      expect((tlsHarness.sends[0].response as { result: string }).result).toContain("testTls");
 
       const plain = makeHarness([{ name: "ups0", description: "Eaton" }]);
       await dispatchMessage(
         buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
         plain.deps,
       );
-      expect((plain.sends[0].response as { result: string }).result).toContain("unencrypted");
+      expect((plain.sends[0].response as { result: string }).result).toContain("testPlain");
     });
 
     it("should return failure when auth fails", async () => {
@@ -372,7 +383,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: null }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect(h.sends[0].response).toEqual({ error: "Host is required" });
+      expect(h.sends[0].response).toEqual({ error: "testHostRequired" });
     });
 
     it("should treat string obj.message as missing host", async () => {
@@ -380,7 +391,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: "junk" }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
+      expect((h.sends[0].response as { error?: string }).error).toBe("testHostRequired");
     });
 
     it("should treat array obj.message as missing host", async () => {
@@ -388,7 +399,7 @@ describe("dispatchMessage", () => {
       await dispatchMessage(buildMessage({ message: [] }), h.deps);
 
       expect(h.sends).toHaveLength(1);
-      expect((h.sends[0].response as { error?: string }).error).toBe("Host is required");
+      expect((h.sends[0].response as { error?: string }).error).toBe("testHostRequired");
     });
   });
 
