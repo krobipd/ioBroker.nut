@@ -75,7 +75,9 @@ describe("i18n completeness", () => {
         add(/"([^"]+)"/g, block[0]);
       }
     }
-    add(/"(?:label|help|tooltip|text|okText|errorText)":\s*"([^"]+)"/g, readRoot("admin/jsonConfig.json"));
+    // `placeholder` counts too: the repository checker resolves it through the translation
+    // files like every other user-visible attribute (W5612), so a placeholder is a key.
+    add(/"(?:label|help|tooltip|text|okText|errorText|placeholder)":\s*"([^"]+)"/g, readRoot("admin/jsonConfig.json"));
 
     const en = JSON.parse(readRoot("admin/i18n/en.json")) as Record<string, string>;
 
