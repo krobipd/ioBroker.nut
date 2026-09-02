@@ -227,7 +227,7 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.11.0 (2026-09-02)
 
 - New: a UPS added to or removed from the NUT server now appears or disappears at the next poll — no reconnect and no adapter restart needed for a changed server setup
 - Fixed: a write to the adapter's own reachable, status or notify states (script, REST API) no longer ends as a SET VAR error in the log; null or object values are rejected before they reach the server
@@ -253,12 +253,6 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 
 - Improved: more UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.
 - Fixed: a driver flag reporting an unusual value is now kept as a text state instead of being misread as a number, so its type no longer changes between updates.
-
-### 0.6.0 (2026-08-11)
-
-- UPS readings now carry their correct data type instead of plain text, so numeric values, yes/no fields and status values can be charted, compared and used directly in scripts.
-- Security fix: the NUT username and password no longer appear in the ioBroker log, where they could previously show up in plain text while commands were exchanged.
-- A UPS whose name contains a space, dot or other special character now appears correctly in the object tree instead of a broken or missing device entry.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

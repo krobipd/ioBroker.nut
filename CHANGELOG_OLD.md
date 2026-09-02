@@ -1,4 +1,10 @@
 # Older changes
+## 0.6.0 (2026-08-11)
+
+- UPS readings now carry their correct data type instead of plain text, so numeric values, yes/no fields and status values can be charted, compared and used directly in scripts.
+- Security fix: the NUT username and password no longer appear in the ioBroker log, where they could previously show up in plain text while commands were exchanged.
+- A UPS whose name contains a space, dot or other special character now appears correctly in the object tree instead of a broken or missing device entry.
+
 ## 0.5.3 (2026-07-26)
 
 - The version history shown in the adapter manager now lists only versions that actually exist for this adapter.

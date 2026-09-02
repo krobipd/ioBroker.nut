@@ -341,11 +341,27 @@ class NutAdapter extends utils.Adapter {
     this.log.warn(`UPS name '${rawName}' collides with another after sanitization \u2192 using object ID '${unique}'`);
     return unique;
   }
-  async discover() {
+  /**
+   * Whether the NUT server's UPS list differs from what was discovered last — by NUT name,
+   * order-independent.
+   *
+   * @param upsList Fresh LIST UPS result
+   */
+  upsListChanged(upsList) {
+    const fresh = upsList.map((u) => u.name).sort();
+    const known = [...this.discoveredUps.values()].map((u) => u.name).sort();
+    return fresh.length !== known.length || fresh.some((name, i) => name !== known[i]);
+  }
+  /**
+   * Discover the UPS devices on the server and (re)build the object tree for them.
+   *
+   * @param prefetched LIST UPS result already fetched by the caller (the poll), otherwise fetched here
+   */
+  async discover(prefetched) {
     if (!this.client || !this.stateManager) {
       return;
     }
-    const upsList = await this.client.listUps();
+    const upsList = prefetched != null ? prefetched : await this.client.listUps();
     this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map((u) => u.name).join(", ")}`);
     this.discoveredUps.clear();
     for (const ups of upsList) {
@@ -396,6 +412,12 @@ class NutAdapter extends utils.Adapter {
     this.log.debug(`poll: starting (lastErrorCode='${this.lastErrorCode}', upsCount=${this.discoveredUps.size})`);
     this.isPolling = true;
     try {
+      const upsList = await this.client.listUps();
+      if (this.upsListChanged(upsList)) {
+        this.log.info(`UPS list on the NUT server changed: ${upsList.map((u) => u.name).join(", ") || "none"}`);
+        await this.discover(upsList);
+        await this.setupCommandButtons();
+      }
       let reachable = 0;
       for (const [upsId, ups] of this.discoveredUps) {
         const nutName = ups.name;
@@ -545,6 +567,10 @@ class NutAdapter extends utils.Adapter {
         return;
       }
       const nutName = ups.name;
+      if (parts[1] === "info" || parts[1] === "status") {
+        this.log.debug(`onStateChange: ${localId} is adapter-owned, ignoring write`);
+        return;
+      }
       if (parts[1] === "commands") {
         if (!config.enableCommands) {
           this.log.warn(`Command blocked \u2014 enableCommands is disabled: ${localId}`);
@@ -563,6 +589,12 @@ class NutAdapter extends utils.Adapter {
       }
       if (!config.enableSetVar) {
         this.log.warn(`SET VAR blocked \u2014 enableSetVar is disabled: ${localId}`);
+        return;
+      }
+      if (typeof state.val !== "boolean" && typeof state.val !== "number" && typeof state.val !== "string") {
+        this.log.warn(
+          `SET VAR ignored \u2014 ${localId} received ${JSON.stringify(state.val)}, not a boolean, number or string`
+        );
         return;
       }
       const varName = (_d = (_c = this.stateManager) == null ? void 0 : _c.nutNameForState(localId)) != null ? _d : `${parts[1]}.${parts.slice(2).join(".").replace(/-/g, ".")}`;
@@ -594,7 +626,7 @@ class NutAdapter extends utils.Adapter {
     if (this.unloaded) {
       return;
     }
-    const { type, upsRef } = (0, import_coerce.parseNotifyTrigger)(rawVal);
+    const { type, upsRef, text } = (0, import_coerce.parseNotifyTrigger)(rawVal);
     let matchedId;
     if (upsRef) {
       for (const [upsId, ups] of this.discoveredUps) {
@@ -627,7 +659,7 @@ class NutAdapter extends utils.Adapter {
     } else {
       this.log.debug("notify: manual refresh triggered");
     }
-    await this.setState("notify", { val: rawVal, ack: true });
+    await this.setState("notify", { val: text, ack: true });
     await this.poll();
   }
   async onMessage(obj) {

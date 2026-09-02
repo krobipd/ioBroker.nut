@@ -95,6 +95,13 @@ class NutClient {
   multiLineBuffer = [];
   multiLineExpectedEnd = "";
   connected = false;
+  /**
+   * True once connect() resolved (TCP up AND, with TLS, the handshake done). `connected` alone
+   * turns true at the TCP level so STARTTLS can be sent; a drop between the two is a failed
+   * connect attempt, not a lost connection — the retry loop handles it through connect()'s
+   * rejection, the close handler must not schedule a second reconnect or warn "lost".
+   */
+  ready = false;
   destroyed = false;
   tlsActive = false;
   host;
@@ -184,6 +191,7 @@ class NutClient {
       return;
     }
     this.connected = false;
+    this.ready = false;
     const sock = this.socket;
     this.socket = null;
     sock == null ? void 0 : sock.destroy();
@@ -212,6 +220,7 @@ class NutClient {
         const sock = this.socket;
         this.socket = null;
         this.connected = false;
+        this.ready = false;
         sock == null ? void 0 : sock.destroy();
         reject(new Error(`Connect to NUT server ${this.host}:${this.port} timed out`));
       }, this.commandTimeout);
@@ -224,6 +233,7 @@ class NutClient {
         if (err) {
           reject(err);
         } else {
+          this.ready = true;
           resolve();
         }
       };
@@ -266,10 +276,11 @@ class NutClient {
     });
     socket.on("close", () => {
       var _a;
-      const wasConnected = this.connected;
+      const wasReady = this.ready;
+      this.ready = false;
       this.connected = false;
       this.rejectAll(new Error("Connection closed"));
-      if (wasConnected && !this.destroyed && this.persistent) {
+      if (wasReady && !this.destroyed && this.persistent) {
         (_a = this.log) == null ? void 0 : _a.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
         this.scheduleReconnect();
       }
@@ -312,6 +323,7 @@ class NutClient {
       this.socket = null;
     }
     this.connected = false;
+    this.ready = false;
   }
   /**
    * Synchronous graceful teardown for onUnload — sends a best-effort LOGOUT and half-closes
@@ -327,6 +339,7 @@ class NutClient {
     const sock = this.socket;
     this.socket = null;
     this.connected = false;
+    this.ready = false;
     if (sock) {
       try {
         sock.end("LOGOUT\n");
@@ -382,6 +395,10 @@ class NutClient {
    * @param ups UPS name
    */
   listVar(ups) {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST VAR ${ups}`, /^VAR\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, (m) => ({
       name: m[1],
       value: unescapeNut(m[2])
@@ -393,6 +410,10 @@ class NutClient {
    * @param ups UPS name
    */
   listRw(ups) {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST RW ${ups}`, /^RW\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, (m) => ({
       name: m[1],
       value: unescapeNut(m[2])
@@ -404,6 +425,10 @@ class NutClient {
    * @param ups UPS name
    */
   listCmd(ups) {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST CMD ${ups}`, /^CMD\s+\S+\s+(\S+)/, (m) => ({ name: m[1] }));
   }
   /**
@@ -413,6 +438,11 @@ class NutClient {
    * @param varName Variable name
    */
   listEnum(ups, varName) {
+    var _a;
+    const bad = (_a = tokenError(ups, "UPS name")) != null ? _a : tokenError(varName, "variable name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(
       `LIST ENUM ${ups} ${varName}`,
       /^ENUM\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/,
@@ -426,6 +456,11 @@ class NutClient {
    * @param varName Variable name
    */
   listRange(ups, varName) {
+    var _a;
+    const bad = (_a = tokenError(ups, "UPS name")) != null ? _a : tokenError(varName, "variable name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(
       `LIST RANGE ${ups} ${varName}`,
       /^RANGE\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"\s+"((?:[^"\\]|\\.)*)"/,
@@ -457,6 +492,11 @@ class NutClient {
    * @param varName Variable name
    */
   async getVar(ups, varName) {
+    var _a;
+    const bad = (_a = tokenError(ups, "UPS name")) != null ? _a : tokenError(varName, "variable name");
+    if (bad) {
+      throw bad;
+    }
     const lines = await this.sendCommand(`GET VAR ${ups} ${varName}`, false);
     const match = /^VAR\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/.exec(lines[0]);
     if (!match) {
@@ -472,6 +512,11 @@ class NutClient {
    * @param value New value
    */
   async setVar(ups, varName, value) {
+    var _a;
+    const bad = (_a = tokenError(ups, "UPS name")) != null ? _a : tokenError(varName, "variable name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`, false);
   }
   /**
@@ -481,6 +526,11 @@ class NutClient {
    * @param cmd Command name
    */
   async instCmd(ups, cmd) {
+    var _a;
+    const bad = (_a = tokenError(ups, "UPS name")) != null ? _a : tokenError(cmd, "command name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`INSTCMD ${ups} ${cmd}`, false);
   }
   /**
@@ -499,6 +549,10 @@ class NutClient {
    * @param ups UPS name
    */
   async login(ups) {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`LOGIN ${ups}`, false);
   }
   /** Best-effort LOGOUT (graceful lifecycle; ignores errors). */
@@ -536,6 +590,7 @@ class NutClient {
       this.active = null;
     }
     this.connected = false;
+    this.ready = false;
     this.cancelAll();
     (_b = this.socket) == null ? void 0 : _b.destroy();
     this.scheduleReconnect();
@@ -572,6 +627,7 @@ class NutClient {
       (_a = this.log) == null ? void 0 : _a.warn(`NUT response line exceeded ${MAX_LINE_BYTES} bytes \u2014 dropping the connection`);
       this.buffer = "";
       this.connected = false;
+      this.ready = false;
       this.rejectAll(new Error("NUT response line exceeded the size limit"));
       (_b = this.socket) == null ? void 0 : _b.destroy();
       this.scheduleReconnect();
@@ -633,6 +689,12 @@ class NutClient {
       this.attemptConnect();
     }, delay);
   }
+}
+function tokenError(value, what) {
+  if (value.length === 0 || /[\s"\\]/.test(value)) {
+    return new Error(`Invalid NUT ${what}: ${JSON.stringify(value)}`);
+  }
+  return null;
 }
 function unescapeNut(s) {
   return s.replace(/\\"/g, '"').replace(/\\\\/g, "\\");

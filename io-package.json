@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "news": {
-      "NEXT": {
+      "0.11.0": {
         "en": "A UPS added to or removed from the NUT server now appears or disappears at the next poll, without a restart; writes to the adapter's own states no longer end in a SET VAR error.",
         "de": "Eine am NUT-Server hinzugefügte oder entfernte USV erscheint bzw. verschwindet beim nächsten Abruf ohne Neustart; Schreibzugriffe auf adaptereigene Datenpunkte enden nicht mehr im SET-VAR-Fehler.",
         "ru": "ИБП, добавленный на сервер NUT или удалённый с него, появляется или исчезает при следующем опросе без перезапуска; запись в собственные состояния адаптера больше не даёт ошибку SET VAR.",

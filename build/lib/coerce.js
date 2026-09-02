@@ -114,7 +114,7 @@ function parseNotifyTrigger(raw) {
   text = text.trim().slice(0, NOTIFY_MAX_LENGTH);
   const firstWs = text.search(/\s/);
   if (firstWs < 0) {
-    return { type: text, upsRef: "" };
+    return { type: text, upsRef: "", text };
   }
   const type = text.slice(0, firstWs);
   let upsRef = text.slice(firstWs).trim();
@@ -122,7 +122,7 @@ function parseNotifyTrigger(raw) {
   if (at >= 0) {
     upsRef = upsRef.slice(0, at).trim();
   }
-  return { type, upsRef };
+  return { type, upsRef, text };
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
