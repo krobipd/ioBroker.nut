@@ -186,6 +186,7 @@
     "password": "",
     "useTls": false,
     "tlsRejectUnauthorized": false,
+    "tlsCaFile": "",
     "commandTimeout": 5,
     "enableCommands": false,
     "enableSetVar": false

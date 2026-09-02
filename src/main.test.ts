@@ -120,6 +120,8 @@ interface FakeClient {
   shutdown: ReturnType<typeof vi.fn>;
   authenticate: ReturnType<typeof vi.fn>;
   login: ReturnType<typeof vi.fn>;
+  logout: ReturnType<typeof vi.fn>;
+  isTls: boolean;
   listUps: ReturnType<typeof vi.fn>;
   listVar: ReturnType<typeof vi.fn>;
   listRw: ReturnType<typeof vi.fn>;
@@ -144,6 +146,8 @@ function makeFakeClient(upsList: UpsInfo[] = [{ name: "ups0", description: "Main
     shutdown: vi.fn(),
     authenticate: vi.fn(async () => {}),
     login: vi.fn(async () => {}),
+    logout: vi.fn(async () => {}),
+    isTls: false,
     listUps: vi.fn(() => Promise.resolve(upsList)),
     listVar: vi.fn((): Promise<NutVariable[]> =>
       Promise.resolve([
@@ -364,19 +368,50 @@ describe("onConnected — idempotent post-connect setup", () => {
     expect(logsOf(stub, "info").some(m => m.includes("Reconnected to NUT server"))).toBe(true);
   });
 
-  it("authenticates but does NOT LOGIN per UPS (one LOGIN/connection — multi-UPS would ALREADY-LOGGED-IN)", async () => {
-    const { client } = await setupConnected({ username: "admin", password: "secret" });
+  it("logs in ONCE per connection — LOGIN on the first UPS verifies the credentials for all of them", async () => {
+    // upsd stores USERNAME/PASSWORD without checking; LOGIN is where it verifies them. One LOGIN
+    // per connection is what upsd allows (a second answers ALREADY-LOGGED-IN) and it covers every
+    // UPS read over the same link — the 0.4.5 per-UPS loop was the mistake, not LOGIN itself.
+    const { client, stub, internal } = await setupConnected({ username: "admin", password: "secret" }, [
+      { name: "ups0", description: "Main" },
+      { name: "ups1", description: "Backup" },
+    ]);
     expect(client.authenticate).toHaveBeenCalledWith("admin", "secret");
-    expect(client.login).not.toHaveBeenCalled();
+    expect(client.login).toHaveBeenCalledTimes(1);
+    expect(client.login).toHaveBeenCalledWith("ups0");
+    expect(internal.authenticated).toBe(true);
+    const started = logsOf(stub, "info").find(m => m.includes("NUT adapter started"));
+    expect(started).toContain("logged in as admin");
+    expect(started).toContain("unencrypted");
   });
 
-  it("auth failure → error+info logs, client destroyed, yellow, NO poll timer", async () => {
+  it("reports the transport in the start line — TLS when the client upgraded", async () => {
+    const s = setup({ useTls: true });
+    s.client.isTls = true;
+    await s.internal.onReady();
+    await s.internal.onConnected();
+    const started = logsOf(s.stub, "info").find(m => m.includes("NUT adapter started"));
+    expect(started).toContain("TLS");
+    expect(started).toContain("no credentials");
+  });
+
+  it("with credentials but no UPS to log in to: warns, does not claim a login, keeps running", async () => {
+    const s = await setupConnected({ username: "admin", password: "secret" }, []);
+    expect(s.client.login).not.toHaveBeenCalled();
+    expect(s.internal.authenticated).toBe(false);
+    expect(logsOf(s.stub, "warn").some(m => m.includes("nothing to log in to"))).toBe(true);
+    expect(s.client.destroy).not.toHaveBeenCalled();
+  });
+
+  it("refused LOGIN → error names both causes, client destroyed, yellow, NO poll timer", async () => {
     const s = setup({ username: "admin", password: "wrong" });
-    s.client.authenticate.mockRejectedValue(new NutError("ACCESS-DENIED"));
+    s.client.login.mockRejectedValue(new NutError("ACCESS-DENIED"));
     await s.internal.onReady();
     await s.internal.onConnected();
 
-    expect(logsOf(s.stub, "error").some(m => m.includes("Authentication failed"))).toBe(true);
+    const error = logsOf(s.stub, "error").find(m => m.includes("Login to NUT server"));
+    expect(error).toContain("wrong password");
+    expect(error).toContain("upsd.users");
     expect(logsOf(s.stub, "info").some(m => m.includes("adapter is idle"))).toBe(true);
     expect(s.client.destroy).toHaveBeenCalledTimes(1);
     expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });

@@ -1,4 +1,4 @@
-import type { NutClient } from "./nut-client";
+import { authFailureText, type NutClient } from "./nut-client";
 import { coerceCommandTimeoutMs, coerceHost, coercePort, errText, localAddressOf } from "./coerce";
 import type { AdapterConfig, NutClientOptions, NutLogger } from "./types";
 
@@ -83,6 +83,7 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           commandTimeout: coerceCommandTimeoutMs(config.commandTimeout),
           useTls: !!config.useTls,
           tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+          tlsCaFile: typeof config.tlsCaFile === "string" ? config.tlsCaFile : "",
         };
 
         const testClient = deps.createTestClient(host, port, options);
@@ -93,21 +94,35 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
           const names = upsList.map(u => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
 
+          // Every word of the answer is backed by a check on this very connection: "via TLS" only
+          // after the handshake, "logged in" only after upsd accepted LOGIN — USERNAME/PASSWORD are
+          // merely stored by upsd (server/netuser.c), LOGIN is where it verifies them.
+          const transport = testClient.isTls ? "via TLS" : "unencrypted";
           if (username && password) {
-            // No per-UPS LOGIN (see onConnected in main.ts): NUT allows one LOGIN per connection
-            // and it is upsmon-only; USERNAME/PASSWORD is the real credential check.
-            await testClient.authenticate(username, password);
-            deps.sendTo(
-              obj.from,
-              obj.command,
-              { result: `Connected and authenticated — ${upsList.length} UPS(es): ${names}` },
-              obj.callback,
-            );
+            const first = upsList[0];
+            if (!first) {
+              deps.sendTo(
+                obj.from,
+                obj.command,
+                { result: `Connected ${transport} — no UPS found; credentials not verified (nothing to log in to)` },
+                obj.callback,
+              );
+            } else {
+              await testClient.authenticate(username, password);
+              await testClient.login(first.name);
+              await testClient.logout();
+              deps.sendTo(
+                obj.from,
+                obj.command,
+                { result: `Connected ${transport}, logged in as ${username} — ${upsList.length} UPS(es): ${names}` },
+                obj.callback,
+              );
+            }
           } else {
             deps.sendTo(
               obj.from,
               obj.command,
-              { result: `Connected — ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected ${transport} — ${upsList.length} UPS(es): ${names} (no credentials configured)` },
               obj.callback,
             );
           }
@@ -123,6 +138,6 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${errText(err)}`);
-    deps.sendTo(obj.from, obj.command, { error: errText(err) }, obj.callback);
+    deps.sendTo(obj.from, obj.command, { error: authFailureText(err) ?? errText(err) }, obj.callback);
   }
 }

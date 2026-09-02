@@ -12,7 +12,7 @@ import {
   parseNotifyTrigger,
 } from "./lib/coerce";
 import { dispatchMessage, makeTestClientFactory } from "./lib/message-router";
-import { NutClient, NutError } from "./lib/nut-client";
+import { authFailureText, NutClient, NutError } from "./lib/nut-client";
 import { nutVarToStateId, sanitizeUpsName, StateManager } from "./lib/state-manager";
 import { detectType } from "./lib/type-detector";
 import type { AdapterConfig, NutLogger, NutVariable, UpsInfo } from "./lib/types";
@@ -167,6 +167,7 @@ export class NutAdapter extends utils.Adapter {
         commandTimeout: commandTimeoutMs,
         useTls: !!config.useTls,
         tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+        tlsCaFile: typeof config.tlsCaFile === "string" ? config.tlsCaFile : "",
         // Inject the adapter-managed timers so the client's command/reconnect timeouts are
         // tracked and auto-cleared on unload (no native setTimeout leaks).
         setTimer: (cb, ms) => this.setTimeout(cb, ms),
@@ -222,13 +223,14 @@ export class NutAdapter extends utils.Adapter {
         this.subscribed = true;
       }
 
+      const transport = this.client?.isTls ? "TLS" : "unencrypted";
       if (this.everConnected) {
-        this.log.info(`Reconnected to NUT server ${host}:${port} — ${this.discoveredUps.size} UPS(es)`);
+        this.log.info(`Reconnected to NUT server ${host}:${port} (${transport}) — ${this.discoveredUps.size} UPS(es)`);
       } else {
         this.everConnected = true;
-        const authStatus = this.authenticated ? "authenticated" : "no credentials";
+        const authStatus = this.authenticated ? `logged in as ${config.username}` : "no credentials";
         this.log.info(
-          `NUT adapter started — ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus})`,
+          `NUT adapter started — ${this.discoveredUps.size} UPS(es) on ${host}:${port}, polling every ${pollSec}s (${authStatus}, ${transport})`,
         );
       }
     } catch (err) {
@@ -242,10 +244,13 @@ export class NutAdapter extends utils.Adapter {
   }
 
   /**
-   * Authenticate when credentials are configured. USERNAME/PASSWORD is all that GET/LIST + SET VAR
-   * + INSTCMD need; we deliberately do NOT send LOGIN per UPS (NUT permits only one LOGIN per
-   * connection, so a multi-UPS server fails the second with ALREADY-LOGGED-IN, and LOGIN only
-   * matters for upsmon shutdown coordination, which this adapter does not do).
+   * Log in when credentials are configured. USERNAME/PASSWORD alone prove nothing: upsd only
+   * stores them and checks them on LOGIN, SET, INSTCMD and FSD (server/netuser.c, user.c). So
+   * the adapter LOGINs on the first UPS of the connection — ONE LOGIN per connection is what
+   * upsd allows (a second answers ALREADY-LOGGED-IN), and it verifies the credentials for the
+   * whole connection; every other UPS is read and written over the same, now verified, link.
+   * The NUT user therefore needs an `upsmon secondary` (or `upsmon primary`) line in upsd.users;
+   * a user with only `actions`/`instcmds` cannot LOGIN and is reported as rejected.
    *
    * @param host NUT server host (for logging)
    * @param port NUT server port (for logging)
@@ -257,15 +262,25 @@ export class NutAdapter extends utils.Adapter {
     if (!config.username || !config.password || !this.client) {
       return true;
     }
+    const first = this.discoveredUps.values().next().value;
+    if (!first) {
+      this.log.warn(
+        `Credentials are configured but NUT server ${host}:${port} lists no UPS — nothing to log in to, credentials not verified`,
+      );
+      return true;
+    }
     try {
       await this.client.authenticate(config.username, config.password);
+      await this.client.login(first.name);
       this.authenticated = true;
-      this.log.debug(`Authenticated to NUT server ${host}:${port}`);
+      this.log.debug(`Logged in to NUT server ${host}:${port} as ${config.username} (LOGIN ${first.name})`);
       return true;
     } catch (err) {
-      this.log.error(`Authentication failed: ${errText(err)} — check NUT server credentials`);
+      this.log.error(
+        `Login to NUT server ${host}:${port} as ${config.username} failed: ${authFailureText(err) ?? errText(err)}`,
+      );
       this.log.info(
-        `Authentication required — adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`,
+        `Login required — adapter is idle (yellow) until the credentials are corrected; use the connection test in admin to verify them`,
       );
       this.client.destroy(); // stop the retry loop; stay alive + yellow
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
@@ -335,7 +350,7 @@ export class NutAdapter extends utils.Adapter {
     const host = coerceHost(config.host) ?? "";
     const port = coercePort(config.port);
     this.log.error(
-      `TLS connection to NUT server ${host}:${port} failed: ${errText(err)} — verify the server offers STARTTLS and check the certificate setting`,
+      `TLS connection to NUT server ${host}:${port} failed: ${errText(err)} — verify the server offers STARTTLS and check the certificate settings (Require valid certificate, CA file)`,
     );
     this.client?.destroy();
     void this.setStateChangedAsync("info.connection", { val: false, ack: true }).catch(() => {});

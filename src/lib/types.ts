@@ -16,6 +16,8 @@ export interface AdapterConfig {
   useTls: boolean;
   /** Reject invalid/self-signed TLS certificates (default false) */
   tlsRejectUnauthorized: boolean;
+  /** Path to a PEM CA certificate file on the ioBroker host — trusted in addition to the system store (only with tlsRejectUnauthorized) */
+  tlsCaFile: string;
   /** Per-command timeout in seconds */
   commandTimeout: number;
   /** Enable instant commands (INSTCMD) */
@@ -76,6 +78,8 @@ export interface NutClientOptions {
   useTls?: boolean;
   /** Reject self-signed/invalid TLS certs (default false — NUT servers are typically self-signed). */
   tlsRejectUnauthorized?: boolean;
+  /** Path to a PEM CA certificate file trusted for the strict check (empty = system store only). */
+  tlsCaFile?: string;
   /** Injected managed timer (adapter.setTimeout) — auto-cleared on unload. Defaults to the global timer. */
   setTimer?: (callback: () => void, ms: number) => unknown;
   /** Injected managed clear (adapter.clearTimeout). Defaults to the global clear. */

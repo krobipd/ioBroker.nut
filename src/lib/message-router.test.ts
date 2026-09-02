@@ -1,4 +1,4 @@
-import type { NutClient } from "./nut-client";
+import { NutError, type NutClient } from "./nut-client";
 import { dispatchMessage, type MessageRouterDeps } from "./message-router";
 import type { NutClientOptions } from "./types";
 
@@ -16,6 +16,8 @@ interface TestHarness {
   createdOptions: (NutClientOptions | undefined)[];
   registered: NutClient[];
   completed: NutClient[];
+  /** Protocol steps the fake test client was driven through, in order. */
+  steps: string[];
   deps: MessageRouterDeps;
 }
 
@@ -23,6 +25,8 @@ function makeHarness(
   listUpsResult?: { name: string; description: string }[],
   connectError?: Error,
   authError?: Error,
+  loginError?: Error,
+  isTls = false,
 ): TestHarness {
   const sends: SentMessage[] = [];
   const logs: { level: "debug" | "warn"; msg: string }[] = [];
@@ -30,6 +34,7 @@ function makeHarness(
   const createdOptions: (NutClientOptions | undefined)[] = [];
   const registered: NutClient[] = [];
   const completed: NutClient[] = [];
+  const steps: string[] = [];
 
   const deps: MessageRouterDeps = {
     log: {
@@ -51,12 +56,24 @@ function makeHarness(
         },
         listUps: () => Promise.resolve(listUpsResult ?? [{ name: "ups0", description: "Eaton" }]),
         authenticate: () => {
+          steps.push("authenticate");
           if (authError) {
             return Promise.reject(authError);
           }
           return Promise.resolve();
         },
-        login: async () => {},
+        login: (ups: string) => {
+          steps.push(`login:${ups}`);
+          if (loginError) {
+            return Promise.reject(loginError);
+          }
+          return Promise.resolve();
+        },
+        logout: () => {
+          steps.push("logout");
+          return Promise.resolve();
+        },
+        isTls,
         destroy: () => {},
       } as unknown as NutClient;
     },
@@ -64,7 +81,7 @@ function makeHarness(
     onTestClientDone: client => completed.push(client),
   };
 
-  return { sends, logs, createdClients, createdOptions, registered, completed, deps };
+  return { sends, logs, createdClients, createdOptions, registered, completed, steps, deps };
 }
 
 function buildMessage(overrides: Partial<ioBroker.Message>): ioBroker.Message {
@@ -178,6 +195,7 @@ describe("dispatchMessage", () => {
             commandTimeout: 8,
             useTls: true,
             tlsRejectUnauthorized: true,
+            tlsCaFile: "/etc/ssl/nut-ca.pem",
           },
         }),
         h.deps,
@@ -189,6 +207,7 @@ describe("dispatchMessage", () => {
         commandTimeout: 8000, // seconds → ms
         useTls: true,
         tlsRejectUnauthorized: true,
+        tlsCaFile: "/etc/ssl/nut-ca.pem",
       });
     });
 
@@ -200,6 +219,7 @@ describe("dispatchMessage", () => {
         localAddress: undefined,
         useTls: false,
         tlsRejectUnauthorized: false,
+        tlsCaFile: "",
       });
     });
 
@@ -220,8 +240,12 @@ describe("dispatchMessage", () => {
   // checkConnection with auth
   // -----------------------------------------------------------------------
   describe("checkConnection with auth", () => {
-    it("should authenticate when username and password provided", async () => {
-      const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
+    it("logs in (LOGIN on the first UPS, then LOGOUT) and only then says so", async () => {
+      // USERNAME/PASSWORD are only stored by upsd — LOGIN is the step that verifies them (#17).
+      const h = makeHarness([
+        { name: "ups0", description: "Eaton" },
+        { name: "ups1", description: "APC" },
+      ]);
       await dispatchMessage(
         buildMessage({
           command: "checkConnection",
@@ -230,12 +254,14 @@ describe("dispatchMessage", () => {
         h.deps,
       );
 
+      expect(h.steps).toEqual(["authenticate", "login:ups0", "logout"]);
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).toContain("authenticated");
+      expect(resp.result).toContain("logged in as admin");
+      expect(resp.result).toContain("2 UPS(es)");
     });
 
-    it("should not authenticate when no credentials provided", async () => {
+    it("does not claim a login when no credentials are provided", async () => {
       const h = makeHarness([{ name: "ups0", description: "Eaton" }]);
       await dispatchMessage(
         buildMessage({
@@ -245,9 +271,66 @@ describe("dispatchMessage", () => {
         h.deps,
       );
 
+      expect(h.steps).toEqual([]);
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { result: string };
-      expect(resp.result).not.toContain("authenticated");
+      expect(resp.result).not.toContain("logged in");
+      expect(resp.result).toContain("no credentials configured");
+    });
+
+    it("says the credentials are unverified when the server lists no UPS to log in to", async () => {
+      const h = makeHarness([]);
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "secret" },
+        }),
+        h.deps,
+      );
+
+      expect(h.steps).toEqual([]);
+      const resp = h.sends[0].response as { result: string };
+      expect(resp.result).toContain("credentials not verified");
+      expect(resp.result).not.toContain("logged in");
+    });
+
+    it("names both causes when upsd refuses the LOGIN", async () => {
+      // upsd answers ACCESS-DENIED for a wrong password AND for a user without upsmon rights.
+      const h = makeHarness(
+        [{ name: "ups0", description: "Eaton" }],
+        undefined,
+        undefined,
+        new NutError("ACCESS-DENIED"),
+      );
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "wrong" },
+        }),
+        h.deps,
+      );
+
+      const resp = h.sends[0].response as { error: string };
+      expect(resp.error).toContain("ACCESS-DENIED");
+      expect(resp.error).toContain("wrong password");
+      expect(resp.error).toContain("upsd.users");
+      expect(h.steps).toEqual(["authenticate", "login:ups0"]);
+    });
+
+    it("reports the transport truthfully — via TLS only after a handshake", async () => {
+      const tlsHarness = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, undefined, undefined, true);
+      await dispatchMessage(
+        buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
+        tlsHarness.deps,
+      );
+      expect((tlsHarness.sends[0].response as { result: string }).result).toContain("via TLS");
+
+      const plain = makeHarness([{ name: "ups0", description: "Eaton" }]);
+      await dispatchMessage(
+        buildMessage({ command: "checkConnection", message: { host: "h", port: 3493 } }),
+        plain.deps,
+      );
+      expect((plain.sends[0].response as { result: string }).result).toContain("unencrypted");
     });
 
     it("should return failure when auth fails", async () => {

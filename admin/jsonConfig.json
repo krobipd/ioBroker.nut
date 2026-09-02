@@ -100,11 +100,24 @@
           "lg": 6,
           "xl": 6
         },
+        "tlsCaFile": {
+          "newLine": true,
+          "type": "text",
+          "label": "label_tlsCaFile",
+          "help": "help_tlsCaFile",
+          "placeholder": "/opt/iobroker/nut-ca.pem",
+          "hidden": "!data.useTls || !data.tlsRejectUnauthorized",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
         "checkConnection": {
           "newLine": true,
           "type": "sendTo",
           "command": "checkConnection",
-          "jsonData": "{\"host\": \"${data.host}\", \"port\": ${data.port}, \"username\": \"${data.username}\", \"password\": \"${data.password}\", \"networkInterface\": \"${data.networkInterface}\", \"commandTimeout\": ${data.commandTimeout}, \"useTls\": ${data.useTls}, \"tlsRejectUnauthorized\": ${data.tlsRejectUnauthorized}}",
+          "jsonData": "{\"host\": \"${data.host}\", \"port\": ${data.port}, \"username\": \"${data.username}\", \"password\": \"${data.password}\", \"networkInterface\": \"${data.networkInterface}\", \"commandTimeout\": ${data.commandTimeout}, \"useTls\": ${data.useTls}, \"tlsRejectUnauthorized\": ${data.tlsRejectUnauthorized}, \"tlsCaFile\": \"${data.tlsCaFile}\"}",
           "label": "btn_checkConnection",
           "xs": 12,
           "sm": 12,

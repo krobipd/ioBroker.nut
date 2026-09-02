@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as net from "node:net";
 import * as tls from "node:tls";
 import { computeReconnectDelay } from "./coerce";
@@ -48,6 +49,9 @@ const TLS_FATAL_ERROR_CODES = new Set<string>([
   "FEATURE-NOT-CONFIGURED",
   "FEATURE-NOT-SUPPORTED",
   "ALREADY-SSL-MODE",
+  // Adapter-level: the configured CA file is missing/unreadable or not a PEM certificate
+  "TLS-CA-UNREADABLE",
+  "TLS-CA-INVALID",
   // Node certificate-verification failures (only reachable with tlsRejectUnauthorized=true)
   "DEPTH_ZERO_SELF_SIGNED_CERT",
   "SELF_SIGNED_CERT_IN_CHAIN",
@@ -71,7 +75,41 @@ export function isTlsConfigError(err: unknown): boolean {
     return false;
   }
   // Explicit set above, plus the whole OpenSSL/TLS-layer code family.
-  return TLS_FATAL_ERROR_CODES.has(code) || code.startsWith("ERR_TLS_") || code.startsWith("ERR_SSL_");
+  return (
+    TLS_FATAL_ERROR_CODES.has(code) ||
+    code.startsWith("ERR_TLS_") ||
+    code.startsWith("ERR_SSL_") ||
+    code.startsWith("ERR_OSSL_")
+  );
+}
+
+/** NUT error codes that mean "the credentials or the login sequence were refused". */
+const AUTH_ERROR_CODES = new Set<string>([
+  "ACCESS-DENIED",
+  "INVALID-USERNAME",
+  "INVALID-PASSWORD",
+  "USERNAME-REQUIRED",
+  "PASSWORD-REQUIRED",
+  "ALREADY-SET-USERNAME",
+  "ALREADY-SET-PASSWORD",
+]);
+
+/**
+ * Human-readable cause for a refused login, or null when the error is not about credentials.
+ * upsd answers ACCESS-DENIED both for a wrong password and for a user without LOGIN rights
+ * (server/user.c: password mismatch and missing `upsmon` action return the same failure), so
+ * the text names both — the adapter cannot tell them apart from the wire.
+ *
+ * @param err Caught value from authenticate()/login()
+ */
+export function authFailureText(err: unknown): string | null {
+  if (!(err instanceof NutError) || !AUTH_ERROR_CODES.has(err.code)) {
+    return null;
+  }
+  if (err.code === "ACCESS-DENIED") {
+    return "the NUT server rejected the login (ACCESS-DENIED): wrong password, or the user has no `upsmon secondary`/`upsmon primary` line in upsd.users";
+  }
+  return `the NUT server rejected the credentials (${err.code})`;
 }
 
 interface QueueEntry {
@@ -100,6 +138,8 @@ export class NutClient {
   private ready = false;
   private destroyed = false;
   private tlsActive = false;
+  /** The UPS this connection is logged in to (LOGIN accepted) — null until then, reset per connection. */
+  private loggedInUps: string | null = null;
 
   private readonly host: string;
   private readonly port: number;
@@ -107,6 +147,7 @@ export class NutClient {
   private readonly commandTimeout: number;
   private readonly useTls: boolean;
   private readonly tlsRejectUnauthorized: boolean;
+  private readonly tlsCaFile?: string;
   private readonly log?: NutLogger;
   // Injected managed timers (adapter.setTimeout/clearTimeout in production → auto-cleared on
   // unload; global timers as fallback for standalone use/tests).
@@ -134,6 +175,7 @@ export class NutClient {
     this.commandTimeout = options?.commandTimeout ?? NUT_DEFAULT_COMMAND_TIMEOUT;
     this.useTls = options?.useTls ?? false;
     this.tlsRejectUnauthorized = options?.tlsRejectUnauthorized ?? false;
+    this.tlsCaFile = options?.tlsCaFile?.trim() || undefined;
     this.log = options?.logger;
     this.setTimer = options?.setTimer ?? ((cb, ms) => globalThis.setTimeout(cb, ms));
     this.clearTimer = options?.clearTimer ?? (h => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>));
@@ -208,7 +250,8 @@ export class NutClient {
 
     const msg = err instanceof Error ? err.message : String(err);
     if (this.useTls && isTlsConfigError(err)) {
-      this.log?.warn(`TLS connection to NUT server ${this.host}:${this.port} failed — not retrying: ${msg}`);
+      // The adapter reports this at error level through onFatal — one line for the user, not two.
+      this.log?.debug(`TLS connection to NUT server ${this.host}:${this.port} failed — not retrying: ${msg}`);
       this.onFatalHandler?.(err);
       return;
     }
@@ -263,6 +306,7 @@ export class NutClient {
       const socket = net.createConnection(opts, () => {
         this.connected = true;
         this.tlsActive = false;
+        this.loggedInUps = null;
         this.buffer = "";
         this.log?.debug(`Connected to NUT server ${this.host}:${this.port}`);
         if (this.useTls) {
@@ -299,6 +343,7 @@ export class NutClient {
       const wasReady = this.ready;
       this.ready = false;
       this.connected = false;
+      this.loggedInUps = null;
       // Drain the WHOLE queue, not just the active command: a queued entry left behind would keep
       // a live command timer that fires later and tears down a subsequently-reconnected socket.
       this.rejectAll(new Error("Connection closed"));
@@ -311,10 +356,35 @@ export class NutClient {
     });
   }
 
+  /**
+   * Read the configured CA file (strict certificate check against a private CA). Both failure
+   * modes are configuration errors — fatal, not retried — and are checked BEFORE the server is
+   * asked for STARTTLS, so a bad path never opens a half-upgraded connection.
+   *
+   * @returns the PEM certificate(s) to trust, or undefined when no CA file is configured
+   */
+  private loadTlsCa(): string[] | undefined {
+    if (!this.tlsCaFile) {
+      return undefined;
+    }
+    let pem: string;
+    try {
+      pem = fs.readFileSync(this.tlsCaFile, "utf8");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new NutError("TLS-CA-UNREADABLE", `TLS CA file ${this.tlsCaFile} cannot be read: ${msg}`);
+    }
+    if (!pem.includes("-----BEGIN CERTIFICATE-----")) {
+      throw new NutError("TLS-CA-INVALID", `TLS CA file ${this.tlsCaFile} is not a PEM certificate`);
+    }
+    return [pem];
+  }
+
   /** Upgrade the plaintext socket to TLS via STARTTLS. */
   private async startTls(): Promise<void> {
     const plain = this.socket as net.Socket;
-    await this.sendCommand("STARTTLS", false); // throws NutError on FEATURE-NOT-CONFIGURED/-SUPPORTED
+    const ca = this.loadTlsCa();
+    await this.sendOk("STARTTLS"); // throws NutError on FEATURE-NOT-CONFIGURED/-SUPPORTED
     // After "OK STARTTLS" the server begins TLS immediately — nothing plaintext may follow.
     plain.removeAllListeners("data");
     plain.removeAllListeners("error");
@@ -325,7 +395,7 @@ export class NutClient {
     const servername = net.isIP(this.host) === 0 ? this.host : undefined;
     await new Promise<void>((resolve, reject) => {
       const tlsSocket = tls.connect(
-        { socket: plain, rejectUnauthorized: this.tlsRejectUnauthorized, servername },
+        { socket: plain, rejectUnauthorized: this.tlsRejectUnauthorized, servername, ca },
         () => {
           this.tlsActive = true;
           this.log?.debug(`STARTTLS established with ${this.host}:${this.port}`);
@@ -553,7 +623,7 @@ export class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`, false);
+    await this.sendOk(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`);
   }
 
   /**
@@ -567,7 +637,7 @@ export class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`INSTCMD ${ups} ${cmd}`, false);
+    await this.sendOk(`INSTCMD ${ups} ${cmd}`);
   }
 
   /**
@@ -577,8 +647,9 @@ export class NutClient {
    * @param password NUT password
    */
   async authenticate(username: string, password: string): Promise<void> {
-    await this.sendCommand(`USERNAME ${username}`, false);
-    await this.sendCommand(`PASSWORD ${password}`, false);
+    // upsd only STORES these two (server/netuser.c) — nothing is verified until login().
+    await this.sendOk(`USERNAME ${username}`);
+    await this.sendOk(`PASSWORD ${password}`);
   }
 
   /**
@@ -591,15 +662,37 @@ export class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`LOGIN ${ups}`, false);
+    await this.sendOk(`LOGIN ${ups}`);
+    this.loggedInUps = ups;
+  }
+
+  /** The UPS this connection is logged in to after an accepted LOGIN, or null. */
+  get loggedIn(): string | null {
+    return this.loggedInUps;
   }
 
   /** Best-effort LOGOUT (graceful lifecycle; ignores errors). */
   async logout(): Promise<void> {
     try {
-      await this.sendCommand("LOGOUT", false);
+      await this.sendOk("LOGOUT");
+      this.loggedInUps = null;
     } catch {
       // Ignore — we are shutting down anyway.
+    }
+  }
+
+  /**
+   * Send a command whose only valid answer is `OK` — plain, or with a trailer such as
+   * `OK STARTTLS` / `OK TRACKING <id>`. Anything else that is not an `ERR` line used to count as
+   * success; now it is a protocol error, so a stray or desynced answer can never confirm a
+   * login, a write or a TLS upgrade that did not happen.
+   *
+   * @param command The protocol line to send
+   */
+  private async sendOk(command: string): Promise<void> {
+    const [line] = await this.sendCommand(command, false);
+    if (!/^OK(\s|$)/.test(line)) {
+      throw new NutError("UNEXPECTED-RESPONSE", `Unexpected answer to ${redactForLog(command)}: ${line}`);
     }
   }
 

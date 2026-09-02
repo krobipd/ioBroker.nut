@@ -1,56 +1,59 @@
+import * as fs from "node:fs";
 import * as net from "node:net";
+import * as os from "node:os";
+import * as path from "node:path";
 import * as tls from "node:tls";
 import { isTlsConfigError, MAX_LINE_BYTES, NutClient, NutError, NutTimeoutError } from "./nut-client";
 
 // Throwaway self-signed cert+key (CN=localhost, 10y) for the STARTTLS handshake test only.
 // The client connects with tlsRejectUnauthorized:false, so a self-signed cert is accepted.
 const TEST_TLS_CERT = `-----BEGIN CERTIFICATE-----
-MIIDCTCCAfGgAwIBAgIUHImzJF8XL41TIaeDxN27q+o+mgMwDQYJKoZIhvcNAQEL
-BQAwFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDUzMTIxMzc1MVoXDTM2MDUy
-ODIxMzc1MVowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEF
-AAOCAQ8AMIIBCgKCAQEAq4As7vWgFqRuj86ZFrSUXLVrst2HJn1hRgFzlKH1Z7YC
-XzvUHeuykDFj0PbhIGKdoPg9xfMQxGMjCtnYFrZwjLyBfP4nfqxewNiUAGPtWwE/
-Y5QPTfxwtZNfqiwktLu8OkimxQKBCw+n/wzD1knbSuEPyP7aXQcMRD0a9Hoif/JL
-Ed4PIE4KVqSpMYP7L+Fw3Sqj4n6vNXLvtmG0FJAj2rbn0PMzM/3Qhz7IfQx9DZAb
-b1aAtXilZOHC/BVlbW91/Vdw7X3srZqFKhMjEWD6lSwQ2FRXHFFkvJNykvbthr29
-jYL894rI7qp7YtSEMsLyqam22AeZ4Oa4U1F4SwR4gQIDAQABo1MwUTAdBgNVHQ4E
-FgQU1+raIiaMpli0/urIg3QONDTdDLUwHwYDVR0jBBgwFoAU1+raIiaMpli0/urI
-g3QONDTdDLUwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEANFnS
-tgPFc0SAp7rdGWi5kffxFIWbyrI2CfnsWFcHVUexgdNCHSh4QrrZRIVHIUUzj04Y
-79Vh8aORPYup8/3B6N6/QJGTVWs6JdJWE1cJBLyLOLnnXgkTEh+WLJi16aamEyXW
-vXzb8yw+RWJML89E6Ikh61f1bByuFcgJJh3yFXTxIFaC4T+Fv0aW3N2lCLBT7QXW
-WMYXCdZb2Guhq8OmnuDGgB4TIbBYhWUlyB3YsY0Up71YylY8cZJErAm2Qh1VvNZR
-YelM6JJpkeP8g739vT3X+UiwXOW6rX8SKMESGtsw2fU7OttQM/GA785RgNkHUmD5
-5KFDgEWZVJU1/aPb6w==
+MIIDJTCCAg2gAwIBAgIUSb0Y7CbK2c7r0L6mI3/N3bRpuvEwDQYJKoZIhvcNAQEL
+BQAwFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwMjEzNDI1OFoXDTM2MDgz
+MDEzNDI1OFowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAv6P7GdSYNz0BnvdDwjGGPT5qXY7oUDgCJp/jg00i8MEs
+rPJUj4Bwc7D3xH/SXGB5h+9tYuwn1AGMhTfhZ2al8G1USZqBu48ZGX6U5fjC1UVl
+q3cSr7TGn4eD6lNbMx/pZEED/Ts3Fe8d6twXhcOp8fP+l3Ko44c5KoLd44hIW2EK
+4dZuXeNNQSVT/t1pa70nsB3jEWZiV2BkBXRh1EN11aVcxoZ5fZ7a5YwOGBaj6v9d
+seT4gylwAR6MLCPdAhNixo3BPOAYZIrSdGlmmwixtCiqk5MnoemyF7X6YJbL6prt
+QebzaoAT+Vfm+ExbAeZpSm9ytMHA5Mo7zwAvVJ7lqQIDAQABo28wbTAdBgNVHQ4E
+FgQUhcxR/OaidvDau3TwE/PPQQ7bV6kwHwYDVR0jBBgwFoAUhcxR/OaidvDau3Tw
+E/PPQQ7bV6kwDwYDVR0TAQH/BAUwAwEB/zAaBgNVHREEEzARgglsb2NhbGhvc3SH
+BH8AAAEwDQYJKoZIhvcNAQELBQADggEBAFPMWpEmM5tJvnBEzG/0ve/21lcPbg21
+bfZlDz9rr0xiO2P6fSpR286SbhvtAdwPDhRHxbyOW71jhBpZeCou0IslGQM7M/r/
+AsSWA4MsSZXS6nAt5tCYqDO9TBhK+opUWlkCl/tGJkg0BuN8VNM8CmOdfqU3TbR+
+lHoHKGgcTiS8ahtnMdAGuvEKaFgG9NwhTd5As942vq24Y6zAxmXgia9fSk1z0zfY
+0UlauHccf/MW8/0GgC1IlWsDowcj/LTJtT9w6+ZB7MTUKLtYFHrpUSSBNX53FoA9
+nxRGbsxqAMDf5pcCjYmoiFZyk3Wo09yj9rX7Hs+0YhwOnHv3ugAHFB8=
 -----END CERTIFICATE-----`;
 
 const TEST_TLS_KEY = `-----BEGIN PRIVATE KEY-----
-MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCrgCzu9aAWpG6P
-zpkWtJRctWuy3YcmfWFGAXOUofVntgJfO9Qd67KQMWPQ9uEgYp2g+D3F8xDEYyMK
-2dgWtnCMvIF8/id+rF7A2JQAY+1bAT9jlA9N/HC1k1+qLCS0u7w6SKbFAoELD6f/
-DMPWSdtK4Q/I/tpdBwxEPRr0eiJ/8ksR3g8gTgpWpKkxg/sv4XDdKqPifq81cu+2
-YbQUkCPatufQ8zMz/dCHPsh9DH0NkBtvVoC1eKVk4cL8FWVtb3X9V3DtfeytmoUq
-EyMRYPqVLBDYVFccUWS8k3KS9u2Gvb2Ngvz3isjuqnti1IQywvKpqbbYB5ng5rhT
-UXhLBHiBAgMBAAECggEAGkogeTQNaZMkwKYwqP6fBJQp8YYMbu3G4Mqdq2HlYtPP
-isY61qhYG8r6bGC/820ykSeknojLX/N7fnEU8yxd1fEan2y9ZKlrMAAzNdkbnDj1
-fOAINZH2PBtejZFNQihKKxwSdn5TBj1M6SfNiHaTZ2fXOd45XovTSU2dqW7khXzA
-WYpkxecb5cGug+eWzuLrqvuaUQaI/cTwU4NTZEZutz0afPtsDKFP+huwb0yjlHF8
-EWfSjMi3ejCfJatoNCUVJ08drTjR+b2vxljGTpG70dPtv5HgcCqSzUi0j4Pg4wtw
-loHiE7FwVrtM6UevUOk0wwjpKGbuEA/AMZ4RgsxdjQKBgQDXmIkwcQkN+t4Gwwvk
-ZvKEXgoTi1fjQN4pWTDmgkqo6ip/kBveCndYMV2U+q7S+KGW/Vw9tgR1BPg0lb8M
-z267GSMnxSIEmnz0lPwKV2BW9yy8vzyN5RXtSWx5xs9v1J0E/Q+QBNFFsE5R+i0z
-BHPjckCBY+595fGlVAPhDi6QtQKBgQDLpB9hl3P63WbNTZNKycf3czN2xa8jdA0N
-9RRXhdPumUbXcUQQbd2T+rAGpFAFksRrqqi2ryCZ0nid/mgv2C17WRwFUMlY6hdq
-s8uBmjGBBGkAQwVF5HWpieHS2vYANF8ZDcKTzNNwn+IMNEdpoOoJlcrdPTUSCuAs
-HqIRMtZEHQKBgQC/wJJcPFzySysIVpgQKCQQ6NcLdQbRP9OYcRSWIFIpFESCOnke
-rq5hCV8Tbzbou2x1L5jH5kjmj2n20y0eRqxUylHDQIk2EPWMT6ovxHESSDtJEMnZ
-5mPvLTvGv7Wl4DNbyXv6+t3qnpm6PcnPs2kjZW3L50aqQUcAZc4hcAyodQKBgQCm
-1ResgULQRDBjg+lmvPbpH+UKqhu4xOupAp6esZIWCFbETBQCDbAY+qjZWCYC2uG2
-f0LnH4Rq4MZWUcWTZNymEDPnmu7JvEZg8VmJHQTveOh5AW9BelB3C/IJJ7+gHUfH
-o8FECusyepnbe70BqYXzQlfHdsySsnxDSPlnc6mcdQKBgBuD3hyhtSYeFZYFIp15
-5QyOYYHA4SylTa/FTWPArsi4Jni3CCUf4ObZ3HUvc5m1ig1WrfsaXG3QuiM2q9Ng
-LueAgxoAfWdMelYH3sDF7+1lZoTM9iW5mUKYR32S/lFzN/s0DfeyRigKgRrHUHRk
-BkE/t6kWa7tRIMX2uf2qvl8M
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/o/sZ1Jg3PQGe
+90PCMYY9PmpdjuhQOAImn+ODTSLwwSys8lSPgHBzsPfEf9JcYHmH721i7CfUAYyF
+N+FnZqXwbVRJmoG7jxkZfpTl+MLVRWWrdxKvtMafh4PqU1szH+lkQQP9OzcV7x3q
+3BeFw6nx8/6Xcqjjhzkqgt3jiEhbYQrh1m5d401BJVP+3WlrvSewHeMRZmJXYGQF
+dGHUQ3XVpVzGhnl9ntrljA4YFqPq/12x5PiDKXABHowsI90CE2LGjcE84BhkitJ0
+aWabCLG0KKqTkyeh6bIXtfpglsvqmu1B5vNqgBP5V+b4TFsB5mlKb3K0wcDkyjvP
+AC9UnuWpAgMBAAECggEABdtzvzccdnzxzP0Qaagv8TTBNWSHn+LXJZbEi+/1j3qz
+/4HOySEH+6OiLjPchwn3noqk/JcS447iXHSYBs9GgJny1gB3+R0EGFLVjbU9jTbe
+oK/WI7koffOhueDib3MilyrjV1/+zJFfO0OohpdznQT6WDO/F88ulXV9y/VcUso2
+BB5g7zKiqz7bYdwvOOHOe2Bv96GiN6PnCRBFJIpB1iK0dYXL9Iqgp3KUT84nJH8D
+z3YBOHcdjdSZCwMzf5NB2ZYzPtn/HAuz/TYjG6BsS6wZtI3r09L109J0j3dwTmua
+AHaASEYe6PK3yT0Gr760sd0v7Zz/Ev8u9DitpFLrNQKBgQD64X7m/rOTk2vJMc+k
+kWPjW0873zT9TlWcUs/TrN4p84Hqds5i911evJs/Ej4WX4jQlF/3JAT5kTBcKxs5
+w2B5d2B8KCpRENmCyqFmOWPWlrlY7iOX+Tm54HIm+hBRn5Lv6ltt5w5686OfnMee
+jXde8A/FE/Ukkxl9F+H+oVE9lQKBgQDDjQltPRrLirPvM9bB7JBKp0O+FWRWg3u2
+NkgGCkgdeMvUlwo8z1mINxJWUBlK+KIc3f+cdEU5F1/AizyM+/o+GJDRy0l86dR9
+0XLXrHnuAvXk6LckB0pQL7bAF71uVFJWYCO4BnTTrrKEXUzBHFHLJp8SEE5ag1xj
+Gp9zW1v6xQKBgDo7lSUxAaXDlkVBFp1wUes4CpAvIzGYuS5r2mmbuoWqTAGMSiOW
+n0maJb7iER9IVY10o0HOTolPNhZuuwcRXpdTKkYnXIssihBd0FDWCWKJ4cPOotxn
+sQqAGn8JlDgd/hFKKKa99xJ68wPddEhNNeQHfOGV3FT8//GVVZOxBhZxAoGAbf7n
+TosQh219yQ9fvbVTdKqhcEqYJhHPhK8D1GH0Lp/EB9Dt8UaxFe3kYqirkYBJr/Mv
+1NGSHosHUUcAyEz0dflbfKbcr2bYH+2wq6BY9Yi0yA4e9iUjp/cu1N6Fr4m+xtdN
+QDZhgLDDubDBe95yI9OVppOFf2Rkk1pmVn0NQAECgYEAmJDZRi7T3b5XOVDgdKFY
+xkS9u1yCbpaDzGcyPFhiynlbZ+esuw/gpqCkQGe+rYnpdPEHxWqUp7vQEMC0p5jO
+r5D54skfkyxwXWG5bDaIybPwDo4X/2ULCuJ7N1R9Pf8pl/+PYVOqoSGU07X/mHP9
+NOrvKUxEDG11lxm5tG7mB+8=
 -----END PRIVATE KEY-----`;
 
 // ---------------------------------------------------------------------------
@@ -1563,12 +1566,13 @@ describe("NutClient", () => {
       const mock = createStartTlsMockServer(() => "ERR UNKNOWN-COMMAND");
       const port = await mock.start();
       const warns: string[] = [];
+      const debugs: string[] = [];
       const timers: number[] = [];
       try {
         const client = new NutClient("127.0.0.1", port, {
           useTls: true,
           tlsRejectUnauthorized: true,
-          logger: { debug: () => {}, info: () => {}, warn: m => warns.push(m) },
+          logger: { debug: m => debugs.push(m), info: () => {}, warn: m => warns.push(m) },
           setTimer: (cb, ms) => {
             timers.push(ms);
             return globalThis.setTimeout(cb, ms);
@@ -1583,7 +1587,9 @@ describe("NutClient", () => {
         // TCP was up when the handshake failed — the close that follows must not read as "lost",
         // and no reconnect may be armed next to the fatal stop (only the connect deadline ran).
         expect(warns.some(w => w.includes("lost"))).toBe(false);
-        expect(warns.some(w => w.includes("not retrying"))).toBe(true);
+        // The client notes the fatal at debug only — the adapter reports it once at error level.
+        expect(warns).toEqual([]);
+        expect(debugs.some(w => w.includes("not retrying"))).toBe(true);
         expect(timers.filter(ms => ms >= 1000 && ms < 5000)).toEqual([]);
         client.destroy();
       } finally {
@@ -1745,7 +1751,155 @@ describe("NutClient", () => {
 // ---------------------------------------------------------------------------
 // isTlsConfigError — fatal (go yellow) vs. transient (retry) classification
 // ---------------------------------------------------------------------------
+describe("OK verification — a confirmation command is only successful on an OK line", () => {
+  it("rejects a SET VAR that is answered with a data line instead of OK", async () => {
+    const mock = createMockNutServer(cmd => (cmd.startsWith("SET VAR") ? 'VAR ups0 x "1"' : "OK"));
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port);
+      await client.connect();
+      await expect(client.setVar("ups0", "x", "1")).rejects.toMatchObject({ code: "UNEXPECTED-RESPONSE" });
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
+  it("rejects USERNAME/PASSWORD answered with anything but OK", async () => {
+    const mock = createMockNutServer(cmd => (cmd.startsWith("USERNAME") ? "HELLO" : "OK"));
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port);
+      await client.connect();
+      await expect(client.authenticate("admin", "secret")).rejects.toMatchObject({ code: "UNEXPECTED-RESPONSE" });
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
+  it("accepts OK with a trailer (INSTCMD tracking, STARTTLS)", async () => {
+    const mock = createMockNutServer(cmd => (cmd.startsWith("INSTCMD") ? "OK TRACKING 4711" : "OK"));
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port);
+      await client.connect();
+      await expect(client.instCmd("ups0", "beeper.enable")).resolves.toBeUndefined();
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
+  it("does not attempt a TLS handshake when STARTTLS is answered with a non-OK line", async () => {
+    const mock = createMockNutServer(cmd => (cmd === "STARTTLS" ? "FOO" : "OK"));
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port, { useTls: true });
+      await expect(client.connect()).rejects.toMatchObject({ code: "UNEXPECTED-RESPONSE" });
+      expect(client.isTls).toBe(false);
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
+  it("tracks the LOGIN of this connection and forgets it on LOGOUT", async () => {
+    const mock = createMockNutServer(cmd => (cmd === "LOGOUT" ? "OK Goodbye" : "OK"));
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port);
+      await client.connect();
+      expect(client.loggedIn).toBeNull();
+      await client.authenticate("admin", "secret");
+      await client.login("ups0");
+      expect(client.loggedIn).toBe("ups0");
+      await client.logout();
+      expect(client.loggedIn).toBeNull();
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+});
+
+describe("TLS CA file — strict check against a private CA", () => {
+  const writeTmp = (name: string, content: string): string => {
+    const file = path.join(os.tmpdir(), `nut2-test-${process.pid}-${name}`);
+    fs.writeFileSync(file, content);
+    return file;
+  };
+
+  it(
+    "trusts the server certificate through the configured CA file with verification ON",
+    { timeout: 10000 },
+    async () => {
+      const mock = createStartTlsMockServer(cmd =>
+        cmd === "LIST UPS" ? ["BEGIN LIST UPS", 'UPS ups0 "Secure"', "END LIST UPS"] : "OK",
+      );
+      const port = await mock.start();
+      const caFile = writeTmp("ca.pem", TEST_TLS_CERT);
+      try {
+        const client = new NutClient("127.0.0.1", port, {
+          useTls: true,
+          tlsRejectUnauthorized: true,
+          tlsCaFile: caFile,
+        });
+        await client.connect();
+        expect(client.isTls).toBe(true);
+        expect(await client.listUps()).toEqual([{ name: "ups0", description: "Secure" }]);
+        client.destroy();
+      } finally {
+        fs.rmSync(caFile, { force: true });
+        await mock.stop();
+      }
+    },
+  );
+
+  it("a missing CA file is a fatal configuration error — checked before STARTTLS is even sent", async () => {
+    const mock = createStartTlsMockServer(() => "OK");
+    const port = await mock.start();
+    try {
+      const client = new NutClient("127.0.0.1", port, {
+        useTls: true,
+        tlsRejectUnauthorized: true,
+        tlsCaFile: path.join(os.tmpdir(), "nut2-does-not-exist.pem"),
+      });
+      let caught: unknown;
+      await client.connect().catch((e: unknown) => (caught = e));
+      expect((caught as NutError).code).toBe("TLS-CA-UNREADABLE");
+      expect(isTlsConfigError(caught)).toBe(true);
+      expect(mock.commands).not.toContain("STARTTLS");
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
+  it("a CA file without a PEM certificate is a fatal configuration error", async () => {
+    const mock = createStartTlsMockServer(() => "OK");
+    const port = await mock.start();
+    const caFile = writeTmp("garbage.pem", "this is not a certificate");
+    try {
+      const client = new NutClient("127.0.0.1", port, { useTls: true, tlsRejectUnauthorized: true, tlsCaFile: caFile });
+      let caught: unknown;
+      await client.connect().catch((e: unknown) => (caught = e));
+      expect((caught as NutError).code).toBe("TLS-CA-INVALID");
+      expect(isTlsConfigError(caught)).toBe(true);
+      client.destroy();
+    } finally {
+      fs.rmSync(caFile, { force: true });
+      await mock.stop();
+    }
+  });
+});
+
 describe("isTlsConfigError", () => {
+  it("treats OpenSSL parse errors (a broken CA/certificate) as fatal configuration errors", () => {
+    expect(isTlsConfigError({ code: "ERR_OSSL_PEM_NO_START_LINE" })).toBe(true);
+    expect(isTlsConfigError({ code: "ECONNRESET" })).toBe(false);
+  });
+
   it("treats NUT no-TLS / SSL-mode errors as fatal", () => {
     expect(isTlsConfigError(new NutError("FEATURE-NOT-CONFIGURED"))).toBe(true);
     expect(isTlsConfigError(new NutError("FEATURE-NOT-SUPPORTED"))).toBe(true);
