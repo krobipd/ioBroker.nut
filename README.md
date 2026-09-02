@@ -46,18 +46,26 @@ For details and how to disable it, see the [Sentry plugin documentation](https:/
 
 ### Connection
 
-| Option                | Description                                                            | Default |
-| --------------------- | ---------------------------------------------------------------------- | ------- |
-| **NUT Server Host**   | Hostname or IP address of the NUT server                               | —       |
-| **Port**              | NUT server port                                                        | `3493`  |
-| **Network Interface** | Bind outgoing connections to a specific local IP (optional)            | all     |
-| **Poll Interval (s)** | How often to query the NUT server (2–300)                              | `15`    |
-| **Username**          | NUT username (optional — required for commands and writable variables) | —       |
-| **Password**          | NUT password                                                           | —       |
-| **Use TLS (STARTTLS)** | Encrypt the connection via STARTTLS                                   | off     |
-| **Require valid certificate** | Reject self-signed/invalid certificates (only shown when TLS is on) | off     |
+| Option                        | Description                                                                                                                                            | Default |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| **NUT Server Host**           | Hostname or IP address of the NUT server                                                                                                               | —       |
+| **Port**                      | NUT server port                                                                                                                                        | `3493`  |
+| **Network Interface**         | Bind outgoing connections to a specific local IP (optional)                                                                                            | all     |
+| **Poll Interval (s)**         | How often to query the NUT server (2–300)                                                                                                              | `15`    |
+| **Username**                  | NUT username (optional — the adapter logs in with it; needed for commands and writable variables)                                                      | —       |
+| **Password**                  | NUT password                                                                                                                                           | —       |
+| **Use TLS (STARTTLS)**        | Encrypt the connection via STARTTLS                                                                                                                    | off     |
+| **Require valid certificate** | Reject self-signed/invalid certificates (only shown when TLS is on)                                                                                    | off     |
+| **CA certificate file**       | PEM file to trust for the strict check — your own certificate authority or the self-signed server certificate (only shown when the strict check is on) | —       |
 
-Use the **Test Connection** button to verify the server is reachable and see discovered UPS devices.
+Use the **Test Connection** button to verify the server is reachable and see discovered UPS devices. With a username
+and password it also logs in, so the result tells you whether the credentials really work — and whether the connection
+is encrypted.
+
+**About the login:** the NUT server only checks a username and password when a client logs in — sending them alone
+proves nothing. The adapter therefore logs in once per connection as soon as credentials are configured. This requires
+an `upsmon secondary` (or `upsmon primary`) line for that user in the server's `upsd.users`; a user that only has
+`actions` or `instcmds` entries cannot log in and is reported as rejected.
 
 **About TLS:** enabling STARTTLS encrypts the connection so your NUT username and password are no longer sent in clear text over the network. With the default settings it protects against passive eavesdropping, but **not** against an active man-in-the-middle, because most NUT servers use a self-signed certificate that cannot be verified. For full protection, configure a certificate the client can validate on the NUT server and enable **Require valid certificate**. The NUT server must be built with TLS support (`upsd` with `CERTFILE`/`CERTPATH`); otherwise the connection test reports a TLS error.
 
@@ -202,6 +210,12 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 - Check firewall rules for TCP port 3493
 - Use the Test Connection button in the admin UI
 
+### Login rejected
+
+- The NUT server answers the same way for a wrong password and for a user that may not log in — check both
+- The user needs an `upsmon secondary` (or `upsmon primary`) line in the server's `upsd.users`
+- Without a username and password the adapter reads the UPS data without logging in; commands and writable variables then stay unavailable
+
 ### Commands not working
 
 - Ensure **Enable Commands** is checked in the Advanced tab
@@ -215,7 +229,7 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 
 ### States not updating
 
-- Check `info.connection` — if `false`, the TCP connection is down
+- Check `info.connection` — if `false`, the connection is down (a rejected login also leaves it `false`)
 - Check the ioBroker log for NUT error codes (e.g. `DATA-STALE` means the UPS driver lost contact)
 - Verify the poll interval is appropriate for your setup
 
@@ -227,6 +241,15 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Fixed: the connection test now really verifies the username and password — it logs in to the NUT server and only then reports success, instead of accepting anything you type (#17)
+- Fixed: the adapter logs in to the NUT server whenever credentials are configured, so wrong credentials show up right away instead of silently failing on the first command
+- Fixed: a reply that is not a confirmation is no longer treated as success — a stray answer can no longer make a write, a login or an encrypted upgrade look like it worked
+- New: the connection test and the start message state whether the connection is encrypted and which user is logged in, so you can see what is really in use
+- New: a certificate file can be configured so strict certificate checking also works with your own certificate authority or a self-signed server certificate
+
 ### 0.11.0 (2026-09-02)
 
 - New: a UPS added to or removed from the NUT server now appears or disappears at the next poll — no reconnect and no adapter restart needed for a changed server setup

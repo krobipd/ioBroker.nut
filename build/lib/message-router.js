@@ -22,12 +22,13 @@ __export(message_router_exports, {
   makeTestClientFactory: () => makeTestClientFactory
 });
 module.exports = __toCommonJS(message_router_exports);
+var import_nut_client = require("./nut-client");
 var import_coerce = require("./coerce");
 function makeTestClientFactory(NutClientClass, logger) {
   return (host, port, options) => new NutClientClass(host, port, { ...options, logger });
 }
 async function dispatchMessage(obj, deps) {
-  var _a, _b;
+  var _a, _b, _c;
   deps.log.debug(`onMessage: command='${obj == null ? void 0 : obj.command}' from='${obj == null ? void 0 : obj.from}' has-callback=${!!(obj == null ? void 0 : obj.callback)}`);
   if (!obj.callback) {
     return;
@@ -51,7 +52,8 @@ async function dispatchMessage(obj, deps) {
           localAddress,
           commandTimeout: (0, import_coerce.coerceCommandTimeoutMs)(config.commandTimeout),
           useTls: !!config.useTls,
-          tlsRejectUnauthorized: !!config.tlsRejectUnauthorized
+          tlsRejectUnauthorized: !!config.tlsRejectUnauthorized,
+          tlsCaFile: typeof config.tlsCaFile === "string" ? config.tlsCaFile : ""
         };
         const testClient = deps.createTestClient(host, port, options);
         (_a = deps.onTestClientCreated) == null ? void 0 : _a.call(deps, testClient);
@@ -60,19 +62,32 @@ async function dispatchMessage(obj, deps) {
           const upsList = await testClient.listUps();
           const names = upsList.map((u) => u.name).join(", ");
           deps.log.debug(`checkConnection: found ${upsList.length} UPS(es): ${names}`);
+          const transport = testClient.isTls ? "via TLS" : "unencrypted";
           if (username && password) {
-            await testClient.authenticate(username, password);
-            deps.sendTo(
-              obj.from,
-              obj.command,
-              { result: `Connected and authenticated \u2014 ${upsList.length} UPS(es): ${names}` },
-              obj.callback
-            );
+            const first = upsList[0];
+            if (!first) {
+              deps.sendTo(
+                obj.from,
+                obj.command,
+                { result: `Connected ${transport} \u2014 no UPS found; credentials not verified (nothing to log in to)` },
+                obj.callback
+              );
+            } else {
+              await testClient.authenticate(username, password);
+              await testClient.login(first.name);
+              await testClient.logout();
+              deps.sendTo(
+                obj.from,
+                obj.command,
+                { result: `Connected ${transport}, logged in as ${username} \u2014 ${upsList.length} UPS(es): ${names}` },
+                obj.callback
+              );
+            }
           } else {
             deps.sendTo(
               obj.from,
               obj.command,
-              { result: `Connected \u2014 ${upsList.length} UPS(es): ${names}` },
+              { result: `Connected ${transport} \u2014 ${upsList.length} UPS(es): ${names} (no credentials configured)` },
               obj.callback
             );
           }
@@ -88,7 +103,7 @@ async function dispatchMessage(obj, deps) {
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${(0, import_coerce.errText)(err)}`);
-    deps.sendTo(obj.from, obj.command, { error: (0, import_coerce.errText)(err) }, obj.callback);
+    deps.sendTo(obj.from, obj.command, { error: (_c = (0, import_nut_client.authFailureText)(err)) != null ? _c : (0, import_coerce.errText)(err) }, obj.callback);
   }
 }
 // Annotate the CommonJS export names for ESM import in node:

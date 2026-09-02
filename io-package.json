@@ -3,6 +3,19 @@
     "name": "nut2",
     "version": "0.11.0",
     "news": {
+      "NEXT": {
+        "en": "The connection test really verifies the credentials now (it logs in), the adapter logs in whenever credentials are set, and the test shows whether the connection is encrypted",
+        "de": "Der Verbindungstest prüft die Zugangsdaten jetzt wirklich (er meldet sich an), der Adapter meldet sich bei hinterlegten Zugangsdaten immer an, und der Test zeigt, ob die Verbindung verschlüsselt ist",
+        "ru": "Проверка соединения теперь действительно проверяет учётные данные (выполняется вход), адаптер входит в систему при заданных данных, а тест показывает, зашифровано ли соединение",
+        "pt": "O teste de ligação verifica agora realmente as credenciais (faz login), o adaptador inicia sessão sempre que houver credenciais e o teste mostra se a ligação é encriptada",
+        "nl": "De verbindingstest controleert de inloggegevens nu echt (hij logt in), de adapter logt in zodra er gegevens zijn ingesteld en de test toont of de verbinding versleuteld is",
+        "fr": "Le test de connexion vérifie désormais réellement les identifiants (il se connecte), l'adaptateur se connecte dès que des identifiants sont configurés et le test indique si la connexion est chiffrée",
+        "it": "Il test di connessione ora verifica davvero le credenziali (esegue il login), l'adattatore accede sempre quando sono configurate credenziali e il test mostra se la connessione è cifrata",
+        "es": "La prueba de conexión ahora verifica realmente las credenciales (inicia sesión), el adaptador inicia sesión siempre que haya credenciales y la prueba muestra si la conexión está cifrada",
+        "pl": "Test połączenia naprawdę sprawdza teraz dane logowania (loguje się), adapter loguje się zawsze gdy dane są ustawione, a test pokazuje czy połączenie jest szyfrowane",
+        "uk": "Перевірка з'єднання тепер справді перевіряє облікові дані (виконує вхід), адаптер входить у систему щоразу за наявності даних, а тест показує, чи зашифроване з'єднання",
+        "zh-cn": "连接测试现在会真正验证凭据（执行登录），配置了凭据时适配器始终登录，测试还会显示连接是否加密"
+      },
       "0.11.0": {
         "en": "A UPS added to or removed from the NUT server now appears or disappears at the next poll, without a restart; writes to the adapter's own states no longer end in a SET VAR error.",
         "de": "Eine am NUT-Server hinzugefügte oder entfernte USV erscheint bzw. verschwindet beim nächsten Abruf ohne Neustart; Schreibzugriffe auf adaptereigene Datenpunkte enden nicht mehr im SET-VAR-Fehler.",
@@ -80,19 +93,6 @@
         "pl": "Więcej odczytów UPS pojawia się teraz z poprawnym typem ioBroker zamiast tekstu, więc wartości liczbowe, przełączniki tak/nie i pola stanu można używać w wykresach i skryptach.",
         "uk": "Більше показань ДБЖ тепер мають правильний тип ioBroker замість тексту, тож числа, перемикачі так/ні та поля стану можна використовувати прямо в графіках і скриптах.",
         "zh-cn": "更多 UPS 读数现在以正确的 ioBroker 类型显示，而非纯文本，因此数值、是/否开关和状态字段可直接用于图表和脚本。"
-      },
-      "0.5.3": {
-        "en": "The version history shown in the adapter manager now lists only versions that actually exist for this adapter.",
-        "de": "Die Versionshistorie im Adapter-Manager zeigt jetzt nur noch Versionen, die es für diesen Adapter wirklich gibt.",
-        "ru": "История версий в менеджере адаптеров теперь показывает только реально существующие версии этого адаптера.",
-        "pt": "O histórico de versões no gestor de adaptadores mostra agora apenas versões que existem realmente.",
-        "nl": "De versiegeschiedenis in de adapterbeheerder toont nu alleen versies die echt bestaan.",
-        "fr": "L'historique des versions dans le gestionnaire d'adaptateurs n'affiche plus que les versions réellement existantes.",
-        "it": "La cronologia delle versioni nel gestore adattatori mostra ora solo le versioni realmente esistenti.",
-        "es": "El historial de versiones en el gestor de adaptadores ahora muestra solo versiones que existen realmente.",
-        "pl": "Historia wersji w menedżerze adapterów pokazuje teraz tylko wersje, które faktycznie istnieją.",
-        "uk": "Історія версій у менеджері адаптерів тепер показує лише версії, які справді існують.",
-        "zh-cn": "适配器管理器中的版本历史现在只显示该适配器实际存在的版本。"
       }
     },
     "plugins": {

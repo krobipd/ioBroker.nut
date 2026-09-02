@@ -32,9 +32,11 @@ __export(nut_client_exports, {
   NutClient: () => NutClient,
   NutError: () => NutError,
   NutTimeoutError: () => NutTimeoutError,
+  authFailureText: () => authFailureText,
   isTlsConfigError: () => isTlsConfigError
 });
 module.exports = __toCommonJS(nut_client_exports);
+var fs = __toESM(require("node:fs"));
 var net = __toESM(require("node:net"));
 var tls = __toESM(require("node:tls"));
 var import_coerce = require("./coerce");
@@ -70,6 +72,9 @@ const TLS_FATAL_ERROR_CODES = /* @__PURE__ */ new Set([
   "FEATURE-NOT-CONFIGURED",
   "FEATURE-NOT-SUPPORTED",
   "ALREADY-SSL-MODE",
+  // Adapter-level: the configured CA file is missing/unreadable or not a PEM certificate
+  "TLS-CA-UNREADABLE",
+  "TLS-CA-INVALID",
   // Node certificate-verification failures (only reachable with tlsRejectUnauthorized=true)
   "DEPTH_ZERO_SELF_SIGNED_CERT",
   "SELF_SIGNED_CERT_IN_CHAIN",
@@ -85,7 +90,25 @@ function isTlsConfigError(err) {
   if (typeof code !== "string") {
     return false;
   }
-  return TLS_FATAL_ERROR_CODES.has(code) || code.startsWith("ERR_TLS_") || code.startsWith("ERR_SSL_");
+  return TLS_FATAL_ERROR_CODES.has(code) || code.startsWith("ERR_TLS_") || code.startsWith("ERR_SSL_") || code.startsWith("ERR_OSSL_");
+}
+const AUTH_ERROR_CODES = /* @__PURE__ */ new Set([
+  "ACCESS-DENIED",
+  "INVALID-USERNAME",
+  "INVALID-PASSWORD",
+  "USERNAME-REQUIRED",
+  "PASSWORD-REQUIRED",
+  "ALREADY-SET-USERNAME",
+  "ALREADY-SET-PASSWORD"
+]);
+function authFailureText(err) {
+  if (!(err instanceof NutError) || !AUTH_ERROR_CODES.has(err.code)) {
+    return null;
+  }
+  if (err.code === "ACCESS-DENIED") {
+    return "the NUT server rejected the login (ACCESS-DENIED): wrong password, or the user has no `upsmon secondary`/`upsmon primary` line in upsd.users";
+  }
+  return `the NUT server rejected the credentials (${err.code})`;
 }
 class NutClient {
   socket = null;
@@ -104,12 +127,15 @@ class NutClient {
   ready = false;
   destroyed = false;
   tlsActive = false;
+  /** The UPS this connection is logged in to (LOGIN accepted) — null until then, reset per connection. */
+  loggedInUps = null;
   host;
   port;
   localAddress;
   commandTimeout;
   useTls;
   tlsRejectUnauthorized;
+  tlsCaFile;
   log;
   // Injected managed timers (adapter.setTimeout/clearTimeout in production → auto-cleared on
   // unload; global timers as fallback for standalone use/tests).
@@ -129,16 +155,17 @@ class NutClient {
    * @param options Connection options
    */
   constructor(host, port, options) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     this.host = host;
     this.port = port;
     this.localAddress = options == null ? void 0 : options.localAddress;
     this.commandTimeout = (_a = options == null ? void 0 : options.commandTimeout) != null ? _a : import_types.NUT_DEFAULT_COMMAND_TIMEOUT;
     this.useTls = (_b = options == null ? void 0 : options.useTls) != null ? _b : false;
     this.tlsRejectUnauthorized = (_c = options == null ? void 0 : options.tlsRejectUnauthorized) != null ? _c : false;
+    this.tlsCaFile = ((_d = options == null ? void 0 : options.tlsCaFile) == null ? void 0 : _d.trim()) || void 0;
     this.log = options == null ? void 0 : options.logger;
-    this.setTimer = (_d = options == null ? void 0 : options.setTimer) != null ? _d : ((cb, ms) => globalThis.setTimeout(cb, ms));
-    this.clearTimer = (_e = options == null ? void 0 : options.clearTimer) != null ? _e : ((h) => globalThis.clearTimeout(h));
+    this.setTimer = (_e = options == null ? void 0 : options.setTimer) != null ? _e : ((cb, ms) => globalThis.setTimeout(cb, ms));
+    this.clearTimer = (_f = options == null ? void 0 : options.clearTimer) != null ? _f : ((h) => globalThis.clearTimeout(h));
   }
   /**
    * Register a callback invoked after every successful (re)connection in persistent mode.
@@ -197,7 +224,7 @@ class NutClient {
     sock == null ? void 0 : sock.destroy();
     const msg = err instanceof Error ? err.message : String(err);
     if (this.useTls && isTlsConfigError(err)) {
-      (_a = this.log) == null ? void 0 : _a.warn(`TLS connection to NUT server ${this.host}:${this.port} failed \u2014 not retrying: ${msg}`);
+      (_a = this.log) == null ? void 0 : _a.debug(`TLS connection to NUT server ${this.host}:${this.port} failed \u2014 not retrying: ${msg}`);
       (_b = this.onFatalHandler) == null ? void 0 : _b.call(this, err);
       return;
     }
@@ -245,6 +272,7 @@ class NutClient {
         var _a;
         this.connected = true;
         this.tlsActive = false;
+        this.loggedInUps = null;
         this.buffer = "";
         (_a = this.log) == null ? void 0 : _a.debug(`Connected to NUT server ${this.host}:${this.port}`);
         if (this.useTls) {
@@ -279,6 +307,7 @@ class NutClient {
       const wasReady = this.ready;
       this.ready = false;
       this.connected = false;
+      this.loggedInUps = null;
       this.rejectAll(new Error("Connection closed"));
       if (wasReady && !this.destroyed && this.persistent) {
         (_a = this.log) == null ? void 0 : _a.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
@@ -286,10 +315,34 @@ class NutClient {
       }
     });
   }
+  /**
+   * Read the configured CA file (strict certificate check against a private CA). Both failure
+   * modes are configuration errors — fatal, not retried — and are checked BEFORE the server is
+   * asked for STARTTLS, so a bad path never opens a half-upgraded connection.
+   *
+   * @returns the PEM certificate(s) to trust, or undefined when no CA file is configured
+   */
+  loadTlsCa() {
+    if (!this.tlsCaFile) {
+      return void 0;
+    }
+    let pem;
+    try {
+      pem = fs.readFileSync(this.tlsCaFile, "utf8");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new NutError("TLS-CA-UNREADABLE", `TLS CA file ${this.tlsCaFile} cannot be read: ${msg}`);
+    }
+    if (!pem.includes("-----BEGIN CERTIFICATE-----")) {
+      throw new NutError("TLS-CA-INVALID", `TLS CA file ${this.tlsCaFile} is not a PEM certificate`);
+    }
+    return [pem];
+  }
   /** Upgrade the plaintext socket to TLS via STARTTLS. */
   async startTls() {
     const plain = this.socket;
-    await this.sendCommand("STARTTLS", false);
+    const ca = this.loadTlsCa();
+    await this.sendOk("STARTTLS");
     plain.removeAllListeners("data");
     plain.removeAllListeners("error");
     plain.removeAllListeners("close");
@@ -297,7 +350,7 @@ class NutClient {
     const servername = net.isIP(this.host) === 0 ? this.host : void 0;
     await new Promise((resolve, reject) => {
       const tlsSocket = tls.connect(
-        { socket: plain, rejectUnauthorized: this.tlsRejectUnauthorized, servername },
+        { socket: plain, rejectUnauthorized: this.tlsRejectUnauthorized, servername, ca },
         () => {
           var _a;
           this.tlsActive = true;
@@ -517,7 +570,7 @@ class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`, false);
+    await this.sendOk(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`);
   }
   /**
    * Execute an instant command.
@@ -531,7 +584,7 @@ class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`INSTCMD ${ups} ${cmd}`, false);
+    await this.sendOk(`INSTCMD ${ups} ${cmd}`);
   }
   /**
    * Authenticate with the NUT server.
@@ -540,8 +593,8 @@ class NutClient {
    * @param password NUT password
    */
   async authenticate(username, password) {
-    await this.sendCommand(`USERNAME ${username}`, false);
-    await this.sendCommand(`PASSWORD ${password}`, false);
+    await this.sendOk(`USERNAME ${username}`);
+    await this.sendOk(`PASSWORD ${password}`);
   }
   /**
    * Register as monitoring client for a UPS.
@@ -553,13 +606,33 @@ class NutClient {
     if (bad) {
       throw bad;
     }
-    await this.sendCommand(`LOGIN ${ups}`, false);
+    await this.sendOk(`LOGIN ${ups}`);
+    this.loggedInUps = ups;
+  }
+  /** The UPS this connection is logged in to after an accepted LOGIN, or null. */
+  get loggedIn() {
+    return this.loggedInUps;
   }
   /** Best-effort LOGOUT (graceful lifecycle; ignores errors). */
   async logout() {
     try {
-      await this.sendCommand("LOGOUT", false);
+      await this.sendOk("LOGOUT");
+      this.loggedInUps = null;
     } catch {
+    }
+  }
+  /**
+   * Send a command whose only valid answer is `OK` — plain, or with a trailer such as
+   * `OK STARTTLS` / `OK TRACKING <id>`. Anything else that is not an `ERR` line used to count as
+   * success; now it is a protocol error, so a stray or desynced answer can never confirm a
+   * login, a write or a TLS upgrade that did not happen.
+   *
+   * @param command The protocol line to send
+   */
+  async sendOk(command) {
+    const [line] = await this.sendCommand(command, false);
+    if (!/^OK(\s|$)/.test(line)) {
+      throw new NutError("UNEXPECTED-RESPONSE", `Unexpected answer to ${redactForLog(command)}: ${line}`);
     }
   }
   sendCommand(command, multiLine) {
@@ -717,6 +790,7 @@ function redactForLog(command) {
   NutClient,
   NutError,
   NutTimeoutError,
+  authFailureText,
   isTlsConfigError
 });
 //# sourceMappingURL=nut-client.js.map
