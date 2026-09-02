@@ -365,11 +365,28 @@ export class NutAdapter extends utils.Adapter {
     return unique;
   }
 
-  private async discover(): Promise<void> {
+  /**
+   * Whether the NUT server's UPS list differs from what was discovered last — by NUT name,
+   * order-independent.
+   *
+   * @param upsList Fresh LIST UPS result
+   */
+  private upsListChanged(upsList: UpsInfo[]): boolean {
+    const fresh = upsList.map(u => u.name).sort();
+    const known = [...this.discoveredUps.values()].map(u => u.name).sort();
+    return fresh.length !== known.length || fresh.some((name, i) => name !== known[i]);
+  }
+
+  /**
+   * Discover the UPS devices on the server and (re)build the object tree for them.
+   *
+   * @param prefetched LIST UPS result already fetched by the caller (the poll), otherwise fetched here
+   */
+  private async discover(prefetched?: UpsInfo[]): Promise<void> {
     if (!this.client || !this.stateManager) {
       return;
     }
-    const upsList = await this.client.listUps();
+    const upsList = prefetched ?? (await this.client.listUps());
     this.log.debug(`Discovered ${upsList.length} UPS(es): ${upsList.map(u => u.name).join(", ")}`);
 
     this.discoveredUps.clear();
@@ -444,6 +461,16 @@ export class NutAdapter extends utils.Adapter {
 
     this.isPolling = true;
     try {
+      // LIST UPS is one cheap command per poll. A UPS added to or removed from the NUT server
+      // at runtime used to wait for the next reconnect (or an adapter restart) — discovery
+      // only ran once per connection.
+      const upsList = await this.client.listUps();
+      if (this.upsListChanged(upsList)) {
+        this.log.info(`UPS list on the NUT server changed: ${upsList.map(u => u.name).join(", ") || "none"}`);
+        await this.discover(upsList);
+        await this.setupCommandButtons();
+      }
+
       let reachable = 0;
       for (const [upsId, ups] of this.discoveredUps) {
         // upsId is the sanitized object-ID segment; nutName is the real NUT name for the protocol.
@@ -638,6 +665,14 @@ export class NutAdapter extends utils.Adapter {
       // parts[0] is the sanitized object ID; the protocol needs the real NUT name.
       const nutName = ups.name;
 
+      // `info` (reachable, notify) and `status` (the parsed flags) are adapter-owned channels,
+      // never NUT variables — a write there (a script, the REST API) must not turn into a
+      // SET VAR that upsd rejects with VAR-NOT-SUPPORTED and an error line in the log.
+      if (parts[1] === "info" || parts[1] === "status") {
+        this.log.debug(`onStateChange: ${localId} is adapter-owned, ignoring write`);
+        return;
+      }
+
       if (parts[1] === "commands") {
         if (!config.enableCommands) {
           this.log.warn(`Command blocked — enableCommands is disabled: ${localId}`);
@@ -657,6 +692,14 @@ export class NutAdapter extends utils.Adapter {
 
       if (!config.enableSetVar) {
         this.log.warn(`SET VAR blocked — enableSetVar is disabled: ${localId}`);
+        return;
+      }
+      // Boundary: a state can carry null or an object (REST API, scripts). "null" or
+      // "[object Object]" is no value NUT should ever see on the wire.
+      if (typeof state.val !== "boolean" && typeof state.val !== "number" && typeof state.val !== "string") {
+        this.log.warn(
+          `SET VAR ignored — ${localId} received ${JSON.stringify(state.val)}, not a boolean, number or string`,
+        );
         return;
       }
 
@@ -695,7 +738,7 @@ export class NutAdapter extends utils.Adapter {
     if (this.unloaded) {
       return;
     }
-    const { type, upsRef } = parseNotifyTrigger(rawVal);
+    const { type, upsRef, text } = parseNotifyTrigger(rawVal);
 
     let matchedId: string | undefined;
     if (upsRef) {
@@ -737,7 +780,9 @@ export class NutAdapter extends utils.Adapter {
     }
 
     // Confirm the trigger (ack echo) before the poll for the same reason the event went first.
-    await this.setState("notify", { val: rawVal, ack: true });
+    // The normalised text goes back, not the raw write: the state is a string, and whatever a
+    // script pushed (an object, an overlong blob) must not be stored as such.
+    await this.setState("notify", { val: text, ack: true });
     await this.poll();
   }
 

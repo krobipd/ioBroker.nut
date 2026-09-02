@@ -28,7 +28,7 @@ src/lib/
 ├── type-detector.test.ts
 ├── status-parser.ts            → ups.status → 19 booleans + severity (0-4) + display string
 ├── status-parser.test.ts
-├── coerce.ts                   → errText + Boundary-Validators (host, port, pollInterval, commandTimeout)
+├── coerce.ts                   → errText + Boundary-Validators (host, port, pollInterval, commandTimeout, parseNotifyTrigger)
 ├── coerce.test.ts
 ├── message-router.ts           → onMessage-Dispatcher (checkConnection + auth test, default-Branch-Contract)
 ├── message-router.test.ts
@@ -67,6 +67,11 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 
 24. **`notify`-Trigger — die upsmon-Klingel (Issue #14, FernetMenta)** — NUT hat KEINEN Server-Push (net-protocol.txt 2.8.5 komplett geprüft: jede upsd-Zeile ist Antwort auf einen Befehl; auch TRACKING/FSD sind Poll). Der einzige Drücker im NUT-System ist upsmon (NOTIFYCMD, Umgebungsvariablen `NOTIFYTYPE`+`UPSNAME`). Deshalb: beschreibbarer Instanz-State `notify` (statisches instanceObject; **cleanupLegacyObjects-Ausnahme nötig**, sonst frisst der Orphan-Sweep ihn bei jedem discover). Wertformat `$NOTIFYTYPE $UPSNAME` (`parseNotifyTrigger` in coerce.ts: erste Token = Typ, Rest = UPS-Ref, `@host[:port]` gestrippt, 200-Zeichen-Kappe, Objekte→leer). Jeder Write = sofortiger Poll ALLER USVen (gezielter Einzel-Poll verworfen: würde die Summary halb-aktuell schreiben; eine Runde gegen den upsd-RAM-Cache kostet nichts). UPS-Match erst am echten NUT-Namen (überlebt Sanitisierung+`…-2`), dann an der sanitisierten ID; Treffer → Ereignis zusätzlich auf `<ups>.info.notify` (unter info, NICHT unterm Device-Root — punktlose NUT-Vars landen dort und könnten kollidieren). **Reihenfolge: Ereignis schreiben + ack VOR dem Poll** (SHUTDOWN-Fall: der NUT-Host stirbt ggf. mitten im Poll). Subscribe auf `notify` in onReady VOR dem Host-Check (Klingel funktioniert auch unkonfiguriert/Server down). Poll-Koaleszenz: `pollAgainRequested` statt Drop — Klingel während laufendem Poll = genau EIN Nachfass-Poll (mehrere Events kollabieren). Unbekannte UPS-Ref: warn once pro Name, dann debug. Kein Safety-Gate (löst nur Lesen aus).
 
+25. **USV-Liste bei JEDEM Poll (v0.11.0)** — `LIST UPS` ist ein billiger Befehl gegen den upsd-RAM-Cache; der Poll holt ihn als erstes und vergleicht die sortierten Namen mit `discoveredUps` (`upsListChanged`). Weicht die Liste ab, laufen `discover(upsList)` + `setupCommandButtons()` mitten im Betrieb — eine auf dem NUT-Server hinzugefügte USV erscheint beim nächsten Poll, eine entfernte verschwindet aus dem Objektbaum (Orphan-Sweep in `discover`). Vorher lief die Erkennung nur einmal pro Verbindung, eine Server-Änderung wartete auf Reconnect oder Adapter-Neustart. `discover` nimmt die frische Liste entgegen, statt sie ein zweites Mal zu holen.
+26. **`onStateChange` — adapter-eigene Kanäle und Wert-Grenze (v0.11.0)** — `<usv>.info.*` (reachable, notify) und `<usv>.status.*` (geparste Flags) sind KEINE NUT-Variablen; ein Write dorthin (Skript, REST-API) endet mit debug, nicht als `SET VAR`, das upsd mit `VAR-NOT-SUPPORTED` und einer Fehlerzeile quittiert. Vor dem `SET VAR` steht eine API-Grenze: nur boolean/number/string gehen auf die Leitung, `null`/Objekt (`"null"`, `"[object Object]"`) werden mit warn verworfen.
+27. **Protokoll-Token-Wächter im Client (v0.11.0)** — `tokenError()` prüft jeden unquoted Wire-Parameter (USV-Name, Variablen-Name, Befehlsname) auf leer / Whitespace / `"` / `\`, bevor `LIST VAR/RW/CMD/ENUM/RANGE`, `GET VAR`, `SET VAR`, `INSTCMD`, `LOGIN` ihn senden. Die Adapter-Pfade liefern immer saubere Namen (LIST-UPS-Ergebnis, `native.nutName`), aber ein von Hand angelegter Datenpunkt unter dem Namensraum erreicht `onStateChange` mit einem beliebigen Segment — der Wächter macht daraus einen klaren Reject statt einer zweiten Protokollzeile. Werte bleiben gequotet+escaped (`escapeNut`), die sind kein Injektionspfad (Nachweis am upsd-Parser, dev-history 2026-08-31).
+28. **`ready` ≠ `connected` im Client (v0.11.0)** — `connected` steht ab TCP-Aufbau, `ready` erst nach vollständigem `connect()` (inkl. STARTTLS). Der `close`-Handler entscheidet an `ready`, ob eine Verbindung VERLOREN ging (warn + Reconnect) oder ein Verbindungsversuch scheiterte (das regelt `handleConnectFailure` — Backoff oder fatal). Das Fenster ist die STARTTLS-Phase: TCP steht, `OK STARTTLS` steht aus, der Server (Firewall, Proxy, Fehlkonfig) schließt — der `close`-Handler läuft VOR dem Settle von `connect()`. Vorher hieß das „Connection to NUT server lost" (warn) für eine Verbindung, die nie nutzbar war; jetzt debug „Connect attempt failed" + Backoff. Gemessen (Mutationsaudit 2026-09-02): beim gescheiterten TLS-Handshake selbst (Zertifikatsfehler) läuft `handleConnectFailure` VOR dem `close` — dieser Fall war nie betroffen.
+
 ## NUT-Protokoll Referenz
 
 - **Autoritative Quelle (Standard-Verifikation): NUT 2.8.5 Release-Quelle.** `docs/new-drivers.txt` = dokumentierte `status_set`-Werte; `docs/nut-names.txt` = Instant-Commands. Flag-/Command-Katalog treiber-agnostisch hiergegen verifiziert (NICHT gegen ein einzelnes Gerät). `grep -rhoE 'status_set\("[^"]+"' drivers/` für den realen Token-Satz
@@ -75,7 +80,7 @@ admin/i18n/<lang>.json          → Single-Source-of-Truth für UI- + State-Tran
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>`
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (560 unit + 57 package = 617)
+## Tests (572 unit + 57 package = 629)
 
 ## Versionshistorie
 

@@ -3,6 +3,19 @@
     "name": "nut2",
     "version": "0.10.0",
     "news": {
+      "NEXT": {
+        "en": "A UPS added to or removed from the NUT server now appears or disappears at the next poll, without a restart; writes to the adapter's own states no longer end in a SET VAR error.",
+        "de": "Eine am NUT-Server hinzugefügte oder entfernte USV erscheint bzw. verschwindet beim nächsten Abruf ohne Neustart; Schreibzugriffe auf adaptereigene Datenpunkte enden nicht mehr im SET-VAR-Fehler.",
+        "ru": "ИБП, добавленный на сервер NUT или удалённый с него, появляется или исчезает при следующем опросе без перезапуска; запись в собственные состояния адаптера больше не даёт ошибку SET VAR.",
+        "pt": "Uma UPS adicionada ou removida no servidor NUT aparece ou desaparece na próxima consulta, sem reinício; escritas nos estados próprios do adaptador já não terminam num erro SET VAR.",
+        "nl": "Een op de NUT-server toegevoegde of verwijderde UPS verschijnt of verdwijnt bij de volgende poll zonder herstart; schrijven naar de eigen states van de adapter eindigt niet meer in een SET VAR-fout.",
+        "fr": "Un onduleur ajouté ou retiré sur le serveur NUT apparaît ou disparaît à l'interrogation suivante, sans redémarrage ; écrire dans les états propres de l'adaptateur ne produit plus d'erreur SET VAR.",
+        "it": "Un UPS aggiunto o rimosso sul server NUT compare o scompare al polling successivo senza riavvio; le scritture sugli stati propri dell'adapter non finiscono più in un errore SET VAR.",
+        "es": "Un SAI añadido o quitado en el servidor NUT aparece o desaparece en la siguiente consulta sin reinicio; escribir en los estados propios del adaptador ya no termina en un error SET VAR.",
+        "pl": "UPS dodany do serwera NUT lub z niego usunięty pojawia się lub znika przy następnym odpytaniu bez restartu; zapis do własnych stanów adaptera nie kończy się już błędem SET VAR.",
+        "uk": "ДБЖ, доданий на сервер NUT або видалений з нього, з'являється чи зникає під час наступного опитування без перезапуску; запис у власні стани адаптера більше не спричиняє помилку SET VAR.",
+        "zh-cn": "在 NUT 服务器上新增或移除的 UPS 会在下次轮询时出现或消失，无需重启；写入适配器自身状态不再产生 SET VAR 错误。"
+      },
       "0.10.0": {
         "en": "New: a writable notify state lets upsmon (or any script) push UPS events — on battery, low battery, shutdown — for an instant refresh instead of waiting for the next poll.",
         "de": "Neu: Ein beschreibbarer notify-Datenpunkt lässt upsmon (oder ein Skript) USV-Ereignisse — Batteriebetrieb, Batterie schwach, Abschaltung — sofort melden, statt auf die nächste Abfrage zu warten.",
@@ -80,19 +93,6 @@
         "pl": "Historia wersji w menedżerze adapterów pokazuje teraz tylko wersje, które faktycznie istnieją.",
         "uk": "Історія версій у менеджері адаптерів тепер показує лише версії, які справді існують.",
         "zh-cn": "适配器管理器中的版本历史现在只显示该适配器实际存在的版本。"
-      },
-      "0.5.2": {
-        "en": "The poll interval can now go down to 2 seconds — below that the NUT driver itself has no new readings to give.",
-        "de": "Das Abfrageintervall lässt sich jetzt bis auf 2 Sekunden senken — schneller liefert der NUT-Treiber selbst keine neuen Werte.",
-        "ru": "Интервал опроса теперь можно уменьшить до 2 секунд — быстрее сам драйвер NUT новых значений не выдаёт.",
-        "pt": "O intervalo de consulta pode agora descer até 2 segundos — abaixo disso o próprio controlador NUT não tem novos valores.",
-        "nl": "Het poll-interval kan nu tot 2 seconden omlaag — sneller levert het NUT-stuurprogramma zelf geen nieuwe waarden.",
-        "fr": "L'intervalle d'interrogation peut maintenant descendre à 2 secondes — en dessous, le pilote NUT n'a pas de nouvelles valeurs.",
-        "it": "L'intervallo di interrogazione può ora scendere a 2 secondi — sotto questa soglia il driver NUT non ha nuovi valori.",
-        "es": "El intervalo de consulta ahora puede bajar a 2 segundos — por debajo, el propio controlador NUT no tiene valores nuevos.",
-        "pl": "Interwał odpytywania można teraz obniżyć do 2 sekund — poniżej sterownik NUT sam nie ma nowych wartości.",
-        "uk": "Інтервал опитування тепер можна зменшити до 2 секунд — швидше сам драйвер NUT нових значень не видає.",
-        "zh-cn": "轮询间隔现在最低可设为 2 秒 — 低于该值时 NUT 驱动本身也没有新的读数。"
       }
     },
     "plugins": {
@@ -156,7 +156,7 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.8.23"
+        "admin": ">=8.0.11"
       }
     ],
     "keywords": [

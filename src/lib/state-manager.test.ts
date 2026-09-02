@@ -1058,8 +1058,10 @@ describe("StateManager", () => {
       const sm = new StateManager(adapter);
 
       objects.set("ups0", { type: "device", common: { name: "Main" }, native: {} });
-      objects.set("ups0.a.b.c.d", { type: "state", common: { name: "deep" }, native: {} });
+      // Shallow object FIRST: the mock hands objects back in insertion order, so only the
+      // depth sort can put the deeper one in front (deep-first insertion would pass without it).
       objects.set("ups0.a.b.c", { type: "state", common: { name: "mid" }, native: {} });
+      objects.set("ups0.a.b.c.d", { type: "state", common: { name: "deep" }, native: {} });
 
       await sm.cleanupLegacyObjects(new Set(["ups0"]));
 

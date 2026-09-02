@@ -91,6 +91,13 @@ export class NutClient {
   private multiLineBuffer: string[] = [];
   private multiLineExpectedEnd = "";
   private connected = false;
+  /**
+   * True once connect() resolved (TCP up AND, with TLS, the handshake done). `connected` alone
+   * turns true at the TCP level so STARTTLS can be sent; a drop between the two is a failed
+   * connect attempt, not a lost connection — the retry loop handles it through connect()'s
+   * rejection, the close handler must not schedule a second reconnect or warn "lost".
+   */
+  private ready = false;
   private destroyed = false;
   private tlsActive = false;
 
@@ -194,6 +201,7 @@ export class NutClient {
     // Tear down the failed socket so the next attempt starts clean. Clearing `connected`
     // first means the close handler sees wasConnected=false and won't double-schedule.
     this.connected = false;
+    this.ready = false;
     const sock = this.socket;
     this.socket = null;
     sock?.destroy();
@@ -229,6 +237,7 @@ export class NutClient {
         const sock = this.socket;
         this.socket = null;
         this.connected = false;
+        this.ready = false;
         sock?.destroy();
         reject(new Error(`Connect to NUT server ${this.host}:${this.port} timed out`));
       }, this.commandTimeout);
@@ -241,6 +250,7 @@ export class NutClient {
         if (err) {
           reject(err);
         } else {
+          this.ready = true;
           resolve();
         }
       };
@@ -286,14 +296,15 @@ export class NutClient {
       }
     });
     socket.on("close", () => {
-      const wasConnected = this.connected;
+      const wasReady = this.ready;
+      this.ready = false;
       this.connected = false;
       // Drain the WHOLE queue, not just the active command: a queued entry left behind would keep
       // a live command timer that fires later and tears down a subsequently-reconnected socket.
       this.rejectAll(new Error("Connection closed"));
       // Only the persistent runtime connection auto-reconnects on a drop; a one-shot
       // connect() (e.g. the connection test) must not.
-      if (wasConnected && !this.destroyed && this.persistent) {
+      if (wasReady && !this.destroyed && this.persistent) {
         this.log?.warn(`Connection to NUT server ${this.host}:${this.port} lost`);
         this.scheduleReconnect();
       }
@@ -340,6 +351,7 @@ export class NutClient {
       this.socket = null;
     }
     this.connected = false;
+    this.ready = false;
   }
 
   /**
@@ -356,6 +368,7 @@ export class NutClient {
     const sock = this.socket;
     this.socket = null;
     this.connected = false;
+    this.ready = false;
     if (sock) {
       try {
         sock.end("LOGOUT\n");
@@ -417,6 +430,10 @@ export class NutClient {
    * @param ups UPS name
    */
   listVar(ups: string): Promise<NutVariable[]> {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST VAR ${ups}`, /^VAR\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, m => ({
       name: m[1],
       value: unescapeNut(m[2]),
@@ -429,6 +446,10 @@ export class NutClient {
    * @param ups UPS name
    */
   listRw(ups: string): Promise<NutVariable[]> {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST RW ${ups}`, /^RW\s+\S+\s+(\S+)\s+"((?:[^"\\]|\\.)*)"/, m => ({
       name: m[1],
       value: unescapeNut(m[2]),
@@ -441,6 +462,10 @@ export class NutClient {
    * @param ups UPS name
    */
   listCmd(ups: string): Promise<NutCommand[]> {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST CMD ${ups}`, /^CMD\s+\S+\s+(\S+)/, m => ({ name: m[1] }));
   }
 
@@ -451,6 +476,10 @@ export class NutClient {
    * @param varName Variable name
    */
   listEnum(ups: string, varName: string): Promise<string[]> {
+    const bad = tokenError(ups, "UPS name") ?? tokenError(varName, "variable name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(`LIST ENUM ${ups} ${varName}`, /^ENUM\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/, m =>
       unescapeNut(m[1]),
     );
@@ -463,6 +492,10 @@ export class NutClient {
    * @param varName Variable name
    */
   listRange(ups: string, varName: string): Promise<NutRange[]> {
+    const bad = tokenError(ups, "UPS name") ?? tokenError(varName, "variable name");
+    if (bad) {
+      return Promise.reject(bad);
+    }
     return this.parseList(
       `LIST RANGE ${ups} ${varName}`,
       /^RANGE\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"\s+"((?:[^"\\]|\\.)*)"/,
@@ -496,6 +529,10 @@ export class NutClient {
    * @param varName Variable name
    */
   async getVar(ups: string, varName: string): Promise<string> {
+    const bad = tokenError(ups, "UPS name") ?? tokenError(varName, "variable name");
+    if (bad) {
+      throw bad;
+    }
     const lines = await this.sendCommand(`GET VAR ${ups} ${varName}`, false);
     const match = /^VAR\s+\S+\s+\S+\s+"((?:[^"\\]|\\.)*)"/.exec(lines[0]);
     if (!match) {
@@ -512,6 +549,10 @@ export class NutClient {
    * @param value New value
    */
   async setVar(ups: string, varName: string, value: string): Promise<void> {
+    const bad = tokenError(ups, "UPS name") ?? tokenError(varName, "variable name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`SET VAR ${ups} ${varName} "${escapeNut(value)}"`, false);
   }
 
@@ -522,6 +563,10 @@ export class NutClient {
    * @param cmd Command name
    */
   async instCmd(ups: string, cmd: string): Promise<void> {
+    const bad = tokenError(ups, "UPS name") ?? tokenError(cmd, "command name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`INSTCMD ${ups} ${cmd}`, false);
   }
 
@@ -542,6 +587,10 @@ export class NutClient {
    * @param ups UPS name
    */
   async login(ups: string): Promise<void> {
+    const bad = tokenError(ups, "UPS name");
+    if (bad) {
+      throw bad;
+    }
     await this.sendCommand(`LOGIN ${ups}`, false);
   }
 
@@ -600,6 +649,7 @@ export class NutClient {
     // async 'close' handler sees wasConnected=false (no double-schedule). cancelAll() drains the
     // rest of the queue; scheduleReconnect() brings the connection back on a clean stream.
     this.connected = false;
+    this.ready = false;
     this.cancelAll();
     this.socket?.destroy();
     this.scheduleReconnect();
@@ -651,6 +701,7 @@ export class NutClient {
       this.log?.warn(`NUT response line exceeded ${MAX_LINE_BYTES} bytes — dropping the connection`);
       this.buffer = "";
       this.connected = false;
+      this.ready = false;
       this.rejectAll(new Error("NUT response line exceeded the size limit"));
       this.socket?.destroy();
       this.scheduleReconnect();
@@ -718,6 +769,23 @@ export class NutClient {
       this.attemptConnect();
     }, delay);
   }
+}
+
+/**
+ * NUT command arguments are whitespace-separated, unquoted tokens (only the SET VAR value is
+ * quoted). A name carrying a space, a quote or a backslash would re-split or re-quote the line
+ * on the server. Variable and command names come from the object tree, where a user can create
+ * states by hand — refuse anything that is not one clean token before it reaches the wire.
+ *
+ * @param value The argument about to be placed on the command line
+ * @param what What it is, for the error message
+ * @returns the error to reject with, or null when the token is clean
+ */
+function tokenError(value: string, what: string): Error | null {
+  if (value.length === 0 || /[\s"\\]/.test(value)) {
+    return new Error(`Invalid NUT ${what}: ${JSON.stringify(value)}`);
+  }
+  return null;
 }
 
 function unescapeNut(s: string): string {

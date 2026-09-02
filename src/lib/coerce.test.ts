@@ -302,39 +302,49 @@ describe("coerce", () => {
 
   describe("parseNotifyTrigger", () => {
     it("takes the first token as the upsmon event type", () => {
-      expect(parseNotifyTrigger("ONBATT")).toEqual({ type: "ONBATT", upsRef: "" });
+      expect(parseNotifyTrigger("ONBATT")).toEqual({ type: "ONBATT", upsRef: "", text: "ONBATT" });
     });
 
     it("takes everything after the first whitespace run as the UPS reference", () => {
-      expect(parseNotifyTrigger("ONBATT ups3")).toEqual({ type: "ONBATT", upsRef: "ups3" });
+      expect(parseNotifyTrigger("ONBATT ups3")).toMatchObject({ type: "ONBATT", upsRef: "ups3" });
       // A NUT name may contain spaces — the reference is the REST, not the second token.
-      expect(parseNotifyTrigger("LOWBATT my ups")).toEqual({ type: "LOWBATT", upsRef: "my ups" });
+      expect(parseNotifyTrigger("LOWBATT my ups")).toMatchObject({ type: "LOWBATT", upsRef: "my ups" });
     });
 
     it("strips the @host[:port] part upsmon appends to $UPSNAME", () => {
-      expect(parseNotifyTrigger("ONBATT ups3@nas.local")).toEqual({ type: "ONBATT", upsRef: "ups3" });
-      expect(parseNotifyTrigger("ONBATT ups3@nas.local:3493")).toEqual({ type: "ONBATT", upsRef: "ups3" });
-      expect(parseNotifyTrigger("SHUTDOWN @host")).toEqual({ type: "SHUTDOWN", upsRef: "" });
+      expect(parseNotifyTrigger("ONBATT ups3@nas.local")).toMatchObject({ type: "ONBATT", upsRef: "ups3" });
+      expect(parseNotifyTrigger("ONBATT ups3@nas.local:3493")).toMatchObject({ type: "ONBATT", upsRef: "ups3" });
+      expect(parseNotifyTrigger("SHUTDOWN @host")).toMatchObject({ type: "SHUTDOWN", upsRef: "" });
+    });
+
+    it("keeps the host part in the echoed text — only the UPS reference is stripped", () => {
+      expect(parseNotifyTrigger("ONBATT ups3@nas.local").text).toBe("ONBATT ups3@nas.local");
     });
 
     it("collapses tabs and repeated spaces like a shell would", () => {
-      expect(parseNotifyTrigger("ONBATT\t  ups0")).toEqual({ type: "ONBATT", upsRef: "ups0" });
-      expect(parseNotifyTrigger("  ONLINE   ups0  ")).toEqual({ type: "ONLINE", upsRef: "ups0" });
+      expect(parseNotifyTrigger("ONBATT\t  ups0")).toMatchObject({ type: "ONBATT", upsRef: "ups0" });
+      expect(parseNotifyTrigger("  ONLINE   ups0  ")).toEqual({
+        type: "ONLINE",
+        upsRef: "ups0",
+        text: "ONLINE   ups0",
+      });
     });
 
     it("treats empty and whitespace-only values as a bare manual refresh", () => {
-      expect(parseNotifyTrigger("")).toEqual({ type: "", upsRef: "" });
-      expect(parseNotifyTrigger("   ")).toEqual({ type: "", upsRef: "" });
-      expect(parseNotifyTrigger(null)).toEqual({ type: "", upsRef: "" });
-      expect(parseNotifyTrigger(undefined)).toEqual({ type: "", upsRef: "" });
+      const bare = { type: "", upsRef: "", text: "" };
+      expect(parseNotifyTrigger("")).toEqual(bare);
+      expect(parseNotifyTrigger("   ")).toEqual(bare);
+      expect(parseNotifyTrigger(null)).toEqual(bare);
+      expect(parseNotifyTrigger(undefined)).toEqual(bare);
     });
 
     it("stringifies primitive non-string writes but rejects objects", () => {
       // A script may write a number/boolean; the REST API always sends strings.
-      expect(parseNotifyTrigger(42)).toEqual({ type: "42", upsRef: "" });
-      expect(parseNotifyTrigger(true)).toEqual({ type: "true", upsRef: "" });
-      // "[object Object]" as an event type helps nobody — an object is no trigger value.
-      expect(parseNotifyTrigger({ evil: 1 })).toEqual({ type: "", upsRef: "" });
+      expect(parseNotifyTrigger(42)).toEqual({ type: "42", upsRef: "", text: "42" });
+      expect(parseNotifyTrigger(true)).toEqual({ type: "true", upsRef: "", text: "true" });
+      // "[object Object]" as an event type helps nobody — an object is no trigger value, and
+      // nothing of it may be echoed back into the string state.
+      expect(parseNotifyTrigger({ evil: 1 })).toEqual({ type: "", upsRef: "", text: "" });
     });
 
     it("caps an overlong value instead of storing arbitrary blobs", () => {
@@ -342,6 +352,8 @@ describe("coerce", () => {
       const parsed = parseNotifyTrigger(blob);
       expect(parsed.type.length).toBeLessThanOrEqual(200);
       expect(parsed.type.startsWith("XAA")).toBe(true);
+      // The echo is the capped text, never the 501-character blob.
+      expect(parsed.text).toHaveLength(200);
     });
   });
 });

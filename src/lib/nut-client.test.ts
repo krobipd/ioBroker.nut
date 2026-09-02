@@ -684,6 +684,32 @@ describe("NutClient", () => {
   // -----------------------------------------------------------------------
   // INSTCMD
   // -----------------------------------------------------------------------
+  describe("protocol argument guard", () => {
+    it("refuses a variable or command name that is not one clean token (nothing reaches the wire)", async () => {
+      const mock = createMockNutServer();
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        await expect(client.setVar("ups0", "ups.delay shutdown", "20")).rejects.toThrow("Invalid NUT variable name");
+        await expect(client.setVar("ups0", 'a"b', "20")).rejects.toThrow("Invalid NUT variable name");
+        await expect(client.instCmd("ups0", "load off")).rejects.toThrow("Invalid NUT command name");
+        await expect(client.getVar("ups0", "")).rejects.toThrow("Invalid NUT variable name");
+        await expect(client.listEnum("ups 0", "x")).rejects.toThrow("Invalid NUT UPS name");
+        await expect(client.listRange("ups0", "x\\y")).rejects.toThrow("Invalid NUT variable name");
+        await expect(client.listVar("u p")).rejects.toThrow("Invalid NUT UPS name");
+        await expect(client.login("u p")).rejects.toThrow("Invalid NUT UPS name");
+        expect(mock.commands).toEqual([]);
+        // A clean token still goes through.
+        await client.setVar("ups0", "ups.delay.shutdown", "20");
+        expect(mock.commands).toEqual(['SET VAR ups0 ups.delay.shutdown "20"']);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
   describe("instCmd", () => {
     it("should send INSTCMD", async () => {
       const mock = createMockNutServer();
@@ -1523,6 +1549,67 @@ describe("NutClient", () => {
         await client.connect();
         expect(client.isTls).toBe(true);
         expect(mock.sniNames, "no SNI for an IP host").toEqual([]);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+
+    it("a failed TLS handshake on the persistent loop is a failed attempt, not a lost connection", async () => {
+      // The mock's certificate is self-signed, so with verification ON the handshake itself fails
+      // (DEPTH_ZERO_SELF_SIGNED_CERT): a fatal stop on the persistent loop — no reconnect timer may
+      // sit next to it. (Measured: handleConnectFailure runs BEFORE the socket's "close" here, so
+      // this case never reached the "lost" branch; the peer-drop test below is the one that does.)
+      const mock = createStartTlsMockServer(() => "ERR UNKNOWN-COMMAND");
+      const port = await mock.start();
+      const warns: string[] = [];
+      const timers: number[] = [];
+      try {
+        const client = new NutClient("127.0.0.1", port, {
+          useTls: true,
+          tlsRejectUnauthorized: true,
+          logger: { debug: () => {}, info: () => {}, warn: m => warns.push(m) },
+          setTimer: (cb, ms) => {
+            timers.push(ms);
+            return globalThis.setTimeout(cb, ms);
+          },
+          clearTimer: h => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>),
+        });
+        const fatal = vi.fn();
+        client.setOnFatal(fatal);
+        client.start();
+        await vi.waitFor(() => expect(fatal).toHaveBeenCalledTimes(1));
+        expect((fatal.mock.calls[0][0] as { code?: string }).code).toBe("DEPTH_ZERO_SELF_SIGNED_CERT");
+        // TCP was up when the handshake failed — the close that follows must not read as "lost",
+        // and no reconnect may be armed next to the fatal stop (only the connect deadline ran).
+        expect(warns.some(w => w.includes("lost"))).toBe(false);
+        expect(warns.some(w => w.includes("not retrying"))).toBe(true);
+        expect(timers.filter(ms => ms >= 1000 && ms < 5000)).toEqual([]);
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+
+    it("a peer dropping the connection during STARTTLS is a failed attempt, not a lost connection", async () => {
+      // TCP is up, STARTTLS is pending, the peer closes: the close handler runs BEFORE connect()
+      // settled — that connection was never usable. It is a failed attempt (backoff through
+      // handleConnectFailure), not a "lost" one; deciding on the TCP flag alone warned about
+      // losing what never existed.
+      const mock = createMockNutServer(() => null); // never answers STARTTLS
+      const port = await mock.start();
+      const warns: string[] = [];
+      const debugs: string[] = [];
+      try {
+        const client = new NutClient("127.0.0.1", port, {
+          useTls: true,
+          logger: { debug: m => debugs.push(m), info: () => {}, warn: m => warns.push(m) },
+        });
+        client.start();
+        await vi.waitFor(() => expect(mock.commands).toContain("STARTTLS"));
+        mock.disconnectAll(); // the peer drops the socket instead of answering
+        await vi.waitFor(() => expect(debugs.some(d => d.includes("Connect attempt failed"))).toBe(true));
+        expect(warns.some(w => w.includes("lost"))).toBe(false);
         client.destroy();
       } finally {
         await mock.stop();

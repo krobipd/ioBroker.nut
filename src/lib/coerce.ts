@@ -144,6 +144,12 @@ export interface NotifyTrigger {
   type: string;
   /** upsmon $UPSNAME with the `@host[:port]` part stripped, "" when absent. */
   upsRef: string;
+  /**
+   * The value as it is kept: trimmed and capped. Echoed back into the trigger state as the
+   * acknowledgement instead of the raw write — an object or an overlong blob must not land in
+   * a string state through the doorbell.
+   */
+  text: string;
 }
 
 // The state is writable from outside (REST API) — cap what we keep so a stray
@@ -174,7 +180,7 @@ export function parseNotifyTrigger(raw: unknown): NotifyTrigger {
 
   const firstWs = text.search(/\s/);
   if (firstWs < 0) {
-    return { type: text, upsRef: "" };
+    return { type: text, upsRef: "", text };
   }
   const type = text.slice(0, firstWs);
   let upsRef = text.slice(firstWs).trim();
@@ -182,5 +188,5 @@ export function parseNotifyTrigger(raw: unknown): NotifyTrigger {
   if (at >= 0) {
     upsRef = upsRef.slice(0, at).trim();
   }
-  return { type, upsRef };
+  return { type, upsRef, text };
 }

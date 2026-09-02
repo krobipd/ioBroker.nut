@@ -555,6 +555,8 @@ describe("poll", () => {
     );
     const p1 = s.internal.poll();
     const p2 = s.internal.poll();
+    // The poll checks LIST UPS before LIST VAR — release only once it really is inside LIST VAR.
+    await vi.waitFor(() => expect(s.client.listVar).toHaveBeenCalled());
     release();
     await Promise.all([p1, p2]);
     expect(logsOf(s.stub, "debug").some(m => m.includes("previous poll still running"))).toBe(true);
@@ -675,6 +677,54 @@ describe("poll", () => {
   });
 });
 
+describe("UPS list changes on the NUT server at runtime", () => {
+  it("an unchanged list runs no discovery and creates nothing again", async () => {
+    const s = await setupConnected();
+    s.sm.ensureUpsDevice.mockClear();
+    s.sm.cleanupRemovedUps.mockClear();
+    await s.internal.poll();
+    await s.internal.poll();
+    expect(s.sm.ensureUpsDevice).not.toHaveBeenCalled();
+    expect(s.sm.cleanupRemovedUps).not.toHaveBeenCalled();
+    expect(logsOf(s.stub, "info").some(m => m.includes("UPS list on the NUT server changed"))).toBe(false);
+  });
+
+  it("a UPS added on the server appears on the next poll, with its command buttons", async () => {
+    const s = await setupConnected({ enableCommands: true, username: "u", password: "p" });
+    s.sm.createCommandButtons.mockClear();
+    s.client.listUps.mockResolvedValue([
+      { name: "ups0", description: "Main UPS" },
+      { name: "ups1", description: "New UPS" },
+    ]);
+    await s.internal.poll();
+    expect([...s.internal.discoveredUps.keys()]).toEqual(["ups0", "ups1"]);
+    expect(s.sm.ensureUpsDevice).toHaveBeenCalledWith("ups1", "New UPS");
+    expect(s.sm.createCommandButtons).toHaveBeenCalledWith("ups1", expect.anything());
+    expect(s.stub.states.get("nut2.0.ups1.info.reachable")).toEqual({ val: true, ack: true });
+    expect(logsOf(s.stub, "info").some(m => m.includes("UPS list on the NUT server changed: ups0, ups1"))).toBe(true);
+  });
+
+  it("a UPS removed on the server is cleaned up on the next poll", async () => {
+    const s = await setupConnected({}, [
+      { name: "ups0", description: "Main UPS" },
+      { name: "ups1", description: "Second UPS" },
+    ]);
+    s.client.listUps.mockResolvedValue([{ name: "ups0", description: "Main UPS" }]);
+    await s.internal.poll();
+    expect([...s.internal.discoveredUps.keys()]).toEqual(["ups0"]);
+    expect(s.sm.cleanupRemovedUps).toHaveBeenLastCalledWith(new Set(["ups0"]));
+    expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 1);
+  });
+
+  it("a LIST UPS failure fails the poll as a whole (no half-updated tree)", async () => {
+    const s = await setupConnected();
+    s.client.listUps.mockRejectedValue(Object.assign(new Error("x"), { code: "ECONNRESET" }));
+    await s.internal.poll();
+    expect(s.client.listVar).toHaveBeenCalledTimes(1); // only the initial poll in setupConnected
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
+  });
+});
+
 describe("onStateChange — command and SET VAR gates", () => {
   it("ignores acked/null states and unknown UPS ids", async () => {
     const s = await setupConnected({ enableCommands: true, enableSetVar: true });
@@ -763,6 +813,28 @@ describe("onStateChange — command and SET VAR gates", () => {
     expect(s.stub.states.has("nut2.0.ups0.ups.delay-shutdown")).toBe(false);
   });
 
+  it("ignores writes to the adapter-owned info/status channels instead of trying SET VAR", async () => {
+    const s = await setupConnected({ enableSetVar: true, enableCommands: true });
+    await s.internal.onStateChange("nut2.0.ups0.info.notify", { val: "ONBATT", ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.info.reachable", { val: true, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.status.online", { val: false, ack: false });
+    expect(s.client.setVar).not.toHaveBeenCalled();
+    expect(s.client.instCmd).not.toHaveBeenCalled();
+    expect(logsOf(s.stub, "error")).toEqual([]);
+    expect(logsOf(s.stub, "debug").filter(m => m.includes("adapter-owned"))).toHaveLength(3);
+  });
+
+  it("SET VAR: a null or object value never reaches the wire (warn, no write, no ack)", async () => {
+    const s = await setupConnected({ enableSetVar: true });
+    await s.internal.onStateChange("nut2.0.ups0.ups.delay-shutdown", { val: null, ack: false });
+    await s.internal.onStateChange("nut2.0.ups0.ups.delay-shutdown", { val: { a: 1 }, ack: false });
+    expect(s.client.setVar).not.toHaveBeenCalled();
+    expect(s.stub.states.get("nut2.0.ups0.ups.delay-shutdown")).toBeUndefined();
+    const warns = logsOf(s.stub, "warn").filter(m => m.includes("SET VAR ignored"));
+    expect(warns).toHaveLength(2);
+    expect(warns[0]).toContain("null");
+  });
+
   it("ignores writes with an unexpected id structure", async () => {
     const s = await setupConnected({ enableSetVar: true });
     await s.internal.onStateChange("nut2.0.shallow", { val: 1, ack: false });
@@ -834,6 +906,19 @@ describe("notify trigger — the upsmon doorbell", () => {
     expect(logsOf(s.stub, "info").length).toBe(infoBefore);
   });
 
+  it("acks the trigger with the normalised text, not the raw write", async () => {
+    const s = await setupConnected();
+    await s.internal.onStateChange("nut2.0.notify", { val: "  ONBATT   ups0@nas  ", ack: false });
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "ONBATT   ups0@nas", ack: true });
+    // An object pushed through the REST API is no trigger value — the echo is an empty string,
+    // never "[object Object]" and never the object itself in a string state.
+    await s.internal.onStateChange("nut2.0.notify", { val: { evil: 1 }, ack: false });
+    expect(s.stub.states.get("nut2.0.notify")).toEqual({ val: "", ack: true });
+    const blob = "Y".repeat(600);
+    await s.internal.onStateChange("nut2.0.notify", { val: blob, ack: false });
+    expect((s.stub.states.get("nut2.0.notify")!.val as string).length).toBe(200);
+  });
+
   it("ignores its own ack echo", async () => {
     const s = await setupConnected();
     s.client.listVar.mockClear();
@@ -850,6 +935,7 @@ describe("notify trigger — the upsmon doorbell", () => {
     s.client.listVar.mockClear();
 
     const running = s.internal.poll();
+    await vi.waitFor(() => expect(s.client.listVar).toHaveBeenCalledTimes(1));
     // The poll is now stuck inside LIST VAR; the doorbell rings twice meanwhile.
     const n1 = s.internal.onStateChange("nut2.0.notify", { val: "ONBATT ups0", ack: false });
     const n2 = s.internal.onStateChange("nut2.0.notify", { val: "LOWBATT ups0", ack: false });
@@ -863,6 +949,32 @@ describe("notify trigger — the upsmon doorbell", () => {
     resolvers[1]([{ name: "ups.status", value: "OB LB" }]);
     // Both events were still recorded individually.
     expect(s.stub.states.get("nut2.0.ups0.info.notify")).toEqual({ val: "LOWBATT", ack: true });
+  });
+
+  it("a follow-up queued during a poll is dropped when the adapter unloads before that poll ends", async () => {
+    const s = await setupConnected();
+    const resolvers: Array<(vars: NutVariable[]) => void> = [];
+    s.client.listVar.mockImplementation(() => new Promise<NutVariable[]>(res => resolvers.push(res)));
+    s.client.listVar.mockClear();
+    s.client.listUps.mockClear();
+
+    const running = s.internal.poll();
+    await vi.waitFor(() => expect(s.client.listVar).toHaveBeenCalledTimes(1));
+    const ring = s.internal.onStateChange("nut2.0.notify", { val: "SHUTDOWN ups0", ack: false });
+    await ring; // queued as a follow-up — the poll is still inside LIST VAR
+    // The host stops the instance while that poll is still running.
+    const callback = vi.fn();
+    s.internal.onUnload(callback);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+    const listUpsCalls = s.client.listUps.mock.calls.length;
+
+    resolvers[0]([{ name: "ups.status", value: "OB" }]);
+    await running;
+    await new Promise(r => setImmediate(r));
+    // No second poll after the shutdown: it would run against the torn-down client and write
+    // states after the host was already told "done".
+    expect(s.client.listUps).toHaveBeenCalledTimes(listUpsCalls);
+    expect(s.client.listVar).toHaveBeenCalledTimes(1);
   });
 
   it("without a client (server never reached) the event is still recorded and acked", async () => {
