@@ -1,4 +1,9 @@
 # Older changes
+## 0.7.0 (2026-08-12)
+
+- Improved: more UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.
+- Fixed: a driver flag reporting an unusual value is now kept as a text state instead of being misread as a number, so its type no longer changes between updates.
+
 ## 0.6.0 (2026-08-11)
 
 - UPS readings now carry their correct data type instead of plain text, so numeric values, yes/no fields and status values can be charted, compared and used directly in scripts.

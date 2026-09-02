@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "news": {
-      "NEXT": {
+      "0.12.0": {
         "en": "The connection test really verifies the credentials now (it logs in), the adapter logs in whenever credentials are set, and a renamed data point keeps your recording",
         "de": "Der Verbindungstest prüft die Zugangsdaten jetzt wirklich (er meldet sich an), der Adapter meldet sich immer an, und ein umbenannter Datenpunkt behält deine Aufzeichnung",
         "ru": "Проверка соединения теперь действительно проверяет учётные данные (выполняется вход), адаптер входит в систему, а переименованная точка данных сохраняет запись",
