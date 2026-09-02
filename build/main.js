@@ -85,15 +85,28 @@ class NutAdapter extends utils.Adapter {
     };
   }
   /**
-   * Switch off `supportedMessages.stopInstance` on this instance's own object.
+   * Remove `supportedMessages` from this instance's own object — the whole key, not just its
+   * `stopInstance` entry.
    *
-   * The entry was dropped from the manifest, which only helps a FRESH install: an upgrade
-   * merges the manifest into the existing instance object and never removes a key, so the old
-   * `true` survives in the database — and that is what the host reads. With it the host kills
-   * the process one second after asking it to stop, `onUnload` never runs, and every state
-   * written while shutting down is dead code (measured on a live js-controller 7.2.2).
+   * Two defects hang on this one key, and the fix for the first caused the second:
    *
-   * Only written when it is actually still on: every instance-object change restarts the
+   * 1. `stopInstance: true` (manifest of v0.8.0 and earlier) makes the host kill the process one
+   *    second after asking it to stop — `onUnload` never runs and every state written while
+   *    shutting down is dead code. Dropping it from the manifest only helps a FRESH install: an
+   *    upgrade merges the manifest into the existing instance object and never removes a key, so
+   *    the old value survives in the database, and that is what the host reads.
+   * 2. Writing `stopInstance: false` (v0.9.0–v0.12.0) fixed the shutdown but silently killed the
+   *    message box, so the admin connection test did nothing at all: js-controller decides the
+   *    subscription with `isMessageboxSupported()` — once `common.supportedMessages` is an
+   *    OBJECT, `common.messagebox` is not even looked at, and a set of entries that are all
+   *    `false` means "no messages" (`js-controller-adapter/lib/adapter/utils.js`, verified on the
+   *    installed 7.2.2). The adapter then never subscribes and the message sits unread.
+   *
+   * Both are cured by deleting the key. `extendObject` merges and cannot remove anything, so the
+   * key is overwritten with `null` — which does erase it (`node.extend` copies `null`, skips
+   * `undefined`) and takes `isMessageboxSupported` back to the `common.messagebox` branch.
+   *
+   * Only written while the key is still there: every instance-object change restarts the
    * instance, so doing it unconditionally would be a restart loop.
    *
    * @returns true when the correction was written and the restart is coming — the caller has to
@@ -105,12 +118,11 @@ class NutAdapter extends utils.Adapter {
     const id = `system.adapter.${this.namespace}`;
     try {
       const obj = await this.getForeignObjectAsync(id);
-      const supported = (_a = obj == null ? void 0 : obj.common) == null ? void 0 : _a.supportedMessages;
-      if (!(supported == null ? void 0 : supported.stopInstance)) {
+      if (((_a = obj == null ? void 0 : obj.common) == null ? void 0 : _a.supportedMessages) === void 0 || obj.common.supportedMessages === null) {
         return false;
       }
       this.log.info("Correcting a leftover setting from an earlier version \u2014 this instance restarts once");
-      await this.extendForeignObjectAsync(id, { common: { supportedMessages: { stopInstance: false } } });
+      await this.extendForeignObjectAsync(id, { common: { supportedMessages: null } });
       return true;
     } catch (err) {
       this.log.debug(`Could not check the instance object ${id}: ${(0, import_coerce.errText)(err)}`);

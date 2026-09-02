@@ -1,4 +1,9 @@
 # Older changes
+## 0.8.0 (2026-08-27)
+
+- New: the adapter now reports crashes to the developer — only if error reporting is enabled in the ioBroker diagnostics settings, and only anonymously without personal data.
+- Fixed: a UPS no longer keeps showing as online after the adapter is stopped or while the NUT server cannot be reached — the reachability indicator is now cleared instead of staying green.
+
 ## 0.7.0 (2026-08-12)
 
 - Improved: more UPS values now carry their dedicated ioBroker role — mains frequency, status severity and humidity — so charts, visualisations and automatic device detection recognise them correctly.

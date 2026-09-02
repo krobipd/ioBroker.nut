@@ -1155,6 +1155,9 @@ describe("shutdown contract", () => {
       common: { supportedMessages?: Record<string, unknown> };
     };
     expect(manifest.common.supportedMessages?.stopInstance).toBeUndefined();
+    // Not even an empty object: any `supportedMessages` object makes js-controller ignore
+    // `common.messagebox`, and the admin connection test stops being delivered.
+    expect(manifest.common.supportedMessages).toBeUndefined();
   });
 
   it("tells the controller we are done only AFTER the last state was written", async () => {
@@ -1180,7 +1183,7 @@ describe("shutdown contract", () => {
     expect(order).toContain("write:ups0.info.reachable");
   });
 
-  it("switches off a leftover stopInstance flag and stops the start there", async () => {
+  it("erases a leftover stopInstance flag and stops the start there", async () => {
     const s = setup();
     s.stub.getForeignObjectAsync.mockResolvedValue({
       common: { supportedMessages: { stopInstance: true } },
@@ -1188,18 +1191,49 @@ describe("shutdown contract", () => {
 
     await s.internal.onReady();
 
+    // The whole key goes, written as null: a merge cannot remove anything, and leaving
+    // `supportedMessages` behind as an object switches the message box off (see below).
     expect(s.stub.extendForeignObjectAsync).toHaveBeenCalledWith("system.adapter.nut2.0", {
-      common: { supportedMessages: { stopInstance: false } },
+      common: { supportedMessages: null },
     });
     // Carrying on would arm timers in a process the host is already shutting down.
     expect(s.client.start).not.toHaveBeenCalled();
     expect(s.sm.markAllUnreachable).not.toHaveBeenCalled();
   });
 
-  it("starts normally when the flag is already off", async () => {
+  it("erases a supportedMessages object whose entries are all off — it kills the message box", async () => {
+    // Measured on the live server (js-controller 7.2.2): once `supportedMessages` is an object,
+    // `isMessageboxSupported()` ignores `common.messagebox` and reads "all entries false" as
+    // "no messages" — the adapter never subscribes and the admin connection test does nothing.
+    // v0.9.0-v0.12.0 wrote exactly that object themselves.
     const s = setup();
     s.stub.getForeignObjectAsync.mockResolvedValue({
       common: { supportedMessages: { stopInstance: false } },
+    });
+
+    await s.internal.onReady();
+
+    expect(s.stub.extendForeignObjectAsync).toHaveBeenCalledWith("system.adapter.nut2.0", {
+      common: { supportedMessages: null },
+    });
+    expect(s.client.start).not.toHaveBeenCalled();
+  });
+
+  it("starts normally once the key is gone", async () => {
+    const s = setup();
+    s.stub.getForeignObjectAsync.mockResolvedValue({ common: { messagebox: true } });
+
+    await s.internal.onReady();
+
+    expect(s.stub.extendForeignObjectAsync).not.toHaveBeenCalled();
+    expect(s.client.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts normally when the correction already ran (key present but null)", async () => {
+    // The erased key stays in the object as null — that must not trigger a restart loop.
+    const s = setup();
+    s.stub.getForeignObjectAsync.mockResolvedValue({
+      common: { messagebox: true, supportedMessages: null },
     });
 
     await s.internal.onReady();

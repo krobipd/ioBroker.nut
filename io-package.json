@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.12.0",
+    "version": "0.12.1",
     "news": {
+      "0.12.1": {
+        "en": "The \"Test connection\" button in the settings answers again — clicking it produced no result at all on every instance updated from 0.9.0 or later",
+        "de": "Der Knopf „Verbindung testen\" in den Einstellungen antwortet wieder — ein Klick lieferte auf jeder ab 0.9.0 aktualisierten Instanz überhaupt kein Ergebnis",
+        "ru": "Кнопка «Проверить соединение» в настройках снова отвечает — на любом экземпляре, обновлённом с 0.9.0 и позже, нажатие не давало никакого результата",
+        "pt": "O botão \"Testar ligação\" nas definições volta a responder — em qualquer instância atualizada a partir da 0.9.0 o clique não dava resultado nenhum",
+        "nl": "De knop \"Verbinding testen\" in de instellingen antwoordt weer — op elke sinds 0.9.0 bijgewerkte instantie leverde klikken helemaal geen resultaat op",
+        "fr": "Le bouton « Tester la connexion » dans les paramètres répond de nouveau — sur toute instance mise à jour depuis la 0.9.0, le clic ne donnait aucun résultat",
+        "it": "Il pulsante \"Prova connessione\" nelle impostazioni risponde di nuovo — su ogni istanza aggiornata dalla 0.9.0 il clic non dava alcun risultato",
+        "es": "El botón \"Probar conexión\" de los ajustes vuelve a responder — en cualquier instancia actualizada desde la 0.9.0 el clic no daba ningún resultado",
+        "pl": "Przycisk „Testuj połączenie\" w ustawieniach znowu odpowiada — na każdej instancji zaktualizowanej od 0.9.0 kliknięcie nie dawało żadnego wyniku",
+        "uk": "Кнопка «Перевірити з'єднання» в налаштуваннях знову відповідає — на будь-якому екземплярі, оновленому від 0.9.0, натискання не давало жодного результату",
+        "zh-cn": "设置中的“测试连接”按钮重新有反应——在所有从 0.9.0 起升级的实例上，点击它没有任何结果"
+      },
       "0.12.0": {
         "en": "The connection test really verifies the credentials now (it logs in), the adapter logs in whenever credentials are set, and a renamed data point keeps your recording",
         "de": "Der Verbindungstest prüft die Zugangsdaten jetzt wirklich (er meldet sich an), der Adapter meldet sich immer an, und ein umbenannter Datenpunkt behält deine Aufzeichnung",
@@ -80,19 +93,6 @@
         "pl": "Częstotliwość sieci, poziom ważności statusu i wilgotność używają teraz własnej roli ioBroker, dzięki czemu wykresy i wykrywanie urządzeń działają poprawnie.",
         "uk": "Частота мережі, рівень серйозності статусу та вологість тепер використовують власну роль ioBroker, тож графіки та розпізнавання пристроїв визначають їх правильно.",
         "zh-cn": "市电频率、状态严重程度和湿度现在使用各自专用的 ioBroker 角色，因此图表和设备检测能正确识别它们。"
-      },
-      "0.6.0": {
-        "en": "More UPS readings now appear with their correct ioBroker type instead of plain text, so numeric values, yes/no switches and status fields can be used directly in charts and scripts.",
-        "de": "Mehr USV-Werte erscheinen jetzt mit ihrem korrekten ioBroker-Typ statt als reiner Text, sodass Zahlenwerte, Ja/Nein-Schalter und Statusfelder direkt in Diagrammen und Skripten nutzbar sind.",
-        "ru": "Больше показаний ИБП теперь имеют правильный тип ioBroker вместо простого текста, поэтому числа, переключатели да/нет и поля состояния можно использовать прямо в графиках и скриптах.",
-        "pt": "Mais leituras do UPS aparecem agora com o tipo ioBroker correto em vez de texto simples, pelo que valores numéricos, interruptores sim/não e campos de estado podem ser usados em gráficos e scripts.",
-        "nl": "Meer UPS-metingen verschijnen nu met hun juiste ioBroker-type in plaats van tekst, zodat getallen, ja/nee-schakelaars en statusvelden direct in grafieken en scripts bruikbaar zijn.",
-        "fr": "Plus de mesures de l'onduleur ont leur bon type ioBroker au lieu de texte, si bien que valeurs numériques, interrupteurs oui/non et champs d'état sont utilisables dans graphiques et scripts.",
-        "it": "Più letture dell'UPS appaiono ora con il tipo ioBroker corretto invece del testo, così valori numerici, interruttori sì/no e campi di stato sono usabili direttamente in grafici e script.",
-        "es": "Más lecturas del SAI aparecen ahora con su tipo ioBroker correcto en vez de texto, por lo que valores numéricos, interruptores sí/no y campos de estado se pueden usar en gráficos y scripts.",
-        "pl": "Więcej odczytów UPS pojawia się teraz z poprawnym typem ioBroker zamiast tekstu, więc wartości liczbowe, przełączniki tak/nie i pola stanu można używać w wykresach i skryptach.",
-        "uk": "Більше показань ДБЖ тепер мають правильний тип ioBroker замість тексту, тож числа, перемикачі так/ні та поля стану можна використовувати прямо в графіках і скриптах.",
-        "zh-cn": "更多 UPS 读数现在以正确的 ioBroker 类型显示，而非纯文本，因此数值、是/否开关和状态字段可直接用于图表和脚本。"
       }
     },
     "plugins": {

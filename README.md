@@ -241,6 +241,10 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.12.1 (2026-09-02)
+
+- Fixed: the "Test connection" button in the settings stayed silent — clicking it produced no result at all. It answers again, on every instance updated from 0.9.0 or later
+
 ### 0.12.0 (2026-09-02)
 
 - Fixed: the connection test now really verifies the username and password — it logs in to the NUT server and only then reports success, instead of accepting anything you type (#17)
@@ -268,11 +272,6 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 
 - New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.
 - Fixed: a UPS kept showing as reachable while the adapter was stopped — it now goes offline there, on installations that were updated as well.
-
-### 0.8.0 (2026-08-27)
-
-- New: the adapter now reports crashes to the developer — only if error reporting is enabled in the ioBroker diagnostics settings, and only anonymously without personal data.
-- Fixed: a UPS no longer keeps showing as online after the adapter is stopped or while the NUT server cannot be reached — the reachability indicator is now cleared instead of staying green.
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
