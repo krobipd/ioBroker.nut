@@ -12,7 +12,7 @@ Monitors uninterruptible power supplies via [Network UPS Tools (NUT)](https://ne
 
 ## Features
 
-- Automatic discovery of all UPS devices on a NUT server via `LIST UPS`
+- Automatic discovery of all UPS devices on a NUT server via `LIST UPS` — also while running: a UPS added to or removed from the server shows up (or disappears) at the next poll
 - Dynamic state creation from `LIST VAR` — whatever your UPS reports appears as ioBroker states
 - Proper data types: numeric values as numbers (not strings), with units (V, Hz, A, Ah, %, W, VA, s, °C)
 - Parsed `ups.status` flags as individual booleans (online, onBattery, lowBattery, charging, ...) plus computed severity (0–4)
