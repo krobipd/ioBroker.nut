@@ -341,7 +341,12 @@ describe("type-detector", () => {
     });
 
     it("should have no unit for unknown numeric variables", () => {
-      expect(detectType("ups.productid", "ffff", false).unit).toBeUndefined();
+      // A real numeric NUT variable with no unit rule in the catalog (a count): the value must
+      // become a number WITHOUT a unit. (ups.productid is a known STRING variable — it never
+      // reaches unit detection, so it could not prove this.)
+      const packs = detectType("battery.packs", "2", false);
+      expect(packs.type).toBe("number");
+      expect(packs.unit).toBeUndefined();
     });
   });
 
