@@ -56,6 +56,8 @@ class NutAdapter extends utils.Adapter {
   credentialsSent = false;
   /** Credentials were reported as refused — warn once, then debug until they work again. */
   warnedCredentialsRejected = false;
+  /** Commands enabled without credentials — say it once, not on every reconnect. */
+  warnedCommandsWithoutCredentials = false;
   enrichedUps = /* @__PURE__ */ new Set();
   testClients = /* @__PURE__ */ new Set();
   subscribed = false;
@@ -184,6 +186,7 @@ class NutAdapter extends utils.Adapter {
       );
       await this.setStateChangedAsync("info.connection", { val: false, ack: true });
       this.stateManager = this.makeStateManager();
+      await this.stateManager.refreshInstanceObjects();
       await this.stateManager.markAllUnreachable();
       await this.subscribeStatesAsync("notify");
       const host = (0, import_coerce.coerceHost)(config.host);
@@ -331,7 +334,16 @@ class NutAdapter extends utils.Adapter {
    * best-effort; a genuinely unauthorised command is refused by the server and logged.
    */
   async setupCommandButtons() {
-    if (!this.credentialsSent || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+    if (!this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+      return;
+    }
+    if (!this.credentialsSent) {
+      if (!this.warnedCommandsWithoutCredentials) {
+        this.warnedCommandsWithoutCredentials = true;
+        this.log.warn(
+          "Instant commands are enabled but no credentials are configured \u2014 the NUT server checks command rights per user, so no command buttons are created"
+        );
+      }
       return;
     }
     for (const [upsId, ups] of this.discoveredUps) {

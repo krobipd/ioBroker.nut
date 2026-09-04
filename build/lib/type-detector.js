@@ -72,11 +72,12 @@ function detectType(varName, rawValue, isWritable) {
   }
   if (TIMER_VARIABLE_RE.test(varName)) {
     const idle = rawValue.toLowerCase();
+    const idleRole = detectRole(varName, "number", isWritable);
     if (idle === "notactive" || rawValue === "-1") {
-      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: null };
+      return { type: "number", role: idleRole, unit: "s", read: true, write: isWritable, parsedValue: null };
     }
     if (idle === "countdownexpired") {
-      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: 0 };
+      return { type: "number", role: idleRole, unit: "s", read: true, write: isWritable, parsedValue: 0 };
     }
   }
   if (isKnownString(varName)) {

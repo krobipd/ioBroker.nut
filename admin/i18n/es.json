@@ -5,13 +5,15 @@
   "help_host": "Nombre de host o dirección IP del servidor NUT (ej.: 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Puerto",
+  "help_port": "Puerto en el que escucha el servidor NUT — 3493, salvo que upsd esté configurado de otro modo",
   "label_networkInterface": "Interfaz de red",
-  "tooltip_networkInterface": "Seleccionar una interfaz de red específica para conexiones salientes (opcional)",
+  "help_networkInterface": "Seleccionar una interfaz de red específica para conexiones salientes (opcional)",
   "label_pollInterval": "Intervalo de consulta (s)",
   "help_pollInterval": "Frecuencia de consulta al servidor NUT (2–300 segundos)",
   "label_username": "Nombre de usuario",
   "help_username": "Nombre de usuario NUT (opcional — necesario para comandos y variables editables)",
   "label_password": "Contraseña",
+  "help_password": "Contraseña de ese usuario NUT, guardada cifrada. Solo se necesita para comandos y variables escribibles",
   "btn_checkConnection": "Probar conexión",
   "label_commandTimeout": "Tiempo de espera de comandos (s)",
   "help_commandTimeout": "Tiempo de espera para comandos NUT individuales (1–30 segundos)",
@@ -293,5 +295,7 @@
   "testPlain": "sin cifrar",
   "testConnectedLoggedIn": "Conectado %s, sesión como \"%s\" — %s SAI: %s",
   "testConnectedNoCreds": "Conectado %s — %s SAI: %s (sin credenciales configuradas)",
-  "testConnectedNoUps": "Conectado %s — el servidor no lista ningún SAI, no se pudieron comprobar las credenciales"
+  "testConnectedNoUps": "Conectado %s — el servidor no lista ningún SAI, no se pudieron comprobar las credenciales",
+  "testConnectedAuthRejected": "Conectado %s, pero el servidor NUT rechazó las credenciales de «%s» — la lectura funciona, conmutar y escribir se denegarán. %s SAI: %s",
+  "testFailed": "La prueba de conexión falló: %s"
 }

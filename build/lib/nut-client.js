@@ -320,10 +320,25 @@ class NutClient {
    * modes are configuration errors — fatal, not retried — and are checked BEFORE the server is
    * asked for STARTTLS, so a bad path never opens a half-upgraded connection.
    *
-   * @returns the PEM certificate(s) to trust, or undefined when no CA file is configured
+   * The file is only read when the strict check is actually on: `tls.connect` ignores `ca`
+   * entirely with `rejectUnauthorized: false`, so reading it then turned a stale path into a
+   * FATAL error on a connection that never needed the file. The admin only HIDES the field when
+   * the strict check is off (`"hidden": "!data.useTls || !data.tlsRejectUnauthorized"`) — hiding
+   * does not clear the stored value, so the path outlives the setting that gave it a purpose.
+   * Skipping it silently would be the next trap (the value is then dead until someone re-enables
+   * the check and the fatal error returns without warning), hence the debug line.
+   *
+   * @returns the PEM certificate(s) to trust, or undefined when no CA file is configured or used
    */
   loadTlsCa() {
+    var _a;
     if (!this.tlsCaFile) {
+      return void 0;
+    }
+    if (!this.tlsRejectUnauthorized) {
+      (_a = this.log) == null ? void 0 : _a.debug(
+        `TLS CA file ${this.tlsCaFile} is configured but not used \u2014 "Require valid certificate" is off, so no certificate is verified`
+      );
       return void 0;
     }
     let pem;

@@ -5,13 +5,15 @@
   "help_host": "Nazwa hosta lub adres IP serwera NUT (np. 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Port",
+  "help_port": "Port, na którym nasłuchuje serwer NUT — 3493, o ile upsd nie jest skonfigurowany inaczej",
   "label_networkInterface": "Interfejs sieciowy",
-  "tooltip_networkInterface": "Wybierz konkretny interfejs sieciowy dla połączeń wychodzących (opcjonalnie)",
+  "help_networkInterface": "Wybierz konkretny interfejs sieciowy dla połączeń wychodzących (opcjonalnie)",
   "label_pollInterval": "Interwał odpytywania (s)",
   "help_pollInterval": "Częstotliwość odpytywania serwera NUT (2–300 sekund)",
   "label_username": "Nazwa użytkownika",
   "help_username": "Nazwa użytkownika NUT (opcjonalnie — wymagana do poleceń i zmiennych zapisywalnych)",
   "label_password": "Hasło",
+  "help_password": "Hasło tego użytkownika NUT, przechowywane w postaci zaszyfrowanej. Potrzebne tylko do poleceń i zapisywalnych zmiennych",
   "btn_checkConnection": "Testuj połączenie",
   "label_commandTimeout": "Limit czasu poleceń (s)",
   "help_commandTimeout": "Limit czasu dla poszczególnych poleceń NUT (1–30 sekund)",
@@ -293,5 +295,7 @@
   "testPlain": "bez szyfrowania",
   "testConnectedLoggedIn": "Połączono %s, zalogowano jako „%s\" — %s UPS: %s",
   "testConnectedNoCreds": "Połączono %s — %s UPS: %s (brak danych logowania)",
-  "testConnectedNoUps": "Połączono %s — serwer nie podaje żadnego UPS, nie można sprawdzić danych logowania"
+  "testConnectedNoUps": "Połączono %s — serwer nie podaje żadnego UPS, nie można sprawdzić danych logowania",
+  "testConnectedAuthRejected": "Połączono %s, ale serwer NUT odrzucił dane logowania „%s” — odczyt działa, przełączanie i zapis zostaną odrzucone. %s UPS: %s",
+  "testFailed": "Test połączenia nie powiódł się: %s"
 }

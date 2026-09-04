@@ -5,13 +5,15 @@
   "help_host": "Nom d'hôte ou adresse IP du serveur NUT (ex. : 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Port",
+  "help_port": "Port sur lequel le serveur NUT écoute — 3493, sauf si upsd est configuré autrement",
   "label_networkInterface": "Interface réseau",
-  "tooltip_networkInterface": "Sélectionner une interface réseau spécifique pour les connexions sortantes (optionnel)",
+  "help_networkInterface": "Sélectionner une interface réseau spécifique pour les connexions sortantes (optionnel)",
   "label_pollInterval": "Intervalle d'interrogation (s)",
   "help_pollInterval": "Fréquence d'interrogation du serveur NUT (2–300 secondes)",
   "label_username": "Nom d'utilisateur",
   "help_username": "Nom d'utilisateur NUT (optionnel — requis pour les commandes et les variables modifiables)",
   "label_password": "Mot de passe",
+  "help_password": "Mot de passe de cet utilisateur NUT, stocké chiffré. Nécessaire uniquement pour les commandes et les variables inscriptibles",
   "btn_checkConnection": "Tester la connexion",
   "label_commandTimeout": "Délai d'attente des commandes (s)",
   "help_commandTimeout": "Délai d'attente pour les commandes NUT individuelles (1–30 secondes)",
@@ -293,5 +295,7 @@
   "testPlain": "non chiffré",
   "testConnectedLoggedIn": "Connecté %s, identifié comme « %s » — %s onduleur(s) : %s",
   "testConnectedNoCreds": "Connecté %s — %s onduleur(s) : %s (aucun identifiant configuré)",
-  "testConnectedNoUps": "Connecté %s — le serveur ne liste aucun onduleur, identifiants non vérifiables"
+  "testConnectedNoUps": "Connecté %s — le serveur ne liste aucun onduleur, identifiants non vérifiables",
+  "testConnectedAuthRejected": "Connecté %s, mais le serveur NUT a refusé les identifiants « %s » — la lecture fonctionne, la commutation et l’écriture seront refusées. %s onduleur(s) : %s",
+  "testFailed": "Échec du test de connexion : %s"
 }

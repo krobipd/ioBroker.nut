@@ -106,15 +106,32 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
             if (!first) {
               deps.sendTo(obj.from, obj.command, { result: tTextArgs("testConnectedNoUps", transport) }, obj.callback);
             } else {
-              await testClient.authenticate(username, password);
-              await testClient.login(first.name);
-              await testClient.logout();
-              deps.sendTo(
-                obj.from,
-                obj.command,
-                { result: tTextArgs("testConnectedLoggedIn", transport, username, upsList.length, names) },
-                obj.callback,
-              );
+              try {
+                await testClient.authenticate(username, password);
+                await testClient.login(first.name);
+                await testClient.logout();
+                deps.sendTo(
+                  obj.from,
+                  obj.command,
+                  { result: tTextArgs("testConnectedLoggedIn", transport, username, upsList.length, names) },
+                  obj.callback,
+                );
+              } catch (err) {
+                // Refused credentials are NOT a failed test since design #32: the adapter keeps
+                // reading and stays green, only switching and writing are refused. Reporting an
+                // error here would tell the user their setup is broken while the very same setup
+                // runs and delivers fresh values one screen away.
+                if (!authFailureText(err)) {
+                  throw err;
+                }
+                deps.log.debug(`checkConnection: credentials for ${username} refused`);
+                deps.sendTo(
+                  obj.from,
+                  obj.command,
+                  { result: tTextArgs("testConnectedAuthRejected", transport, username, upsList.length, names) },
+                  obj.callback,
+                );
+              }
             }
           } else {
             deps.sendTo(
@@ -136,6 +153,16 @@ export async function dispatchMessage(obj: ioBroker.Message, deps: MessageRouter
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${errText(err)}`);
-    deps.sendTo(obj.from, obj.command, { error: authFailureText(err) ?? errText(err) }, obj.callback);
+    // The answer is shown in the admin, so its wording follows the system language like every
+    // other user-facing text — the failure case just as much as the success case. Only the cause
+    // inside it stays as the server/runtime worded it; that is a protocol detail, not prose.
+    // Translating happens HERE and not in authFailureText(): that function also feeds log lines,
+    // and the log stays English (fleet rule).
+    deps.sendTo(
+      obj.from,
+      obj.command,
+      { error: tTextArgs("testFailed", authFailureText(err) ?? errText(err)) },
+      obj.callback,
+    );
   }
 }

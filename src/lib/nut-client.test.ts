@@ -3,7 +3,7 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as tls from "node:tls";
-import { isTlsConfigError, MAX_LINE_BYTES, NutClient, NutError, NutTimeoutError } from "./nut-client";
+import { authFailureText, isTlsConfigError, MAX_LINE_BYTES, NutClient, NutError, NutTimeoutError } from "./nut-client";
 
 // Throwaway self-signed cert+key (CN=localhost, 10y) for the STARTTLS handshake test only.
 // The client connects with tlsRejectUnauthorized:false, so a self-signed cert is accepted.
@@ -702,6 +702,10 @@ describe("NutClient", () => {
         await expect(client.listRange("ups0", "x\\y")).rejects.toThrow("Invalid NUT variable name");
         await expect(client.listVar("u p")).rejects.toThrow("Invalid NUT UPS name");
         await expect(client.login("u p")).rejects.toThrow("Invalid NUT UPS name");
+        // These two were the only guarded calls without a test — the guard exists for a UPS name
+        // that reaches the client from a hand-made object, and it has to hold on every path.
+        await expect(client.listRw("u p")).rejects.toThrow("Invalid NUT UPS name");
+        await expect(client.listCmd('a"b')).rejects.toThrow("Invalid NUT UPS name");
         expect(mock.commands).toEqual([]);
         // A clean token still goes through.
         await client.setVar("ups0", "ups.delay.shutdown", "20");
@@ -1173,6 +1177,32 @@ describe("NutClient", () => {
       } finally {
         await mock.stop();
       }
+    });
+
+    it("clears an armed reconnect timer — a torn-down client must not come back", async () => {
+      // Without this the timer fires after the teardown and opens a socket nobody owns any more.
+      // The injected timer deliberately NEVER fires: with a real one the reconnect could run
+      // before destroy() and the assertion would pass on an already-empty handle — a green test
+      // that proves nothing.
+      const cleared: unknown[] = [];
+      const client = new NutClient("127.0.0.1", 1, {
+        commandTimeout: 50,
+        setTimer: cb => ({ cb }),
+        clearTimer: h => cleared.push(h),
+      });
+      client.start(); // port 1 → connect fails → a reconnect gets scheduled
+      await vi.waitFor(() => {
+        // @ts-expect-error reading the private timer handle to prove it was armed
+        expect(client.reconnectTimer).not.toBeNull();
+      });
+      // @ts-expect-error the very handle destroy() has to hand to clearTimer
+      const armed = client.reconnectTimer;
+
+      client.destroy();
+
+      expect(cleared).toContain(armed);
+      // @ts-expect-error the handle is dropped, not just cleared
+      expect(client.reconnectTimer).toBeNull();
     });
   });
 
@@ -1745,6 +1775,68 @@ describe("NutClient", () => {
         await mock.stop();
       }
     });
+
+    it("falls back to a hard destroy when the socket refuses the goodbye", async () => {
+      // onUnload has one second before the host kills the process — a throwing end() must not
+      // leave the socket open, and it must never propagate out of a synchronous teardown.
+      const mock = createMockNutServer(() => "OK");
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        // @ts-expect-error replacing end() on the private socket to force the failure path
+        const sock = client.socket as { end: () => void; destroy: () => void };
+        let destroyed = false;
+        const realDestroy = sock.destroy.bind(sock);
+        sock.end = () => {
+          throw new Error("write after end");
+        };
+        sock.destroy = () => {
+          destroyed = true;
+          realDestroy();
+        };
+
+        expect(() => client.shutdown()).not.toThrow();
+        expect(destroyed).toBe(true);
+        expect(client.isConnected).toBe(false);
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
+  describe("getVar", () => {
+    it("rejects an answer that is not a VAR line", async () => {
+      // NUT has no request IDs; a desynced or unexpected answer must not be handed on as a value.
+      const mock = createMockNutServer(cmd => (cmd.startsWith("GET VAR") ? "OK" : "ERR UNKNOWN-COMMAND"));
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port);
+        await client.connect();
+        await expect(client.getVar("ups0", "battery.charge")).rejects.toThrow("Unexpected GET VAR response");
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
+  });
+
+  describe("outgoing source address", () => {
+    it("binds the connection to the configured local address", async () => {
+      // The network-interface selector exists for multi-homed hosts; nothing exercised it, so a
+      // wrong option name would have gone unnoticed until a user with two networks complained.
+      const mock = createMockNutServer(() => "OK");
+      const port = await mock.start();
+      try {
+        const client = new NutClient("127.0.0.1", port, { localAddress: "127.0.0.1" });
+        await client.connect();
+        // @ts-expect-error reading the private socket to prove the bind really happened
+        expect(client.socket!.localAddress).toBe("127.0.0.1");
+        client.destroy();
+      } finally {
+        await mock.stop();
+      }
+    });
   });
 });
 
@@ -1876,6 +1968,36 @@ describe("TLS CA file — strict check against a private CA", () => {
     }
   });
 
+  it("a broken CA path is harmless while the strict check is off — the file is never read", async () => {
+    // The admin only HIDES the CA field when "Require valid certificate" is off; the stored path
+    // stays. Reading it anyway made a moved/deleted PEM fatal on a connection that does not verify
+    // any certificate at all — the adapter went yellow with no retry over an unused file.
+    const mock = createStartTlsMockServer(cmd =>
+      cmd === "LIST UPS" ? ["BEGIN LIST UPS", 'UPS ups0 "Secure"', "END LIST UPS"] : "OK",
+    );
+    const port = await mock.start();
+    const debug: string[] = [];
+    try {
+      const client = new NutClient("127.0.0.1", port, {
+        useTls: true,
+        tlsRejectUnauthorized: false,
+        tlsCaFile: path.join(os.tmpdir(), "nut2-does-not-exist.pem"),
+        logger: { debug: m => debug.push(m), warn: () => {}, info: () => {} },
+      });
+      await client.connect();
+      expect(client.isTls).toBe(true);
+      expect(await client.listUps()).toEqual([{ name: "ups0", description: "Secure" }]);
+      // Not silently dead: the line says why the configured path did nothing, so re-enabling the
+      // strict check later does not resurrect the fatal error out of nowhere.
+      expect(debug.some(m => m.includes("nut2-does-not-exist.pem") && m.includes("is configured but not used"))).toBe(
+        true,
+      );
+      client.destroy();
+    } finally {
+      await mock.stop();
+    }
+  });
+
   it("a CA file without a PEM certificate is a fatal configuration error", async () => {
     const mock = createStartTlsMockServer(() => "OK");
     const port = await mock.start();
@@ -1955,5 +2077,26 @@ describe("NutClient credential redaction", () => {
       client.destroy();
       await mock.stop();
     }
+  });
+});
+
+describe("authFailureText", () => {
+  it("names both causes of ACCESS-DENIED — upsd cannot tell them apart on the wire", () => {
+    const text = authFailureText(new NutError("ACCESS-DENIED"));
+    expect(text).toContain("wrong password");
+    expect(text).toContain("upsd.users");
+  });
+
+  it("names the code for the other credential refusals", () => {
+    // The branch that was never exercised: every AUTH code that is not ACCESS-DENIED.
+    for (const code of ["INVALID-USERNAME", "INVALID-PASSWORD", "USERNAME-REQUIRED", "ALREADY-SET-PASSWORD"]) {
+      expect(authFailureText(new NutError(code))).toContain(code);
+    }
+  });
+
+  it("returns null for anything that is not about credentials", () => {
+    expect(authFailureText(new NutError("DATA-STALE"))).toBeNull();
+    expect(authFailureText(new Error("ACCESS-DENIED"))).toBeNull();
+    expect(authFailureText("ACCESS-DENIED")).toBeNull();
   });
 });

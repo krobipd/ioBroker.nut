@@ -5,13 +5,15 @@
   "help_host": "Hostname oder IP-Adresse des NUT-Servers (z. B. 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Port",
+  "help_port": "Port, auf dem der NUT-Server lauscht — 3493, sofern upsd nicht anders eingerichtet ist",
   "label_networkInterface": "Netzwerkschnittstelle",
-  "tooltip_networkInterface": "Bestimmte Netzwerkschnittstelle für ausgehende Verbindungen wählen (optional)",
+  "help_networkInterface": "Bestimmte Netzwerkschnittstelle für ausgehende Verbindungen wählen (optional)",
   "label_pollInterval": "Abfrageintervall (s)",
   "help_pollInterval": "Wie oft der NUT-Server abgefragt wird (2–300 Sekunden)",
   "label_username": "Benutzername",
   "help_username": "NUT-Benutzername (optional — erforderlich für Befehle und beschreibbare Variablen)",
   "label_password": "Passwort",
+  "help_password": "Passwort dieses NUT-Benutzers, verschlüsselt gespeichert. Nur für Befehle und schreibbare Variablen nötig",
   "btn_checkConnection": "Verbindung testen",
   "label_commandTimeout": "Befehlstimeout (s)",
   "help_commandTimeout": "Timeout für einzelne NUT-Befehle (1–30 Sekunden)",
@@ -293,5 +295,7 @@
   "testPlain": "unverschlüsselt",
   "testConnectedLoggedIn": "Verbunden %s, angemeldet als „%s\" — %s USV(en): %s",
   "testConnectedNoCreds": "Verbunden %s — %s USV(en): %s (keine Zugangsdaten hinterlegt)",
-  "testConnectedNoUps": "Verbunden %s — der Server führt keine USV, die Zugangsdaten konnten nicht geprüft werden"
+  "testConnectedNoUps": "Verbunden %s — der Server führt keine USV, die Zugangsdaten konnten nicht geprüft werden",
+  "testConnectedAuthRejected": "Verbunden %s, aber der NUT-Server hat die Zugangsdaten für „%s“ abgelehnt — Lesen funktioniert, Schalten und Schreiben werden verweigert. %s USV(en): %s",
+  "testFailed": "Verbindungstest fehlgeschlagen: %s"
 }

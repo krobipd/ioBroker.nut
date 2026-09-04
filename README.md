@@ -128,6 +128,15 @@ nut2.0.
     │   ├── voltage                    — Output voltage (V, number)
     │   ├── frequency                  — Output frequency (Hz, number)
     │   └── ...
+    ├── outlet/                        — Switchable outlets and outlet groups (if the UPS has them)
+    │   ├── id                         — Outlet identifier (string)
+    │   ├── desc                       — Outlet description (string)
+    │   ├── status                     — on / off (enum)
+    │   └── ...
+    ├── ambient/                       — Environment sensors (if the UPS or an EMP has them)
+    │   ├── temperature                — Ambient temperature (°C, number)
+    │   ├── humidity                   — Ambient humidity (%, number)
+    │   └── ...
     ├── ups/
     │   ├── load                       — UPS load (%, number)
     │   ├── power                      — Apparent power (VA, number)
@@ -158,7 +167,7 @@ nut2.0.
         └── ...                        — (from LIST CMD)
 ```
 
-> **State IDs:** the first dot in a NUT variable name is the channel separator; any further dots become dashes. So `battery.charge.low` is stored as `battery.charge-low`, and the instant command `test.battery.start` becomes `commands.test-battery-start`.
+> **State IDs:** the first dot in a NUT variable name is the channel separator; any further dots become dashes. So `battery.charge.low` is stored as `battery.charge-low`, and the instant command `test.battery.start` becomes `commands.test-battery-start`. A NUT variable without any dot (some drivers expose a bare `ALARM`) has no channel and is created directly under the device.
 
 ### Status Severity Levels
 
@@ -250,6 +259,18 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- Fixed: a certificate file left over in the settings no longer stops the adapter — it is only read while strict certificate checking is actually switched on
+- Fixed: value lists of writable data points stay in your language instead of falling back to the raw NUT wording after the first poll
+- Fixed: the connection test no longer reports an error when only the credentials are refused — it says so and confirms that reading works, matching what the adapter does
+- Fixed: the connection test now answers in your language when something goes wrong, not only when it succeeds
+- Fixed: a UPS that disappears from the NUT server and comes back gets its manufacturer and model name again instead of keeping the bare UPS name
+- Fixed: renamed data points of the adapter itself now reach existing installations instead of only new ones
+- Fixed: enabling instant commands without credentials no longer fails silently — the adapter now explains why no command buttons are created
+- New: detailed user documentation in English and German is now part of the repository and shown in the ioBroker documentation portal
+
 ### 0.13.0 (2026-09-02)
 
 - New: every data point now carries a short explanation in your language — what it means, not just what it is called

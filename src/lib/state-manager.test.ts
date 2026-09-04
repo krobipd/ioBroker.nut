@@ -810,6 +810,47 @@ describe("StateManager", () => {
   // -----------------------------------------------------------------------
   // Cleanup
   // -----------------------------------------------------------------------
+  describe("refreshInstanceObjects", () => {
+    it("re-applies all six manifest objects with name and description", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.refreshInstanceObjects();
+
+      // Asserted on the SET of ids, not on a count: a manifest object added later must be
+      // added here too, and this is the assertion that says so.
+      for (const id of [
+        "info",
+        "info.connection",
+        "info.upsTotal",
+        "info.upsReachable",
+        "info.allUpsReachable",
+        "notify",
+      ]) {
+        const common = objects.get(id)?.common as any;
+        expect(common?.name, id).toBeDefined();
+        expect(common?.desc, id).toBeDefined();
+      }
+    });
+
+    it("overwrites a name an older version left behind", async () => {
+      // The whole point: js-controller preserves common.name when it re-applies the manifest,
+      // so without this call a renamed data point keeps its old label forever.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      objects.set("info.upsTotal", {
+        type: "state",
+        common: { name: { en: "Ancient label" }, type: "number", role: "value" },
+        native: {},
+      });
+
+      await sm.refreshInstanceObjects();
+
+      expect((objects.get("info.upsTotal")?.common.name as any).en).not.toBe("Ancient label");
+      expect((objects.get("info.upsTotal")?.common as any).type).toBe("number");
+    });
+  });
+
   describe("cleanupRemovedUps", () => {
     it("should remove devices not in current set", async () => {
       const { adapter, deletedIds } = createMockAdapter();
@@ -857,6 +898,84 @@ describe("StateManager", () => {
       await sm.cleanupRemovedUps(new Set());
 
       expect(logs.some(l => l.includes("Removing stale UPS device: ups0"))).toBe(true);
+    });
+
+    it("a UPS that comes back gets its manufacturer+model name again", async () => {
+      // Since design #25 a UPS can vanish and return within one runtime — the poll re-reads
+      // LIST UPS. The derived-name memory has to go with the deleted device, or updateDeviceName
+      // believes it already wrote that name and the returning device keeps the bare UPS id.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      const vars = [
+        { name: "device.mfr", value: "Eaton" },
+        { name: "device.model", value: "Ellipse PRO 1600" },
+      ];
+
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      await sm.updateDeviceName("ups0", "Description unavailable", vars);
+      expect((objects.get("ups0")?.common.name as any).en).toBe("Eaton Ellipse PRO 1600");
+
+      // Gone from the NUT server …
+      await sm.cleanupRemovedUps(new Set());
+      objects.clear();
+
+      // … and back on the next poll.
+      await sm.ensureUpsDevice("ups0", "Description unavailable");
+      expect((objects.get("ups0")?.common.name as any).en).toBe("ups0");
+      await sm.updateDeviceName("ups0", "Description unavailable", vars);
+      expect((objects.get("ups0")?.common.name as any).en).toBe("Eaton Ellipse PRO 1600");
+    });
+
+    it("drops the NUT-name map and a held recording of the removed UPS", async () => {
+      // Both maps are keyed by state id, so a stale entry survives the device it belonged to:
+      // the name map would answer for an id that no longer exists, and a held recording would be
+      // handed to a fresh state of a UPS that has nothing to do with it.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.ensureUpsDevice("ups0", "Main");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "80" }], new Set());
+      expect(sm.nutNameForState("ups0.battery.charge")).toBe("battery.charge");
+
+      // A recording waiting for a successor that never gets created.
+      objects.set("ups0.info.online", {
+        type: "state",
+        common: { name: "old", custom: { "history.0": { enabled: true } } },
+        native: {},
+      });
+      await sm.cleanupRemovedUps(new Set());
+
+      expect(sm.nutNameForState("ups0.battery.charge")).toBeUndefined();
+    });
+
+    it("a returning UPS may report its first garbage value again", async () => {
+      const { adapter, logs } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      const warns = (): string[] => logs.filter(l => l.startsWith("WARN:") && l.includes("Discarding non-numeric"));
+
+      await sm.ensureUpsDevice("ups0", "Main");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "Infinity" }], new Set());
+      expect(warns()).toHaveLength(1);
+
+      await sm.cleanupRemovedUps(new Set());
+      await sm.ensureUpsDevice("ups0", "Main");
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "Infinity" }], new Set());
+      expect(warns()).toHaveLength(2);
+    });
+
+    it("the garbage warning is deduplicated per UPS, not fleet-wide", async () => {
+      // The message names the UPS, so a second UPS reporting the same junk has to be able to
+      // say so once as well — a name-only key silenced it.
+      const { adapter, logs } = createMockAdapter();
+      const sm = new StateManager(adapter);
+      const warns = (): string[] => logs.filter(l => l.startsWith("WARN:") && l.includes("Discarding non-numeric"));
+
+      await sm.updateVariables("ups0", [{ name: "battery.charge", value: "Infinity" }], new Set());
+      await sm.updateVariables("ups1", [{ name: "battery.charge", value: "Infinity" }], new Set());
+
+      expect(warns()).toHaveLength(2);
+      expect(warns()[0]).toContain("ups0");
+      expect(warns()[1]).toContain("ups1");
     });
   });
 
@@ -1326,6 +1445,64 @@ describe("StateManager", () => {
 
       const common = objects.get("ups0.output.voltage-nominal")?.common as any;
       expect(common.states).toEqual({ 200: "200", 208: "208", 220: "220", 230: "230", 240: "240" });
+    });
+
+    it("translates the value labels of a LIST ENUM answer", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.ups.beeper-status", {
+        type: "state",
+        common: { type: "string", role: "text", name: "Beeper status" },
+        native: {},
+      });
+
+      // LIST ENUM answers with the raw NUT tokens — the labels must still follow the system
+      // language, the values stay the tokens the write path needs.
+      await sm.enrichStateMetadata("ups0.ups.beeper-status", {
+        states: { enabled: "enabled", disabled: "disabled", muted: "muted" },
+      });
+
+      const common = objects.get("ups0.ups.beeper-status")?.common as any;
+      expect(common.states).toEqual({ enabled: "valEnabled", disabled: "valDisabled", muted: "valMuted" });
+    });
+
+    it("a token the catalog does not know keeps the server's own word as its label", async () => {
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      objects.set("ups0.ups.vendor-mode", {
+        type: "state",
+        common: { type: "string", role: "text", name: "Vendor mode" },
+        native: {},
+      });
+
+      await sm.enrichStateMetadata("ups0.ups.vendor-mode", { states: { on: "on", vendorX: "vendorX" } });
+
+      const common = objects.get("ups0.ups.vendor-mode")?.common as any;
+      expect(common.states).toEqual({ on: "valOn", vendorX: "vendorX" });
+    });
+
+    it("the enrichment does not undo the translated labels updateVariables just wrote", async () => {
+      // The seam that produced the defect: both modules were only ever tested on their own, so
+      // nobody saw that the poll runs updateVariables FIRST (localized labels) and the enrichment
+      // SECOND (raw tokens) on the very same object.
+      const { adapter, objects } = createMockAdapter();
+      const sm = new StateManager(adapter);
+
+      await sm.updateVariables(
+        "ups0",
+        [{ name: "ups.beeper.status", value: "enabled" }],
+        new Set(["ups.beeper.status"]),
+      );
+      const afterCatalog = (objects.get("ups0.ups.beeper-status")?.common as any).states;
+      expect(afterCatalog).toEqual({ enabled: "valEnabled", disabled: "valDisabled", muted: "valMuted" });
+
+      await sm.enrichStateMetadata("ups0.ups.beeper-status", {
+        states: { enabled: "enabled", disabled: "disabled", muted: "muted" },
+      });
+
+      expect((objects.get("ups0.ups.beeper-status")?.common as any).states).toEqual(afterCatalog);
     });
 
     it("should set common.min and common.max via extendObject", async () => {

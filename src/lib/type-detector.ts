@@ -105,11 +105,14 @@ export function detectType(varName: string, rawValue: string, isWritable: boolea
   // must not be discarded as garbage in a numeric field (it would warn on every poll).
   if (TIMER_VARIABLE_RE.test(varName)) {
     const idle = rawValue.toLowerCase();
+    // The role has to match what the RUNNING countdown gets from detectRole below, or a writable
+    // timer would carry a different role depending on which value the first poll happened to see.
+    const idleRole = detectRole(varName, "number", isWritable);
     if (idle === "notactive" || rawValue === "-1") {
-      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: null };
+      return { type: "number", role: idleRole, unit: "s", read: true, write: isWritable, parsedValue: null };
     }
     if (idle === "countdownexpired") {
-      return { type: "number", role: "value.interval", unit: "s", read: true, write: isWritable, parsedValue: 0 };
+      return { type: "number", role: idleRole, unit: "s", read: true, write: isWritable, parsedValue: 0 };
     }
   }
 

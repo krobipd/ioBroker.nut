@@ -5,13 +5,15 @@
   "help_host": "Nome do host ou endereço IP do servidor NUT (ex.: 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Porta",
+  "help_port": "Porta em que o servidor NUT escuta — 3493, salvo se o upsd estiver configurado de outra forma",
   "label_networkInterface": "Interface de rede",
-  "tooltip_networkInterface": "Selecionar uma interface de rede específica para conexões de saída (opcional)",
+  "help_networkInterface": "Selecionar uma interface de rede específica para conexões de saída (opcional)",
   "label_pollInterval": "Intervalo de consulta (s)",
   "help_pollInterval": "Frequência de consulta ao servidor NUT (2–300 segundos)",
   "label_username": "Nome de utilizador",
   "help_username": "Nome de utilizador NUT (opcional — necessário para comandos e variáveis editáveis)",
   "label_password": "Palavra-passe",
+  "help_password": "Palavra-passe desse utilizador NUT, guardada cifrada. Só é necessária para comandos e variáveis graváveis",
   "btn_checkConnection": "Testar conexão",
   "label_commandTimeout": "Tempo limite de comando (s)",
   "help_commandTimeout": "Tempo limite para comandos NUT individuais (1–30 segundos)",
@@ -293,5 +295,7 @@
   "testPlain": "sem encriptação",
   "testConnectedLoggedIn": "Ligado %s, sessão iniciada como \"%s\" — %s UPS: %s",
   "testConnectedNoCreds": "Ligado %s — %s UPS: %s (sem credenciais definidas)",
-  "testConnectedNoUps": "Ligado %s — o servidor não lista nenhum UPS, não foi possível verificar as credenciais"
+  "testConnectedNoUps": "Ligado %s — o servidor não lista nenhum UPS, não foi possível verificar as credenciais",
+  "testConnectedAuthRejected": "Ligado %s, mas o servidor NUT rejeitou as credenciais de «%s» — a leitura funciona, comutar e escrever serão recusados. %s UPS: %s",
+  "testFailed": "Teste de ligação falhou: %s"
 }

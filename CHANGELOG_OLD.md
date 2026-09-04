@@ -1,4 +1,5 @@
 # Older changes
+
 ## 0.9.0 (2026-08-27)
 
 - New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.

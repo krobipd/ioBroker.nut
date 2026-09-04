@@ -5,13 +5,15 @@
   "help_host": "Hostname or IP address of the NUT server (e.g. 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Port",
+  "help_port": "Port the NUT server listens on — 3493 unless upsd was configured differently",
   "label_networkInterface": "Network interface",
-  "tooltip_networkInterface": "Select a specific network interface for outgoing connections (optional)",
+  "help_networkInterface": "Select a specific network interface for outgoing connections (optional)",
   "label_pollInterval": "Poll interval (s)",
   "help_pollInterval": "How often to query the NUT server (2–300 seconds)",
   "label_username": "Username",
   "help_username": "NUT username (optional — required for commands and writable variables)",
   "label_password": "Password",
+  "help_password": "Password of that NUT user, stored encrypted. Only needed for commands and writable variables",
   "btn_checkConnection": "Test connection",
   "label_commandTimeout": "Command timeout (s)",
   "help_commandTimeout": "Timeout for individual NUT commands (1–30 seconds)",
@@ -293,5 +295,7 @@
   "testPlain": "unencrypted",
   "testConnectedLoggedIn": "Connected %s, logged in as \"%s\" — %s UPS(es): %s",
   "testConnectedNoCreds": "Connected %s — %s UPS(es): %s (no credentials configured)",
-  "testConnectedNoUps": "Connected %s — the server lists no UPS, so the credentials could not be checked"
+  "testConnectedNoUps": "Connected %s — the server lists no UPS, so the credentials could not be checked",
+  "testConnectedAuthRejected": "Connected %s, but the NUT server rejected the credentials for \"%s\" — reading works, switching and writing will be refused. %s UPS(es): %s",
+  "testFailed": "Connection test failed: %s"
 }

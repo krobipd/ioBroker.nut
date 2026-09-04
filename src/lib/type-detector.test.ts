@@ -570,6 +570,23 @@ describe("type-detector", () => {
   // -----------------------------------------------------------------------
   // detectStates (enum values)
   // -----------------------------------------------------------------------
+  it("a writable numeric variable gets the writable role, not a measurement role", () => {
+    // level is what ioBroker uses for "a number the user may set"; value.* is a reading.
+    expect(detectType("ups.realpower.nominal", "1500", true).role).toBe("level");
+    expect(detectType("ups.realpower.nominal", "1500", false).role).toBe("value.power.active");
+  });
+
+  it("a writable countdown keeps one role whether it runs or idles", () => {
+    // The role is written once per runtime; if idle and running disagreed, the value the first
+    // poll happened to see would decide what the datapoint looks like.
+    const running = detectType("ups.timer.shutdown", "30", true);
+    const idle = detectType("ups.timer.shutdown", "-1", true);
+    const expired = detectType("ups.timer.shutdown", "NotActive", true);
+    expect(idle.role).toBe(running.role);
+    expect(expired.role).toBe(running.role);
+    expect(idle.unit).toBe(running.unit);
+  });
+
   describe("detectStates", () => {
     it("should return enum states for battery.charger.status", () => {
       const s = detectStates("battery.charger.status");

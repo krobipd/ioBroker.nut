@@ -5,13 +5,15 @@
   "help_host": "NUT 服务器的主机名或 IP 地址（例如 192.168.1.100）",
   "placeholder_host": "192.168.1.100",
   "label_port": "端口",
+  "help_port": "NUT 服务器监听的端口——除非 upsd 另行配置，否则为 3493",
   "label_networkInterface": "网络接口",
-  "tooltip_networkInterface": "选择用于传出连接的特定网络接口（可选）",
+  "help_networkInterface": "选择用于传出连接的特定网络接口（可选）",
   "label_pollInterval": "轮询间隔（秒）",
   "help_pollInterval": "查询 NUT 服务器的频率（2–300 秒）",
   "label_username": "用户名",
   "help_username": "NUT 用户名（可选——发送命令和修改可写变量时需要）",
   "label_password": "密码",
+  "help_password": "该 NUT 用户的密码，加密存储。仅在使用命令和可写变量时需要",
   "btn_checkConnection": "测试连接",
   "label_commandTimeout": "命令超时（秒）",
   "help_commandTimeout": "单个 NUT 命令的超时时间（1–30 秒）",
@@ -293,5 +295,7 @@
   "testPlain": "（未加密）",
   "testConnectedLoggedIn": "已连接%s，以“%s”登录——%s 台 UPS：%s",
   "testConnectedNoCreds": "已连接%s——%s 台 UPS：%s（未配置凭据）",
-  "testConnectedNoUps": "已连接%s——服务器未列出任何 UPS，无法校验凭据"
+  "testConnectedNoUps": "已连接%s——服务器未列出任何 UPS，无法校验凭据",
+  "testConnectedAuthRejected": "已连接%s，但 NUT 服务器拒绝了“%s”的凭据——读取正常，切换与写入将被拒绝。%s 台 UPS：%s",
+  "testFailed": "连接测试失败：%s"
 }

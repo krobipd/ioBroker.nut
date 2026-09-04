@@ -82,7 +82,11 @@ vi.mock("@iobroker/adapter-core", () => {
     getForeignObjectAsync = vi.fn((_id: string): Promise<unknown> => Promise.resolve(null));
     extendForeignObjectAsync = vi.fn(async (_id: string, _obj: unknown): Promise<void> => {});
 
-    sendTo(): void {}
+    sentTo: { from: string; command: string; response: unknown }[] = [];
+
+    sendTo(from: string, command: string, response: unknown, _cb?: unknown): void {
+      this.sentTo.push({ from, command, response });
+    }
   }
 
   return {
@@ -111,6 +115,7 @@ interface StubSurface {
   timeouts: { cb: () => void; ms: number; cleared: boolean }[];
   getForeignObjectAsync: ReturnType<typeof vi.fn>;
   extendForeignObjectAsync: ReturnType<typeof vi.fn>;
+  sentTo: { from: string; command: string; response: unknown }[];
 }
 
 interface FakeClient {
@@ -185,6 +190,7 @@ interface FakeStateManager {
   enrichStateMetadata: ReturnType<typeof vi.fn>;
   nutNameForState: ReturnType<typeof vi.fn>;
   markAllUnreachable: ReturnType<typeof vi.fn>;
+  refreshInstanceObjects: ReturnType<typeof vi.fn>;
   writeUpsSummary: ReturnType<typeof vi.fn>;
 }
 
@@ -200,6 +206,7 @@ function makeFakeStateManager(): FakeStateManager {
     enrichStateMetadata: vi.fn(async () => {}),
     nutNameForState: vi.fn(() => undefined),
     markAllUnreachable: vi.fn(async () => {}),
+    refreshInstanceObjects: vi.fn(async () => {}),
     writeUpsSummary: vi.fn(async () => {}),
   };
 }
@@ -210,6 +217,7 @@ interface Internal {
   onConnected: () => Promise<void>;
   onStateChange: (id: string, state: { val: unknown; ack: boolean } | null | undefined) => Promise<void>;
   onUnload: (callback: () => void) => void;
+  onMessage: (obj: ioBroker.Message) => Promise<void>;
   poll: () => Promise<void>;
   discover: () => Promise<void>;
   classifyError: (err: unknown) => string;
@@ -315,6 +323,15 @@ describe("onReady", () => {
     const { internal, sm } = setup({ host: "" });
     await internal.onReady();
     expect(sm.markAllUnreachable).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-applies the manifest objects on every start, even without a host", async () => {
+    // js-controller re-applies instanceObjects with preserve on common.name, so a renamed one
+    // would reach fresh installs only. And it has to happen before the host check: a
+    // misconfigured instance still deserves current texts.
+    const { internal, sm } = setup({ host: "" });
+    await internal.onReady();
+    expect(sm.refreshInstanceObjects).toHaveBeenCalledTimes(1);
   });
 
   it("errors out without a host and never builds a client", async () => {
@@ -1404,5 +1421,201 @@ describe("the whole chain agrees in every state", () => {
     expect(s.stub.states.get("nut2.0.info.connection")).toEqual({ val: false, ack: true });
     expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: false, ack: true });
     expect(s.sm.writeUpsSummary).toHaveBeenLastCalledWith(1, 0);
+  });
+});
+
+describe("onMessage", () => {
+  const message = (msg: unknown): ioBroker.Message =>
+    ({
+      command: "checkConnection",
+      from: "system.adapter.admin.0",
+      callback: { id: 1, message: "x", time: 0, ack: false },
+      message: msg,
+    }) as ioBroker.Message;
+
+  // This handler had NO coverage at all, and it is exactly the path that was dead from v0.9.0
+  // to v0.12.0 without a single test noticing (issue #17 / v0.12.1). The router itself is well
+  // tested — what was never exercised is the wiring around it.
+  it("routes a message to the dispatcher and answers through sendTo", async () => {
+    const s = setup();
+    await s.internal.onMessage(message({ host: "" }));
+
+    expect(s.stub.sentTo).toHaveLength(1);
+    expect(s.stub.sentTo[0].command).toBe("checkConnection");
+    expect(s.stub.sentTo[0].from).toBe("system.adapter.admin.0");
+    expect(s.stub.sentTo[0].response).toHaveProperty("error");
+  });
+
+  it("answers an unknown command instead of leaving the caller hanging", async () => {
+    const s = setup();
+    await s.internal.onMessage({ ...message(undefined), command: "nonsense" });
+
+    expect(s.stub.sentTo[0].response).toEqual({ error: "Unknown command" });
+  });
+
+  it("registers the throwaway test client AND removes it again", async () => {
+    // A client left in the set would be destroyed a second time on unload — and worse, a leak
+    // that nothing ever notices, because the set is only read while shutting down.
+    const s = setup();
+    await s.internal.onMessage(message({ host: "127.0.0.1", port: 1, commandTimeout: 1 }));
+
+    expect(s.stub.sentTo).toHaveLength(1);
+    expect(s.internal.testClients.size).toBe(0);
+  });
+
+  it("catches a failure inside the dispatcher instead of crashing the adapter", async () => {
+    const s = setup();
+    // An unhandled rejection in an event handler crash-loops the instance; the top-level catch
+    // is the only thing between a broken answer and that loop.
+    (s.stub as unknown as { sendTo: () => void }).sendTo = () => {
+      throw new Error("states DB gone");
+    };
+
+    await s.internal.onMessage(message({ host: "" }));
+
+    expect(logsOf(s.stub, "error").some(m => m.includes("onMessage failed"))).toBe(true);
+  });
+});
+
+describe("edges that had no test", () => {
+  it("says why no command buttons appear when commands are on but credentials are missing", async () => {
+    // Silence here is the trap: the user ticks the box, nothing shows up, and there is nowhere
+    // to look. upsd checks command rights per named user, so credentials are not optional.
+    const s = await setupConnected({ enableCommands: true });
+
+    expect(s.sm.createCommandButtons).not.toHaveBeenCalled();
+    const warns = logsOf(s.stub, "warn").filter(m => m.includes("no credentials are configured"));
+    expect(warns).toHaveLength(1);
+
+    // Every reconnect runs the same path — it must not turn into a log flood.
+    await s.internal.onConnected();
+    expect(logsOf(s.stub, "warn").filter(m => m.includes("no credentials are configured"))).toHaveLength(1);
+  });
+
+  it("ignores a write while no client exists instead of throwing", async () => {
+    const s = await setupConnected({ enableCommands: true, username: "u", password: "p" });
+    s.internal.client = null;
+
+    await s.internal.onStateChange("nut2.0.ups0.commands.beeper-enable", { val: true, ack: false });
+
+    expect(logsOf(s.stub, "debug").some(m => m.includes("no client connection"))).toBe(true);
+  });
+
+  it("catches a failure inside onStateChange — an unhandled rejection crash-loops the instance", async () => {
+    const s = await setupConnected({ enableCommands: true, username: "u", password: "p" });
+    s.sm.nutNameForState.mockImplementation(() => {
+      throw new Error("cache exploded");
+    });
+
+    await s.internal.onStateChange("nut2.0.ups0.commands.beeper-enable", { val: true, ack: false });
+
+    expect(logsOf(s.stub, "error").some(m => m.includes("onStateChange failed"))).toBe(true);
+  });
+
+  it("survives a driver that supports neither LIST ENUM nor LIST RANGE", async () => {
+    const s = await setupConnected({ enableSetVar: true });
+    s.client.listRw.mockResolvedValue([{ name: "ups.delay.shutdown", value: "20" }]);
+    s.client.listEnum.mockRejectedValue(new NutError("VAR-NOT-SUPPORTED"));
+    s.client.listRange.mockRejectedValue(new NutError("VAR-NOT-SUPPORTED"));
+    s.internal.enrichedUps.clear();
+
+    await s.internal.poll();
+
+    // Best-effort: not a warning, not an abort — the poll itself has to finish.
+    const debug = logsOf(s.stub, "debug");
+    expect(debug.some(m => m.includes("LIST ENUM") && m.includes("not supported"))).toBe(true);
+    expect(debug.some(m => m.includes("LIST RANGE") && m.includes("not supported"))).toBe(true);
+    expect(s.stub.states.get("nut2.0.ups0.info.reachable")).toEqual({ val: true, ack: true });
+  });
+
+  it("keeps disambiguating past the second collision", async () => {
+    // Three different NUT names that all sanitize to the same object ID.
+    const s = setup({}, [
+      { name: "u p", description: "A" },
+      { name: "u.p", description: "B" },
+      { name: "u,p", description: "C" },
+    ]);
+    await s.internal.onReady();
+    await s.internal.onConnected();
+
+    expect([...s.internal.discoveredUps.keys()]).toEqual(["u_p", "u_p-2", "u_p-3"]);
+    expect(logsOf(s.stub, "warn").filter(m => m.includes("collides")).length).toBe(2);
+  });
+
+  it("does not poll on a notify trigger that arrives during shutdown", async () => {
+    const s = await setupConnected();
+    s.internal.onUnload(() => {});
+    s.client.listUps.mockClear();
+
+    await s.internal.onStateChange("nut2.0.notify", { val: "ONBATT ups0", ack: false });
+
+    expect(s.client.listUps).not.toHaveBeenCalled();
+  });
+
+  it("logs instead of throwing when the final writes are rejected on shutdown", async () => {
+    const s = await setupConnected();
+    (s.stub as unknown as { setState: () => Promise<void> }).setState = () =>
+      Promise.reject(new Error("states DB closed"));
+
+    const done = new Promise<void>(resolve => s.internal.onUnload(resolve));
+    await done;
+
+    expect(logsOf(s.stub, "debug").some(m => m.includes("final states rejected"))).toBe(true);
+  });
+});
+
+describe("what the adapter hands to its collaborators", () => {
+  it("injects MANAGED timers into the client — a native one would outlive onUnload", async () => {
+    const s = setup();
+    await s.internal.onReady();
+
+    const opts = s.clientArgs[0][2] as {
+      setTimer: (cb: () => void, ms: number) => unknown;
+      clearTimer: (h: unknown) => void;
+      logger: { debug: (m: string) => void; warn: (m: string) => void; info: (m: string) => void };
+    };
+
+    const handle = opts.setTimer(() => {}, 1234);
+    expect(s.stub.timeouts.some(t => t.ms === 1234)).toBe(true);
+
+    opts.clearTimer(handle);
+    expect(s.stub.timeouts.find(t => t.ms === 1234)!.cleared).toBe(true);
+    // A null handle must not reach clearTimeout — the client passes one after a settled connect.
+    expect(() => opts.clearTimer(null)).not.toThrow();
+
+    opts.logger.debug("d");
+    opts.logger.warn("w");
+    opts.logger.info("i");
+    expect(logsOf(s.stub, "debug")).toContain("d");
+    expect(logsOf(s.stub, "warn")).toContain("w");
+    expect(logsOf(s.stub, "info")).toContain("i");
+  });
+
+  it("starts anyway when the instance object cannot be read", async () => {
+    // The objects DB being briefly unavailable must not stop the adapter from coming up; the
+    // next start checks again.
+    const s = setup();
+    s.stub.getForeignObjectAsync.mockRejectedValue(new Error("objects DB down"));
+
+    await s.internal.onReady();
+
+    expect(logsOf(s.stub, "debug").some(m => m.includes("Could not check the instance object"))).toBe(true);
+    expect(s.client.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs a failing post-connect setup instead of losing the rejection", async () => {
+    const s = setup();
+    await s.internal.onReady();
+    s.client.listUps.mockRejectedValue(new Error("boom"));
+
+    // This is the callback the client itself invokes after every (re)connect.
+    s.client.onConnect!();
+    await vi.waitFor(() =>
+      expect(logsOf(s.stub, "error").some(m => m.includes("Post-connect setup failed"))).toBe(true),
+    );
+
+    // And the poll timer is armed anyway: the socket is alive, so nothing else would ever
+    // restart the polling.
+    expect(s.internal.pollTimer).toBeDefined();
   });
 });

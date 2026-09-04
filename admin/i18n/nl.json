@@ -5,13 +5,15 @@
   "help_host": "Hostnaam of IP-adres van de NUT-server (bijv. 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Poort",
+  "help_port": "Poort waarop de NUT-server luistert — 3493, tenzij upsd anders is ingesteld",
   "label_networkInterface": "Netwerkinterface",
-  "tooltip_networkInterface": "Selecteer een specifieke netwerkinterface voor uitgaande verbindingen (optioneel)",
+  "help_networkInterface": "Selecteer een specifieke netwerkinterface voor uitgaande verbindingen (optioneel)",
   "label_pollInterval": "Poll-interval (s)",
   "help_pollInterval": "Hoe vaak de NUT-server wordt bevraagd (2–300 seconden)",
   "label_username": "Gebruikersnaam",
   "help_username": "NUT-gebruikersnaam (optioneel — vereist voor commando's en schrijfbare variabelen)",
   "label_password": "Wachtwoord",
+  "help_password": "Wachtwoord van die NUT-gebruiker, versleuteld opgeslagen. Alleen nodig voor commando's en schrijfbare variabelen",
   "btn_checkConnection": "Verbinding testen",
   "label_commandTimeout": "Commandotimeout (s)",
   "help_commandTimeout": "Timeout voor individuele NUT-commando's (1–30 seconden)",
@@ -293,5 +295,7 @@
   "testPlain": "onversleuteld",
   "testConnectedLoggedIn": "Verbonden %s, aangemeld als \"%s\" — %s UPS(en): %s",
   "testConnectedNoCreds": "Verbonden %s — %s UPS(en): %s (geen inloggegevens ingesteld)",
-  "testConnectedNoUps": "Verbonden %s — de server heeft geen UPS, de inloggegevens konden niet worden gecontroleerd"
+  "testConnectedNoUps": "Verbonden %s — de server heeft geen UPS, de inloggegevens konden niet worden gecontroleerd",
+  "testConnectedAuthRejected": "Verbonden %s, maar de NUT-server weigerde de inloggegevens van “%s” — lezen werkt, schakelen en schrijven worden geweigerd. %s UPS(en): %s",
+  "testFailed": "Verbindingstest mislukt: %s"
 }

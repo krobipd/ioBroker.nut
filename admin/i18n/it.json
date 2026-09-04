@@ -5,13 +5,15 @@
   "help_host": "Nome host o indirizzo IP del server NUT (es. 192.168.1.100)",
   "placeholder_host": "192.168.1.100",
   "label_port": "Porta",
+  "help_port": "Porta su cui il server NUT è in ascolto — 3493, salvo diversa configurazione di upsd",
   "label_networkInterface": "Interfaccia di rete",
-  "tooltip_networkInterface": "Selezionare un'interfaccia di rete specifica per le connessioni in uscita (opzionale)",
+  "help_networkInterface": "Selezionare un'interfaccia di rete specifica per le connessioni in uscita (opzionale)",
   "label_pollInterval": "Intervallo di polling (s)",
   "help_pollInterval": "Frequenza di interrogazione del server NUT (2–300 secondi)",
   "label_username": "Nome utente",
   "help_username": "Nome utente NUT (opzionale — richiesto per comandi e variabili scrivibili)",
   "label_password": "Password",
+  "help_password": "Password di quell'utente NUT, salvata cifrata. Serve solo per i comandi e le variabili scrivibili",
   "btn_checkConnection": "Testa connessione",
   "label_commandTimeout": "Timeout comandi (s)",
   "help_commandTimeout": "Timeout per i singoli comandi NUT (1–30 secondi)",
@@ -293,5 +295,7 @@
   "testPlain": "non cifrato",
   "testConnectedLoggedIn": "Connesso %s, autenticato come \"%s\" — %s UPS: %s",
   "testConnectedNoCreds": "Connesso %s — %s UPS: %s (nessuna credenziale impostata)",
-  "testConnectedNoUps": "Connesso %s — il server non elenca UPS, credenziali non verificabili"
+  "testConnectedNoUps": "Connesso %s — il server non elenca UPS, credenziali non verificabili",
+  "testConnectedAuthRejected": "Connesso %s, ma il server NUT ha rifiutato le credenziali di «%s» — la lettura funziona, commutazione e scrittura saranno rifiutate. %s UPS: %s",
+  "testFailed": "Test di connessione non riuscito: %s"
 }

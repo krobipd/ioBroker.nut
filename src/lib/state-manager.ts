@@ -315,6 +315,41 @@ export class StateManager {
   }
 
   /**
+   * Re-apply the adapter's own manifest objects to an EXISTING installation.
+   *
+   * js-controller does refresh `common.desc` of an `instanceObjects` entry on every start — but
+   * it does so with `preserve: { common: ["name"], native: true }` (measured in
+   * `@iobroker/js-controller-adapter` 7.2.2, `_extendObjects`). The NAME is therefore frozen at
+   * whatever the version that first created the object wrote: a rename in the manifest reaches
+   * fresh installs only, and nothing — not the manifest, not a gate, not a test — would show it.
+   * Only the live tree of an updated system would.
+   *
+   * The six ids are written out one by one on purpose rather than looped over the manifest: the
+   * fleet gate matches the literal id at the `extendObject` call, and a loop would be DRYer but
+   * unverifiable (`reference_gate_braucht_die_woertliche_kennung`).
+   */
+  async refreshInstanceObjects(): Promise<void> {
+    await this.adapter.extendObject("info", {
+      common: { name: tName("channelInfo"), desc: tDesc("descChannelInfo") },
+    });
+    await this.adapter.extendObject("info.connection", {
+      common: { name: tName("connectionStatus"), desc: tDesc("descConnectionStatus") },
+    });
+    await this.adapter.extendObject("info.upsTotal", {
+      common: { name: tName("upsCountTotal"), desc: tDesc("descUpsCountTotal") },
+    });
+    await this.adapter.extendObject("info.upsReachable", {
+      common: { name: tName("upsCountReachable"), desc: tDesc("descUpsCountReachable") },
+    });
+    await this.adapter.extendObject("info.allUpsReachable", {
+      common: { name: tName("upsAllReachable"), desc: tDesc("descUpsAllReachable") },
+    });
+    await this.adapter.extendObject("notify", {
+      common: { name: tName("notifyTrigger"), desc: tDesc("descNotifyTrigger") },
+    });
+  }
+
+  /**
    * Create device + standard channels for a discovered UPS.
    *
    * @param upsName NUT UPS identifier (e.g. "ups0")
@@ -461,8 +496,11 @@ export class StateManager {
       // Garbage value in a numeric field (e.g. "Infinity", "12abc") → discard
       // instead of storing junk, and warn once per variable (no log spam).
       if (detected.expectedNumeric) {
-        if (!this.warnedGarbageVars.has(v.name)) {
-          this.warnedGarbageVars.add(v.name);
+        // Keyed per UPS, not per variable name: the warning names the UPS, so a second UPS
+        // reporting the same junk has to be able to say so once as well.
+        const warnKey = `${upsName}.${v.name}`;
+        if (!this.warnedGarbageVars.has(warnKey)) {
+          this.warnedGarbageVars.add(warnKey);
           this.adapter.log.warn(
             `Discarding non-numeric value ${JSON.stringify(v.value)} for numeric variable '${v.name}' on ${upsName}`,
           );
@@ -777,21 +815,42 @@ export class StateManager {
   }
 
   /**
-   * Remove all cached IDs under a prefix.
+   * Remove every cached memory of a UPS whose objects have just been deleted.
    *
-   * @param prefix ID prefix to clear
+   * ALL of them, not only the object-id caches: a UPS can come back within the same runtime since
+   * design #25 (the poll re-reads LIST UPS, so a device added or removed on the NUT server appears
+   * or disappears without a reconnect). A leftover `fallbackNames` entry then makes
+   * `updateDeviceName` believe it already wrote that name — the re-created device keeps the bare
+   * UPS name and never gets "manufacturer + model" back until the adapter restarts. The other two
+   * are the same class, one step smaller: a stale `pendingRecording` entry would hand a dead
+   * predecessor's recording to a fresh state, and a stale `warnedGarbageVars` entry would swallow
+   * the first garbage-value warning of the returning UPS.
+   *
+   * @param prefix UPS object-ID segment whose cached state is dropped
    */
   private dropCacheUnder(prefix: string): void {
+    const under = (id: string): boolean => id === prefix || id.startsWith(`${prefix}.`);
     for (const id of [...this.createdIds]) {
-      if (id === prefix || id.startsWith(`${prefix}.`)) {
+      if (under(id)) {
         this.createdIds.delete(id);
       }
     }
     for (const id of [...this.nutNames.keys()]) {
-      if (id === prefix || id.startsWith(`${prefix}.`)) {
+      if (under(id)) {
         this.nutNames.delete(id);
       }
     }
+    for (const id of [...this.pendingRecording.keys()]) {
+      if (under(id)) {
+        this.pendingRecording.delete(id);
+      }
+    }
+    for (const key of [...this.warnedGarbageVars]) {
+      if (under(key)) {
+        this.warnedGarbageVars.delete(key);
+      }
+    }
+    this.fallbackNames.delete(prefix);
   }
 
   private async ensureObject(
@@ -936,6 +995,12 @@ export class StateManager {
    * Enrich an existing state with ENUM/RANGE metadata from the NUT server.
    * Uses extendObject to deep-merge — overwrites only the provided keys.
    *
+   * The value labels are translated HERE, not at the call site: a LIST ENUM answer arrives as raw
+   * NUT tokens, and this write lands AFTER `updateVariables` has already put the localized catalog
+   * labels on the same object — so an untranslated list would quietly undo design #35 for exactly
+   * the writable enum datapoints. Translating inside means a future third caller cannot reintroduce
+   * that; the values themselves stay the NUT tokens, only their labels follow the system language.
+   *
    * @param id State object ID
    * @param patch Metadata to apply (states for ENUM, min/max for RANGE)
    * @param patch.states ENUM value map
@@ -949,7 +1014,7 @@ export class StateManager {
     this.adapter.log.debug(`enrichStateMetadata ${id}: ${JSON.stringify(patch)}`);
     const common: Record<string, unknown> = {};
     if (patch.states) {
-      common.states = patch.states;
+      common.states = localizeStates(patch.states);
     }
     if (patch.min !== undefined) {
       common.min = patch.min;

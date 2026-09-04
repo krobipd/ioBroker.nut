@@ -40,6 +40,8 @@ export class NutAdapter extends utils.Adapter {
   private credentialsSent = false;
   /** Credentials were reported as refused — warn once, then debug until they work again. */
   private warnedCredentialsRejected = false;
+  /** Commands enabled without credentials — say it once, not on every reconnect. */
+  private warnedCommandsWithoutCredentials = false;
   private enrichedUps = new Set<string>();
   private testClients = new Set<NutClient>();
   private subscribed = false;
@@ -182,6 +184,10 @@ export class NutAdapter extends utils.Adapter {
       // Built before the host check so the online indicators are cleared even on a misconfigured
       // instance: nothing will poll, so a stale "reachable" would stand forever.
       this.stateManager = this.makeStateManager();
+      // The manifest objects reach an EXISTING installation only through this call — js-controller
+      // preserves their common.name when it re-applies them, so a renamed data point would land on
+      // fresh installs only. Runs after I18n.init, because the texts come from admin/i18n.
+      await this.stateManager.refreshInstanceObjects();
       await this.stateManager.markAllUnreachable();
 
       // The upsmon doorbell listens from the very start, independent of any successful connect:
@@ -367,7 +373,19 @@ export class NutAdapter extends utils.Adapter {
    * best-effort; a genuinely unauthorised command is refused by the server and logged.
    */
   private async setupCommandButtons(): Promise<void> {
-    if (!this.credentialsSent || !this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+    if (!this.nutConfig().enableCommands || !this.client || !this.stateManager) {
+      return;
+    }
+    if (!this.credentialsSent) {
+      // Say it once instead of silently building nothing: a user who ticks "enable commands"
+      // without credentials sees no buttons appear and has nowhere to look for the reason.
+      // upsd checks `instcmds` per command against a named user, so commands need credentials.
+      if (!this.warnedCommandsWithoutCredentials) {
+        this.warnedCommandsWithoutCredentials = true;
+        this.log.warn(
+          "Instant commands are enabled but no credentials are configured — the NUT server checks command rights per user, so no command buttons are created",
+        );
+      }
       return;
     }
     for (const [upsId, ups] of this.discoveredUps) {

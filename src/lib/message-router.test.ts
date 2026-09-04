@@ -244,7 +244,10 @@ describe("dispatchMessage", () => {
 
       expect(h.sends).toHaveLength(1);
       const resp = h.sends[0].response as { error: string };
-      expect(resp.error).toBe("ECONNREFUSED");
+      // The frame follows the system language like every other user-facing answer; only the cause
+      // inside it stays as the runtime worded it.
+      expect(resp.error).toContain("testFailed");
+      expect(resp.error).toContain("ECONNREFUSED");
     });
   });
 
@@ -321,11 +324,51 @@ describe("dispatchMessage", () => {
         h.deps,
       );
 
+      // Refused credentials are not a broken connection: since design #32 the adapter keeps
+      // reading and stays green, so the test says the same thing instead of crying error.
+      expect(h.sends[0].response).not.toHaveProperty("error");
+      const resp = h.sends[0].response as { result: string };
+      expect(resp.result).toContain("testConnectedAuthRejected");
+      expect(resp.result).toContain("admin");
+      expect(h.steps).toEqual(["authenticate", "login:ups0"]);
+    });
+
+    it("an auth error outside the login block keeps its explaining cause text", async () => {
+      // Not every ACCESS-DENIED comes from LOGIN — a server with an ACL can refuse the connection
+      // or LIST UPS itself. That path runs through the general catch, and the user still needs to
+      // be told WHY: upsd answers a wrong password and a missing `upsmon` line identically, so the
+      // message has to name both. (This assertion used to live in the ACCESS-DENIED login test,
+      // which moved to the result path in 0.14.0 — the mutation wave caught the gap.)
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], new NutError("ACCESS-DENIED"));
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "pw" },
+        }),
+        h.deps,
+      );
+
       const resp = h.sends[0].response as { error: string };
-      expect(resp.error).toContain("ACCESS-DENIED");
+      expect(resp.error).toContain("testFailed");
       expect(resp.error).toContain("wrong password");
       expect(resp.error).toContain("upsd.users");
-      expect(h.steps).toEqual(["authenticate", "login:ups0"]);
+    });
+
+    it("a NON-auth failure during login is still reported as an error", async () => {
+      // The distinction has to be the error itself, not "anything that happens around LOGIN":
+      // a dropped socket at that moment is a real failure and must not be dressed up as success.
+      const h = makeHarness([{ name: "ups0", description: "Eaton" }], undefined, undefined, new NutError("DATA-STALE"));
+      await dispatchMessage(
+        buildMessage({
+          command: "checkConnection",
+          message: { host: "192.168.1.100", port: 3493, username: "admin", password: "pw" },
+        }),
+        h.deps,
+      );
+
+      const resp = h.sends[0].response as { error: string };
+      expect(resp.error).toContain("testFailed");
+      expect(resp.error).toContain("DATA-STALE");
     });
 
     it("reports the transport truthfully — via TLS only after a handshake", async () => {
@@ -441,7 +484,7 @@ describe("dispatchMessage", () => {
       expect(completed).toHaveLength(1);
       expect(registered[0]).toBe(completed[0]);
       expect(sends).toHaveLength(1);
-      expect((sends[0].response as { error?: string }).error).toBe("boom");
+      expect((sends[0].response as { error?: string }).error).toContain("boom");
     });
 
     it("should not register a test-client when host is missing", async () => {

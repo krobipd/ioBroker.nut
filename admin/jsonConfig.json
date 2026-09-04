@@ -27,7 +27,8 @@
           "sm": 12,
           "md": 3,
           "lg": 3,
-          "xl": 3
+          "xl": 3,
+          "help": "help_port"
         },
         "pollInterval": {
           "type": "number",
@@ -46,7 +47,6 @@
           "newLine": true,
           "type": "ip",
           "label": "label_networkInterface",
-          "tooltip": "tooltip_networkInterface",
           "onlyIp4": true,
           "noInternal": true,
           "listenOnAllPorts": true,
@@ -54,7 +54,8 @@
           "sm": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6
+          "xl": 6,
+          "help": "help_networkInterface"
         },
         "username": {
           "newLine": true,
@@ -74,7 +75,8 @@
           "sm": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6
+          "xl": 6,
+          "help": "help_password"
         },
         "useTls": {
           "newLine": true,
@@ -117,7 +119,7 @@
           "newLine": true,
           "type": "sendTo",
           "command": "checkConnection",
-          "jsonData": "{\"host\": \"${data.host}\", \"port\": ${data.port}, \"username\": \"${data.username}\", \"password\": \"${data.password}\", \"networkInterface\": \"${data.networkInterface}\", \"commandTimeout\": ${data.commandTimeout}, \"useTls\": ${data.useTls}, \"tlsRejectUnauthorized\": ${data.tlsRejectUnauthorized}, \"tlsCaFile\": \"${data.tlsCaFile}\"}",
+          "jsonData": "${JSON.stringify({host: data.host, port: data.port, username: data.username, password: data.password, networkInterface: data.networkInterface, commandTimeout: data.commandTimeout, useTls: data.useTls, tlsRejectUnauthorized: data.tlsRejectUnauthorized, tlsCaFile: data.tlsCaFile})}",
           "label": "btn_checkConnection",
           "xs": 12,
           "sm": 12,

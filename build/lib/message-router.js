@@ -69,15 +69,28 @@ async function dispatchMessage(obj, deps) {
             if (!first) {
               deps.sendTo(obj.from, obj.command, { result: (0, import_i18n.tTextArgs)("testConnectedNoUps", transport) }, obj.callback);
             } else {
-              await testClient.authenticate(username, password);
-              await testClient.login(first.name);
-              await testClient.logout();
-              deps.sendTo(
-                obj.from,
-                obj.command,
-                { result: (0, import_i18n.tTextArgs)("testConnectedLoggedIn", transport, username, upsList.length, names) },
-                obj.callback
-              );
+              try {
+                await testClient.authenticate(username, password);
+                await testClient.login(first.name);
+                await testClient.logout();
+                deps.sendTo(
+                  obj.from,
+                  obj.command,
+                  { result: (0, import_i18n.tTextArgs)("testConnectedLoggedIn", transport, username, upsList.length, names) },
+                  obj.callback
+                );
+              } catch (err) {
+                if (!(0, import_nut_client.authFailureText)(err)) {
+                  throw err;
+                }
+                deps.log.debug(`checkConnection: credentials for ${username} refused`);
+                deps.sendTo(
+                  obj.from,
+                  obj.command,
+                  { result: (0, import_i18n.tTextArgs)("testConnectedAuthRejected", transport, username, upsList.length, names) },
+                  obj.callback
+                );
+              }
             }
           } else {
             deps.sendTo(
@@ -99,7 +112,12 @@ async function dispatchMessage(obj, deps) {
     }
   } catch (err) {
     deps.log.debug(`onMessage: '${obj.command}' failed: ${(0, import_coerce.errText)(err)}`);
-    deps.sendTo(obj.from, obj.command, { error: (_c = (0, import_nut_client.authFailureText)(err)) != null ? _c : (0, import_coerce.errText)(err) }, obj.callback);
+    deps.sendTo(
+      obj.from,
+      obj.command,
+      { error: (0, import_i18n.tTextArgs)("testFailed", (_c = (0, import_nut_client.authFailureText)(err)) != null ? _c : (0, import_coerce.errText)(err)) },
+      obj.callback
+    );
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
