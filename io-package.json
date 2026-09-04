@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "nut2",
-    "version": "0.13.0",
+    "version": "0.14.0",
     "news": {
-      "NEXT": {
+      "0.14.0": {
         "en": "A leftover certificate file no longer stops the adapter, refused credentials are reported honestly instead of as an error, and renamed data points now reach existing installations",
         "de": "Eine übrig gebliebene Zertifikatsdatei stoppt den Adapter nicht mehr, abgelehnte Zugangsdaten werden ehrlich statt als Fehler gemeldet, und umbenannte Datenpunkte erreichen jetzt bestehende Anlagen",
         "ru": "Оставшийся файл сертификата больше не останавливает адаптер, отклонённые учётные данные сообщаются честно, а не как ошибка, и переименованные параметры теперь доходят до существующих установок",

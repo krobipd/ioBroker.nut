@@ -260,7 +260,7 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
     ### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.14.0 (2026-09-04)
 
 - Fixed: a certificate file left over in the settings no longer stops the adapter — it is only read while strict certificate checking is actually switched on
 - Fixed: value lists of writable data points stay in your language instead of falling back to the raw NUT wording after the first poll
@@ -303,11 +303,6 @@ iobroker state set nut2.0.notify "$NOTIFYTYPE $UPSNAME"
 - Fixed: a write to the adapter's own reachable, status or notify states (script, REST API) no longer ends as a SET VAR error in the log; null or object values are rejected before they reach the server
 - Fixed: a failed TLS handshake no longer logs a misleading "Connection lost" warning next to the stop, and the notify trigger state echoes the cleaned event text instead of the raw write
 - Changed: ioBroker Admin 8.0.11 or newer is required, in line with the current ioBroker stable repository — older Admin installations must be updated before installing this version
-
-### 0.10.0 (2026-09-01)
-
-- New: writable `notify` trigger state — upsmon (or any script) pushes events like ONBATT or SHUTDOWN for an instant refresh, and a matched event also lands on that UPS device (#14)
-- Improved: a password accidentally saved with a stray line break is now rejected cleanly instead of silently breaking the connection to the NUT server
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

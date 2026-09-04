@@ -1,5 +1,10 @@
 # Older changes
 
+## 0.10.0 (2026-09-01)
+
+- New: writable `notify` trigger state — upsmon (or any script) pushes events like ONBATT or SHUTDOWN for an instant refresh, and a matched event also lands on that UPS device (#14)
+- Improved: a password accidentally saved with a stray line break is now rejected cleanly instead of silently breaking the connection to the NUT server
+
 ## 0.9.0 (2026-08-27)
 
 - New: three states show how many UPS devices were found, how many answer right now, and whether that is all of them — one line to watch instead of every device.
