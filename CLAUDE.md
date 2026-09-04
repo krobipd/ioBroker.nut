@@ -95,7 +95,7 @@ docs/{en,de}/                   → Nutzerdoku im Repo (README/datapoints/faq), 
 - Auth: `USERNAME <user>` → `PASSWORD <pass>` → `LOGIN <ups>` (upsd prüft die Zugangsdaten ERST bei LOGIN/SET/INSTCMD/FSD — `server/netuser.c` speichert nur; `LOGIN` braucht `upsmon`-Recht im `upsd.users`; ein LOGIN je Verbindung)
 - 23 Error-Codes in `types.ts:NUT_ERRORS`
 
-## Tests (648 unit + 57 package = 705)
+## Tests (650 unit + 57 package = 707)
 
 ## Versionshistorie
 
